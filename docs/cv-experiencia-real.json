@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-02-19T00:00:00.000Z",
+  "basics": {
+    "fullName": "Cristian Camilo Romero",
+    "contact": {
+      "address": "",
+      "city": "Bogotá D.C",
+      "state": "Colombia",
+      "zip": "",
+      "email": "cristian.c.romero.p@gmail.com",
+      "phone": "+57 3148554726"
+    }
+  },
+  "education": [
+    {
+      "id": "3749218a-39e8-4ea3-bc5c-f55dd69aa2cf",
+      "institution": "Fundación Universitaria del Área Andina",
+      "location": "Bogotá, Colombia",
+      "degree": "Ingeniería de Sistemas",
+      "concentration": "",
+      "gpa": "",
+      "graduationDate": "Octubre 2021",
+      "thesis": "",
+      "coursework": "Medalla de Excelencia WorldSkills 2018 en Tecnologías Web",
+      "studyAbroad": null,
+      "order": 0
+    },
+    {
+      "id": "1b34126d-c7f7-4598-8531-8971cbb656af",
+      "institution": "Servicio Nacional de Aprendizaje (SENA)",
+      "location": "Soacha, Cundinamarca, Colombia",
+      "degree": "Tecnólogo en Análisis y Desarrollo de Sistemas de Información",
+      "concentration": "Tecnología de la información",
+      "gpa": "",
+      "graduationDate": "Agosto 2018",
+      "thesis": "",
+      "coursework": "",
+      "studyAbroad": null,
+      "order": 1
+    },
+    {
+      "id": "d2f3e719-70bc-49e0-8f3e-74c4f5d3a826",
+      "institution": "Servicio Nacional de Aprendizaje (SENA)",
+      "location": "Soacha, Cundinamarca, Colombia",
+      "degree": "Técnico en Programación de Software",
+      "concentration": "",
+      "gpa": "",
+      "graduationDate": "Octubre 2016",
+      "thesis": "",
+      "coursework": "",
+      "studyAbroad": null,
+      "order": 2
+    },
+    {
+      "id": "20735fe6-772d-4216-9751-3bdf432ed27b",
+      "institution": "Platzi",
+      "location": "",
+      "degree": "Curso de React Avanzado",
+      "concentration": "Ingeniería de software",
+      "gpa": "",
+      "graduationDate": "Agosto 2022",
+      "thesis": "",
+      "coursework": "",
+      "studyAbroad": null,
+      "order": 3
+    },
+    {
+      "id": "0f23653b-47fe-4223-9156-507008fd65d6",
+      "institution": "Platzi",
+      "location": "",
+      "degree": "Complejidad Algorítmica",
+      "concentration": "Ingeniería de software",
+      "gpa": "",
+      "graduationDate": "Enero 2022",
+      "thesis": "",
+      "coursework": "",
+      "studyAbroad": null,
+      "order": 4
+    }
+  ],
+  "experience": [
+    {
+      "id": "a332e008-e1ae-4b75-a3f2-3e60f77fa324",
+      "organization": "VTEX",
+      "title": "Software Engineer II - Full Stack",
+      "location": "Bogotá, Colombia",
+      "dates": "Enero 2024 – Octubre 2025",
+      "bullets": [
+        "Lideré decisiones de arquitectura y diseñé RFCs técnicas, ejecutando estimaciones de impacto para evaluar la viabilidad técnica de nuevos desarrollos.",
+        "Participé en la definición de métricas de negocio y estrategias de producto, colaborando con equipos de producto y stakeholders para priorizar features según su impacto en el negocio.",
+        "Propuse e implementé trunk-based development como git flow del equipo, diseñando una RFC con el proceso completo, configurando reglas de ramas e implementando un sistema de versionado con tags para CI/CD.",
+        "Mejoré el proceso de Pull Requests del equipo: implementé conventional commits, plantillas de PR, mínimo 2 revisores obligatorios e integración con Slack para mejorar la comunicación asíncrona entre stakeholders.",
+        "Investigué e impulsé la implementación de CI/CD con GitHub Actions, Tekton y Vercel, creando POCs y una RFC detallada. Refactoricé la configuración de Turborepo del monorepo: variables de entorno, pipelines (check types, test, linter, build) por cada app y package.",
+        "Establecí cultura de code reviews estructurados y testing automatizado (Vitest, Playwright), aumentando cobertura de tests y mejorando la calidad de los entregables del equipo.",
+        "Lideré ceremonias semanales de 1 hora para elevar el nivel técnico del equipo: compartí buenas prácticas de principios SOLID, patrones de diseño y uso correcto de TypeScript, revisando errores comunes en PRs. Presenté mensualmente el progreso en métricas registradas en GetDX.",
+        "Mentoricé equipo de desarrolladores internos y externos (3 third-party), estableciendo estándares de code review, testing automatizado y documentación técnica centralizada en Backstage.",
+        "Establecí y documenté los principios de arquitectura (patrones de composición, estructura de carpetas, convenciones de nombrado) para el equipo Frontend, homogenizando el código en 6 aplicaciones.",
+        "Implementé un sistema de logging estructurado para mejorar la observabilidad y el rastreo de errores en la API. Investigué y documenté la migración de CloudWatch a OpenSearch y Grafana, apoyando al desarrollador en la implementación.",
+        "Mejoré significativamente la documentación del producto: documenté APIs existentes, creé RFCs para múltiples features, registré incidencias de producción con análisis de causa raíz, y documenté la API Tracking Protocol. Lideré la iniciativa de migrar la documentación técnica a Backstage.io (plataforma interna Darkkitchen de VTEX).",
+        "Enseñé al equipo buenas prácticas de monorepos con Turborepo y mejoré progresivamente la arquitectura de cada app para seguir separación por capas con una estructura consistente entre apps de frontend y backend.",
+        "Promoví e implementé una cultura de on-call en el equipo, estableciendo procesos para el manejo de incidencias, prioridades y registro de métricas para identificar y actuar sobre errores comunes.",
+        "Lideré junto con otros 2 compañeros a 3 desarrolladores third-party, velando por el cumplimiento de pautas y entregas solicitadas.",
+        "Realicé revisiones de PRs diariamente.",
+        "Lidere he hice la reingeniería completa de un crítico proceso de integración entre nuestro sistema 'Pick and Pack' y el OMS de VTex, que gestionaba todos los pedidos entrantes.\n\nEl sistema existente era muy frágil y operaba en un estado de caos constante. Durante picos de tráfico, una cola SQS alimentaba una Lambda que procesaba los pedidos, pero fallaba en múltiples frentes:\n\n1.  **Inconsistencia de Datos:** Procesábamos órdenes duplicadas y, lo que es peor, muchas otras simplemente no llegaban a nuestro sistema, desapareciendo en un agujero negro.\n2.  **Depuración Imposible:** CloudWatch era un vertedero de logs sin estructura. Encontrar la causa raíz de un error era como buscar una aguja en un pajar, lo que alargaba las incidencias por horas o días.\n3.  **Ceguera Operacional:** No existían alertas. Los primeros en detectar un problema eran nuestros clientes, lo que generaba una pésima experiencia y dañaba nuestra reputación.\n4.  **Falta de Robustez:** Si un proceso de negocio de 4 pasos fallaba en el paso 3, no había ningún mecanismo de *rollback*. Los cambios del paso 1 y 2 quedaban huérfanos en la base de datos, corrompiendo el estado. La única solución era una dolorosa intervención manual de un ingeniero para revertir los cambios y poder reencolar el pedido.\"\n\n**(Tarea) - Los Objetivos de una Misión Crítica**\n\n\"Mi tarea no era solo 'arreglar bugs', era rediseñar la integración desde cero para hacerla **resiliente, observable y auto-gestionable**. Los desafíos técnicos eran enormes y abordé cada uno como un objetivo específico:\n\n-   **Resiliencia:** Aislar al sistema de fallos externos, como caídas de la API de VTex, implementando *retries* con *backoff*.\n-   **Trazabilidad y Depuración:** Pasar de un 'basurero de logs' a un sistema de logging inteligente y trazable con AWS X-Ray.\n-   **Alertas Proactivas:** Implementar notificaciones en Slack/Email para saber de un error *antes* que el cliente.\n-   **Recuperación Autónoma y Manual:** Crear un sistema que permitiera tanto reintentos automáticos (con DLQ) como una herramienta para reencolar mensajes manualmente tras analizar la causa raíz.\n-   **Atomicidad y Consistencia:** Garantizar que el procesamiento de un pedido fuera una operación atómica: o se completaba exitosamente con todos sus pasos, o se revertía por completo, permitiendo un reintento limpio.\n-   **Manejo de Fallos Parciales:** Asegurar que un error en un mensaje de un lote (batch) no impidiera el procesamiento exitoso de los otros 7 mensajes del mismo evento.\"\n\n\n**(Acción) - La Ingeniería en Acción**\n\n\"Para lograr esto, lideré una reestructuración completa del componente, tomando las siguientes acciones clave:\n\n1.  **Gobernanza de Errores y Observabilidad:**\n    -   Implementé un **patrón Singleton** dentro del handler de la Lambda para unificar todos los logs de una sola invocación en un único y estructurado objeto JSON. Esto, junto con la integración de **AWS X-Ray**, me permitió correlacionar un trace ID a través de API Gateway, SQS y Lambda, reduciendo el tiempo de debugging en un 80%.\n    -   Configuré una **DLQ (Dead Letter Queue)** con una Lambda dedicada que, al recibir un mensaje fallido, guardaba el payload completo en DynamoDB y disparaba una notificación en Slack vía SNS. Esto nos daba visibilidad inmediata.\n\n2.  **Resiliencia y Control de Flujo:**\n    -   Ajusté finamente la configuración de la cola SQS: **Visibility Timeout** para evitar procesamiento duplicado, **retries** y una política de respaldo a la DLQ tras 3 intentos fallidos.\n    -   Modifiqué la Lambda para que, al recibir un batch de hasta 10 mensajes, procesara cada uno de forma independiente. Si un mensaje fallaba, la Lambda lo marcaba como fallido explícitamente, permitiendo que los demás se completaran con éxito. Esto evitaba el reintento innecesario de mensajes que ya se habían procesado correctamente.\n\n3.  **Consistencia y Recuperación:**\n    -   Implementé un **patrón de transacción o saga** a nivel de código. Ahora, cada paso del proceso de negocio tenía una acción compensatoria (rollback). Si un paso fallaba, se ejecutaban automáticamente las acciones de reversión de los pasos previos, dejando el sistema en un estado consistente para reintentar el evento completo.\n    -   Para la recuperación manual controlada, diseñé una tabla en DynamoDB que actúa como un 'almacén de eventos fallidos'. Esta tabla, junto con una pequeña herramienta interna, permite a cualquier miembro del equipo (no solo ingenieros) reencolar un evento específico a la cola principal una vez que se ha investigado y corregido la causa raíz.\"\n\n**(Resultado) - El Impacto Medible**\n\n\"El resultado de esta transformación fue un cambio radical en la estabilidad y operación del sistema:\n\n-   **Depuración 80% más rápida:** Gracias a los logs estructurados y la trazabilidad de X-Ray, el tiempo para identificar la causa raíz de un error se redujo drásticamente.\n-   **Resolución de Errores un 95% más proactiva:** Las alertas en tiempo real nos permiten actuar y resolver incidencias antes de que impacten al cliente, mejorando enormemente su experiencia.\n-   **Reducción del 30% en la tasa de errores efectiva:** Al manejar correctamente los fallos parciales en los batches, evitamos reintentar y procesar incorrectamente mensajes que ya eran válidos.\n\n**(Ventaja Adicional - El Valor de Negocio)**\n\nY la mayor ventaja, más allá de los números, fue la **autonomía que le devolvimos al negocio**. Con los logs organizados y la herramienta de reencolado basada en DynamoDB, ahora son los propios stakeholders (como el equipo de operaciones) quienes pueden investigar por qué un pedido no llegó y reencolarlo sin necesidad de intervención del equipo de ingeniería. Esto redujo nuestra carga operativa y nos permitió enfocarnos en desarrollar nuevas funcionalidades con mayor prioridad."
+      ],
+      "order": 0
+    },
+    {
+      "id": "4e8aa16e-00eb-4bbd-ada2-d5e60ea6ad83",
+      "organization": "VTEX",
+      "title": "First Party Apps - Full Stack Engineer",
+      "location": "Bogotá, Colombia",
+      "dates": "Enero 2023 – Diciembre 2023",
+      "bullets": [
+        "Participé en la toma de decisiones de las nuevas features del producto, contribuyendo a la estrategia de Time-to-Market y al seguimiento de Product Analytics y KPIs.",
+        "Establecí sistema de observabilidad con OpenSearch y Grafana, implementando logging estructurado que redujo el tiempo de diagnóstico de errores en un 45%.",
+        "Optimicé arquitectura de microservicios con Node.js y TypeScript, logrando mejora de 25% en performance y reducción de 35% en costos de infraestructura AWS.",
+        "Mejoré el performance de los microservicios en un 60% optimizando los triggers en la base de datos y eliminando la duplicidad de procesos en los eventos de la DB.",
+        "Reduje los costos de infraestructura en un 56% mediante mejoras arquitectónicas.",
+        "Optimicé y redefiní la arquitectura de los proyectos para mejorar su escalabilidad y mantenibilidad.",
+        "Implementé el módulo de automatizaciones en Pick and Pack, permitiendo reglas y acciones customizables para mejorar el modelo de negocio según la tienda, con notificaciones, integraciones y acciones flexibles.",
+        "Migré los datos de Atlas Search a OpenSearch, mejorando los costos y reduciendo la latencia de los buscadores dentro de la App, facilitado por la implementación previa del patrón Repository.",
+        "Implementé un sistema de Feature Flags a nivel del cliente y servidor, permitiendo lanzamientos progresivos y experimentos A/B sin necesidad de nuevos despliegues, reduciendo incidentes en producción en un 40%.",
+        "Fortalecí la documentación técnica (APIs, flujos, arquitectura, incidentes) centralizada en Backstage.",
+        "Optimicé y documenté el sistema de integraciones de WMS para nuevos operadores logísticos.",
+        "Di soporte y mejoré la documentación de la API Delivery & Tracking para facilitar la integración de stakeholders y third-parties, apoyando con reuniones técnicas."
+      ],
+      "order": 1
+    },
+    {
+      "id": "34536439-f1eb-46ff-a0d9-1e8145b5acd9",
+      "organization": "NativApps Inc.",
+      "title": "Mid Backend Developer",
+      "location": "Colombia",
+      "dates": "Octubre 2022 – Enero 2023",
+      "bullets": [
+        "Migración exitosa de monolitos a microservicios serverless, reduciendo la deuda técnica y mejorando la mantenibilidad del código.",
+        "Implementé autorización granular con Cognito y API Gateway custom authorizers, cumpliendo con estándares GDPR y HIPAA.",
+        "Creé plantillas reutilizables de Serverless Framework para estandarizar el despliegue de servicios, acelerando el onboarding de nuevos desarrolladores en un 50%.",
+        "Implementé estrategias de rollback automático con AWS CodeDeploy, reduciendo el MTTR (Mean Time to Recovery) de 2 horas a 10 minutos.",
+        "Configuré dashboards en CloudWatch y X-Ray para monitoreo en tiempo real, logrando una detección de errores un 60% más rápida.",
+        "Diseñé un sistema de WebSockets serverless (API Gateway + Lambda) para notificaciones en tiempo real, soportando hasta 4K conexiones concurrentes.",
+        "Solucioné problemas de cold starts críticos mediante técnicas de warming functions y arquitecturas híbridas (Lambda + Fargate), mejorando la latencia en un 90%.",
+        "Implementé gestión centralizada de secretos con AWS Secrets Manager, eliminando hardcoded credentials en el 100% de los servicios."
+      ],
+      "order": 2
+    },
+    {
+      "id": "b4d1d91c-e7f2-46c8-9af6-3de6c6059747",
+      "organization": "Softgic – Línea Directa S.A.S",
+      "title": "Senior Frontend Developer",
+      "location": "Colombia",
+      "dates": "Junio 2022 – Octubre 2022",
+      "bullets": [
+        "Mejoré el tiempo de creación de interfaces de usuario creando una librería de UI para los equipos de desarrollo en el frontend.",
+        "Diseñé e implementé un Design System modular con Storybook, reutilizado en 4 proyectos, que redujo el tiempo de desarrollo de nuevas features en un 30% y estandarizó la experiencia de usuario en toda la plataforma.",
+        "Colaboré con SEO y performance para optimizar métricas clave que resultaron en mayor visibilidad orgánica y conversiones.",
+        "Mantuve y creé una arquitectura escalable y flexible."
+      ],
+      "order": 3
+    },
+    {
+      "id": "2cb4524c-41c2-49da-8a47-38e5861820a6",
+      "organization": "Softgic – VTEX",
+      "title": "Fullstack Engineer",
+      "location": "Colombia",
+      "dates": "Marzo 2021 – Junio 2022",
+      "bullets": [
+        "Reduje la complejidad del portal de E-commerce del módulo de tracking en un 30%, separando las responsabilidades de negocio en diferentes capas siguiendo los principios SOLID.",
+        "Logramos un 100% de satisfacción de los clientes en el desarrollo del módulo de tracking del website.",
+        "Diseñé e implementé un sistema de gobernanza de errores con Dead Letter Queues (DLQ) y alertas proactivas para el procesamiento de pedidos, reduciendo el impacto en usuarios finales en un 30% y mejorando la trazabilidad de fallas.",
+        "Implementé una estrategia para diagnosticar bugs y fallas al recibir mensajes en la cola de pedidos, reduciendo e identificando el número de órdenes que fallaban en el sistema.",
+        "Optimicé el proceso de fulfillment mediante automatización del flujo de pedidos, reduciendo el tiempo total de picking, packing y despacho en un 40%, aumentando la capacidad de procesamiento diario y mejorando los tiempos de entrega.",
+        "Mantuve y creé una arquitectura escalable y flexible."
+      ],
+      "order": 4
+    },
+    {
+      "id": "d30a68e9-a1f4-443c-8504-7fff4d4ce94b",
+      "organization": "Go Digital Colombia",
+      "title": "Fullstack Developer",
+      "location": "Bogotá, Colombia",
+      "dates": "Diciembre 2017 – Noviembre 2019",
+      "bullets": [
+        "Disminuí el porcentaje de errores de la página de chats y videollamadas del portal de la compañía en un 40%, implementando Web Workers para desencriptar los mensajes provenientes del servidor.",
+        "Desarrollé el módulo de facturación electrónica integrando la API de la DIAN (Dirección de Impuestos y Aduanas Nacionales)."
+      ],
+      "order": 5
+    }
+  ],
+  "leadership": [
+    {
+      "id": "4a4a036a-e2d7-4fae-ad71-74310ebf6ecc",
+      "organization": "VTEX",
+      "location": "Bogotá, Colombia",
+      "role": "Tech Lead & Engineering Mentor",
+      "dates": "Enero 2024 – Octubre 2025",
+      "bullets": [
+        "Lideré decisiones de arquitectura y diseñé RFCs técnicas, ejecutando estimaciones de impacto para evaluar la viabilidad técnica de nuevos desarrollos.",
+        "Participé en la definición de métricas de negocio y estrategias de producto, colaborando con equipos de producto y stakeholders para priorizar features según su impacto en el negocio.",
+        "Establecí cultura de code reviews estructurados y testing automatizado (Vitest, Playwright), aumentando cobertura de tests y mejorando la calidad de los entregables del equipo.",
+        "Lideré ceremonias semanales de 1 hora para elevar el nivel técnico del equipo: compartí buenas prácticas de principios SOLID, patrones de diseño y uso correcto de TypeScript, revisando errores comunes en PRs. Presenté mensualmente el progreso en métricas registradas en GetDX.",
+        "Mentoricé equipo de desarrolladores internos y externos (3 third-party), estableciendo estándares de code review, testing automatizado y documentación técnica centralizada en Backstage.",
+        "Promoví e implementé una cultura de on-call en el equipo, estableciendo procesos para el manejo de incidencias, prioridades y registro de métricas para identificar y actuar sobre errores comunes.",
+        "Enseñé al equipo buenas prácticas de monorepos con Turborepo y mejoré progresivamente la arquitectura de cada app para seguir separación por capas con una estructura consistente entre apps de frontend y backend.",
+        "Lideré junto con otros 2 compañeros a 3 desarrolladores third-party, velando por el cumplimiento de pautas y entregas solicitadas.",
+        "Realicé revisiones de PRs diariamente."
+      ],
+      "order": 0
+    },
+    {
+      "id": "523f3d09-bd50-44d7-8eed-aa0ec54b3bf9",
+      "organization": "VTEX",
+      "location": "Bogotá, Colombia",
+      "role": "Product & Technical Decision Maker",
+      "dates": "Enero 2023 – Diciembre 2023",
+      "bullets": [
+        "Participé en la toma de decisiones de las nuevas features del producto, contribuyendo a la estrategia de Time-to-Market y al seguimiento de Product Analytics y KPIs."
+      ],
+      "order": 1
+    },
+    {
+      "id": "c1d6d7ae-10f6-428f-a671-f703bb329f6d",
+      "organization": "Go Digital Colombia",
+      "location": "Colombia",
+      "role": "Technical Leader",
+      "dates": "Noviembre 2019 – Diciembre 2020",
+      "bullets": [
+        "Aumenté la seguridad de la información de los usuarios en la base de datos en un 95% mediante técnicas de cifrado asimétrico y simétrico usando un sistema de gestión de claves (KMS).",
+        "Reduje 2 horas en promedio en el proceso de despliegue a producción y QA mediante CI/CD con Bitbucket Pipelines en los diferentes proyectos de la compañía.",
+        "Llevé adelante el proyecto entregando el 95% de los features dentro de los tiempos establecidos con el cliente de Farmalisto.",
+        "Diagnostiqué y solucioné un cuello de botella de rendimiento en la renderización de un chat con listas grandes de mensajes (6K+ items) mediante virtualización con react-window, reduciendo el uso de memoria en un 40% y eliminando el jank."
+      ],
+      "order": 2
+    }
+  ],
+  "skills": {
+    "technical": "Node.js, TypeScript, Python, AWS (Lambda, API Gateway, DynamoDB, SQS, SNS, S3, Cognito, Amplify, AppSync, EventBridge, CloudFormation, X-Ray, VPC, Kinesis, OpenSearch, Redshift, Secrets Manager, CodeDeploy, Fargate), Serverless Framework, Pulumi, Docker, Kubernetes, MongoDB, GraphQL, REST, React.js, Next.js, Tailwind CSS, Turborepo, CI/CD (GitHub Actions, Tekton, Bitbucket Pipelines), Grafana, Backstage.io, Jest, Vitest, Playwright, Storybook, Web Workers, KMS, Redis, WebSockets, Feature Flags",
+    "language": "Español (Nativo) | Inglés (Intermedio)",
+    "laboratory": "",
+    "interests": ""
+  },
+  "settings": {
+    "paperSize": "A4",
+    "fontFamily": "Calibri",
+    "fontSize": 11,
+    "hideOptionalEmpty": true
+  }
+}

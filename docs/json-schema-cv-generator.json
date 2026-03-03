@@ -1,0 +1,412 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CV Schema",
+  "description": "Schema para generar CVs optimizados para sistemas ATS (Applicant Tracking Systems). Cada campo incluye descripción con buenas prácticas y ejemplos de uso.",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Versión del schema. Mantener en 1 salvo que se actualice la estructura.",
+      "examples": [1]
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Fecha ISO 8601 de la última actualización del CV. Actualizar cada vez que se modifique el contenido.",
+      "examples": ["2026-02-19T00:00:00.000Z"]
+    },
+    "basics": {
+      "type": "object",
+      "description": "Información personal y de contacto. Los ATS extraen estos datos como identificadores principales del candidato.",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "minLength": 1,
+          "default": "",
+          "description": "Nombre completo tal como aparece en documentos oficiales. Evitar apodos o abreviaturas. Los ATS lo usan como identificador principal.",
+          "examples": ["Cristian Camilo Romero Piñeros"]
+        },
+        "contact": {
+          "type": "object",
+          "description": "Datos de contacto profesional. Los ATS parsean estos campos de forma independiente, por eso cada dato tiene su propio campo.",
+          "properties": {
+            "address": {
+              "type": "string",
+              "default": "",
+              "description": "Dirección física (opcional). Para roles remotos se puede dejar vacío. Incluir solo si la oferta lo requiere o si la ubicación es un diferencial.",
+              "examples": ["Calle 123 #45-67", ""]
+            },
+            "city": {
+              "type": "string",
+              "default": "",
+              "description": "Ciudad de residencia. Muchos ATS filtran por ubicación geográfica, incluirla siempre.",
+              "examples": ["Bogotá D.C"]
+            },
+            "state": {
+              "type": "string",
+              "default": "",
+              "description": "País, estado o departamento. Importante para aplicaciones internacionales.",
+              "examples": ["Colombia"]
+            },
+            "zip": {
+              "type": "string",
+              "default": "",
+              "description": "Código postal (opcional). Útil para ofertas que filtran por zona geográfica específica.",
+              "examples": ["110111", ""]
+            },
+            "email": {
+              "oneOf": [
+                { "type": "string", "format": "email" },
+                { "type": "string", "const": "" }
+              ],
+              "default": "",
+              "description": "Email profesional. Evitar correos informales con apodos. Preferir formato nombre.apellido@dominio.com.",
+              "examples": ["cristian.c.romero.p@gmail.com"]
+            },
+            "phone": {
+              "type": "string",
+              "default": "",
+              "description": "Número telefónico con código de país para aplicaciones internacionales. Formato: +XX XXXXXXXXXX.",
+              "examples": ["+57 3148554726"]
+            }
+          },
+          "required": ["address", "city", "state", "zip", "email", "phone"],
+          "additionalProperties": false,
+          "default": {
+            "address": "",
+            "city": "",
+            "state": "",
+            "zip": "",
+            "email": "",
+            "phone": ""
+          }
+        }
+      },
+      "required": ["fullName", "contact"],
+      "additionalProperties": false,
+      "default": {
+        "fullName": "",
+        "contact": {
+          "address": "",
+          "city": "",
+          "state": "",
+          "zip": "",
+          "email": "",
+          "phone": ""
+        }
+      }
+    },
+    "education": {
+      "type": "array",
+      "description": "Formación académica ordenada por relevancia o fecha (más reciente primero). Incluir títulos formales, certificaciones y cursos relevantes para el rol.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificador único UUID v4. Generar con herramientas como uuidgenerator.net o librerías de programación.",
+            "examples": ["6557814f-6e90-4055-be1d-bd7a1daedc04"]
+          },
+          "institution": {
+            "type": "string",
+            "default": "",
+            "description": "Nombre completo oficial de la institución, sin abreviaturas. Los ATS pueden no reconocer siglas no estandarizadas.",
+            "examples": ["Fundación Universitaria del Área Andina", "Servicio Nacional de Aprendizaje (SENA)"]
+          },
+          "location": {
+            "type": "string",
+            "default": "",
+            "description": "Ciudad y país de la institución. Formato: 'Ciudad, País' o 'Ciudad, Departamento, País'.",
+            "examples": ["Bogotá, Colombia", "Soacha, Cundinamarca, Colombia"]
+          },
+          "degree": {
+            "type": "string",
+            "default": "",
+            "description": "Título obtenido con el nombre oficial del programa. Usar palabras clave relevantes de la industria que los ATS puedan hacer match.",
+            "examples": ["Ingeniería de Sistemas", "Tecnólogo en Análisis y Desarrollo de Sistemas de Información"]
+          },
+          "concentration": {
+            "type": "string",
+            "default": "",
+            "description": "Área de concentración, especialización o énfasis del programa. Dejar vacío si no aplica.",
+            "examples": ["Tecnología de la información", ""]
+          },
+          "gpa": {
+            "type": "string",
+            "default": "",
+            "description": "Promedio académico si es destacable (>3.5/5.0 o >3.0/4.0). Si no es competitivo o no lo solicitan, dejar vacío.",
+            "examples": ["4.2/5.0", ""]
+          },
+          "graduationDate": {
+            "type": "string",
+            "default": "",
+            "description": "Mes y año de graduación. Mantener formato consistente en todo el CV (siempre 'Mes Año').",
+            "examples": ["Octubre 2021", "Agosto 2018"]
+          },
+          "thesis": {
+            "type": "string",
+            "default": "",
+            "description": "Título de tesis o proyecto de grado si es relevante para el rol al que aplicas. Dejar vacío si no aplica o no aporta valor.",
+            "examples": ["Sistema de detección de anomalías en redes usando Machine Learning", ""]
+          },
+          "coursework": {
+            "type": "string",
+            "default": "",
+            "description": "Cursos destacados, certificaciones o logros académicos relevantes. Incluir keywords del sector. Ideal para premios y reconocimientos.",
+            "examples": ["Medalla de Excelencia WorldSkills 2018 en Tecnologías Web", ""]
+          },
+          "studyAbroad": {
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Experiencia de estudio en el exterior.",
+                "properties": {
+                  "program": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Nombre del programa de intercambio o estudio en el exterior.",
+                    "examples": ["Semestre de intercambio académico"]
+                  },
+                  "location": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Ciudad y país donde se realizó el estudio.",
+                    "examples": ["Madrid, España"]
+                  },
+                  "coursework": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Cursos o materias cursadas durante el estudio en el exterior.",
+                    "examples": ["Arquitectura de Software, Cloud Computing"]
+                  },
+                  "dates": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Periodo del estudio en el exterior.",
+                    "examples": ["Enero 2020 – Junio 2020"]
+                  }
+                },
+                "required": ["program", "location", "coursework", "dates"],
+                "additionalProperties": false
+              },
+              { "type": "null" }
+            ],
+            "default": null,
+            "description": "Experiencia de estudio en el exterior si aplica. Dejar null si no tiene."
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Número entero para ordenar (0 = primero). Ordenar por relevancia para el rol o por fecha más reciente.",
+            "examples": [0, 1, 2]
+          }
+        },
+        "required": ["id", "institution", "location", "degree", "concentration", "gpa", "graduationDate", "thesis", "coursework", "studyAbroad", "order"],
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "experience": {
+      "type": "array",
+      "description": "Experiencia laboral en orden cronológico inverso (más reciente primero). Aquí van los roles con responsabilidades técnicas e individuales. Para roles donde ejerciste liderazgo de equipos, mentoría o gestión de personas, usa la sección 'leadership'.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificador único UUID v4.",
+            "examples": ["d4c353b2-ac13-4c82-a56d-68e59769076d"]
+          },
+          "organization": {
+            "type": "string",
+            "default": "",
+            "description": "Nombre oficial de la empresa. Si trabajaste como contractor para un cliente a través de una consultora, usar formato 'Consultora – Cliente'.",
+            "examples": ["VTEX", "Softgic – Línea Directa S.A.S", "NativApps Inc."]
+          },
+          "title": {
+            "type": "string",
+            "default": "",
+            "description": "Título del cargo. Usar títulos estándar de la industria que los ATS reconozcan. Evitar títulos creativos internos que no sean reconocibles externamente.",
+            "examples": ["Software Engineer II - Full Stack", "Senior Frontend Developer", "Mid Backend Developer"]
+          },
+          "location": {
+            "type": "string",
+            "default": "",
+            "description": "Ciudad y país del empleo. Formato consistente: 'Ciudad, País'.",
+            "examples": ["Bogotá, Colombia"]
+          },
+          "dates": {
+            "type": "string",
+            "default": "",
+            "description": "Periodo laboral en formato 'Mes Año – Mes Año'. Mantener formato consistente en todo el CV. Para empleo actual usar 'Mes Año – Presente'.",
+            "examples": ["Enero 2023 – Octubre 2025", "Marzo 2021 – Junio 2022"]
+          },
+          "bullets": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [],
+            "description": "Logros y responsabilidades. Cada bullet debe seguir la fórmula: Verbo de acción (pasado) + Qué hiciste + Cómo lo hiciste + Resultado cuantificable. Usar verbos fuertes (Diseñé, Implementé, Optimicé, Reduje, Migré). Incluir tecnologías específicas como keywords para ATS. Mantener entre 3-6 bullets por experiencia: más de 6 diluye el impacto, menos de 3 puede parecer insuficiente. Priorizar logros con métricas (%, horas, costos, usuarios).",
+            "examples": [
+              ["Optimicé arquitectura de microservicios con Node.js y TypeScript, logrando mejora de 25% en performance y reducción de 35% en costos de infraestructura AWS.", "Migré sistema de búsqueda de Atlas Search a OpenSearch, reduciendo latencia mediante implementación del patrón Repository."]
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Número entero para ordenar (0 = más reciente). Usar orden cronológico inverso.",
+            "examples": [0, 1, 2]
+          }
+        },
+        "required": ["id", "organization", "title", "location", "dates", "bullets", "order"],
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "leadership": {
+      "type": "array",
+      "description": "Roles de liderazgo, mentoría y gestión de equipos. Usar esta sección cuando en un empleo asumiste responsabilidades de liderazgo como: liderar equipos, mentorear desarrolladores, establecer procesos, tomar decisiones de producto/arquitectura a nivel de equipo, o gestionar personas. Esta sección complementa 'experience' mostrando tu capacidad de influencia y gestión más allá de lo técnico individual.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Identificador único UUID v4.",
+            "examples": ["4a4a036a-e2d7-4fae-ad71-74310ebf6ecc"]
+          },
+          "organization": {
+            "type": "string",
+            "default": "",
+            "description": "Nombre de la empresa donde ejerciste el liderazgo.",
+            "examples": ["VTEX", "Go Digital Colombia"]
+          },
+          "location": {
+            "type": "string",
+            "default": "",
+            "description": "Ciudad y país.",
+            "examples": ["Bogotá, Colombia"]
+          },
+          "role": {
+            "type": "string",
+            "default": "",
+            "description": "Rol de liderazgo ejercido. Describir el alcance del liderazgo: Tech Lead, Team Lead, Engineering Lead, Technical Mentor, etc.",
+            "examples": ["Tech Lead & Engineering Mentor", "Technical Leader"]
+          },
+          "dates": {
+            "type": "string",
+            "default": "",
+            "description": "Periodo en el que ejerciste el liderazgo. Formato: 'Mes Año – Mes Año'.",
+            "examples": ["Enero 2024 – Octubre 2025"]
+          },
+          "bullets": {
+            "type": "array",
+            "items": { "type": "string" },
+            "default": [],
+            "description": "Logros de liderazgo. Enfocarse en: impacto en el equipo, mejoras de procesos, mentoría, decisiones estratégicas, gestión de personas. Usar métricas cuando sea posible (tamaño de equipo, % mejora en procesos, reducción de tiempos).",
+            "examples": [
+              ["Mentoricé equipo de 6 desarrolladores (3 internos + 3 third-party), estableciendo estándares de code review, testing automatizado y documentación técnica.", "Lideré ceremonias semanales técnicas que elevaron la calidad del código y redujeron errores recurrentes en PRs."]
+            ]
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Número entero para ordenar (0 = más reciente).",
+            "examples": [0, 1]
+          }
+        },
+        "required": ["id", "organization", "location", "role", "dates", "bullets", "order"],
+        "additionalProperties": false
+      },
+      "default": []
+    },
+    "skills": {
+      "type": "object",
+      "description": "Habilidades y competencias. Los ATS hacen matching directo de keywords contra estas listas, por lo que es crítico incluir las tecnologías exactas de la oferta laboral.",
+      "properties": {
+        "technical": {
+          "type": "string",
+          "default": "",
+          "description": "Lista de habilidades técnicas separadas por comas. Priorizar las que aparecen en la oferta laboral. Agrupar por categoría si es extenso (e.g. lenguajes, frameworks, cloud, herramientas). No inventar skills que no dominas. Los ATS hacen matching directo contra estas keywords.",
+          "examples": ["Node.js, TypeScript, Python, AWS (Lambda, API Gateway, DynamoDB), Docker, Kubernetes, CI/CD (GitHub Actions, Tekton), React.js, Next.js, GraphQL, REST"]
+        },
+        "language": {
+          "type": "string",
+          "default": "",
+          "description": "Idiomas con nivel de competencia. Usar formatos reconocidos: Nativo, Avanzado/C1, Intermedio/B2, Básico/A2. Separar idiomas con '|'.",
+          "examples": ["Español (Nativo) | Inglés (Intermedio-B2)"]
+        },
+        "laboratory": {
+          "type": "string",
+          "default": "",
+          "description": "Habilidades de laboratorio si aplica al campo (biotecnología, química, etc.). Dejar vacío si no aplica.",
+          "examples": [""]
+        },
+        "interests": {
+          "type": "string",
+          "default": "",
+          "description": "Intereses profesionales relevantes (opcional). Solo incluir si aportan valor al perfil o muestran alineación con la cultura de la empresa.",
+          "examples": ["Cloud Architecture, Open Source, Developer Experience", ""]
+        }
+      },
+      "required": ["technical", "language", "laboratory", "interests"],
+      "additionalProperties": false,
+      "default": {
+        "technical": "",
+        "language": "",
+        "laboratory": "",
+        "interests": ""
+      }
+    },
+    "settings": {
+      "type": "object",
+      "description": "Configuración de formato del CV generado.",
+      "properties": {
+        "paperSize": {
+          "type": "string",
+          "enum": ["A4", "Letter"],
+          "default": "A4",
+          "description": "Tamaño de papel. 'A4' para aplicaciones internacionales, 'Letter' para USA/Canadá.",
+          "examples": ["A4"]
+        },
+        "fontFamily": {
+          "type": "string",
+          "enum": ["Calibri", "Times New Roman"],
+          "default": "Calibri",
+          "description": "Fuente del CV. Usar fuentes ATS-friendly. Calibri es moderna y legible; Times New Roman es más formal/académica. Evitar fuentes decorativas que los ATS no puedan parsear.",
+          "examples": ["Calibri"]
+        },
+        "fontSize": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 16,
+          "default": 11,
+          "description": "Tamaño de fuente en puntos. Rango recomendado: 10-12pt para cuerpo. 11pt ofrece buen balance entre legibilidad y aprovechamiento de espacio.",
+          "examples": [11]
+        },
+        "hideOptionalEmpty": {
+          "type": "boolean",
+          "default": true,
+          "description": "Si es true, oculta campos opcionales vacíos en el render final. Recomendado: true para evitar secciones vacías que desperdicien espacio.",
+          "examples": [true]
+        }
+      },
+      "required": ["paperSize", "fontFamily", "fontSize", "hideOptionalEmpty"],
+      "additionalProperties": false,
+      "default": {
+        "paperSize": "A4",
+        "fontFamily": "Calibri",
+        "fontSize": 11,
+        "hideOptionalEmpty": true
+      }
+    }
+  },
+  "required": ["schemaVersion", "updatedAt", "basics", "education", "experience", "leadership", "skills", "settings"],
+  "additionalProperties": false
+}
