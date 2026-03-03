@@ -1,6 +1,13 @@
 import type { RxJsonSchema } from 'rxdb'
 import type { ApplicationStatus, AIModel } from '@/types/cv'
 
+export interface TimelineEntry {
+  id: string
+  status: ApplicationStatus
+  date: string
+  notes: string
+}
+
 export interface ApplicationDocument {
   id: string
   company: string
@@ -9,8 +16,10 @@ export interface ApplicationDocument {
   status: ApplicationStatus
   salaryOffered: number
   salaryCurrency: string
-  benefits: string
-  ranking: number
+  benefits: string[]
+  isFavorite: boolean
+  jobOfferText: string
+  timeline: TimelineEntry[]
   appliedAt: string
   responseDate: string
   nextSteps: string
@@ -44,7 +53,7 @@ export interface ExperienceDocument {
 }
 
 export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
-  version: 0,
+  version: 1,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -67,8 +76,24 @@ export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
     },
     salaryOffered: { type: 'number' },
     salaryCurrency: { type: 'string' },
-    benefits: { type: 'string' },
-    ranking: { type: 'number', minimum: 0, maximum: 5 },
+    benefits: {
+      type: 'array',
+      items: { type: 'string' },
+    },
+    isFavorite: { type: 'boolean' },
+    jobOfferText: { type: 'string' },
+    timeline: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          status: { type: 'string' },
+          date: { type: 'string' },
+          notes: { type: 'string' },
+        },
+      },
+    },
     appliedAt: { type: 'string' },
     responseDate: { type: 'string' },
     nextSteps: { type: 'string' },

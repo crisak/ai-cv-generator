@@ -4,6 +4,8 @@ import { verifyCredentials } from '@/lib/auth'
 
 interface AuthState {
   isAuthenticated: boolean
+  hasHydrated: boolean
+  setHasHydrated: (v: boolean) => void
   login: (email: string, password: string) => boolean
   logout: () => void
 }
@@ -12,6 +14,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       isAuthenticated: false,
+      hasHydrated: false,
+      setHasHydrated: (v) => set({ hasHydrated: v }),
       login: (email, password) => {
         const valid = verifyCredentials(email, password)
         if (valid) set({ isAuthenticated: true })
@@ -22,6 +26,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'cv-auth',
       partialize: (state) => ({ isAuthenticated: state.isAuthenticated }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

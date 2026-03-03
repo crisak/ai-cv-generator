@@ -3,7 +3,9 @@
 import { createRxDatabase, addRxPlugin } from 'rxdb'
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie'
 import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder'
+import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema'
 import type { RxDatabase, RxCollection } from 'rxdb'
+import { v4 as uuidv4 } from 'uuid'
 import {
   applicationSchema,
   cvSchema,
@@ -16,6 +18,7 @@ import {
 } from './schemas'
 
 addRxPlugin(RxDBQueryBuilderPlugin)
+addRxPlugin(RxDBMigrationSchemaPlugin)
 
 export type DatabaseCollections = {
   applications: RxCollection<ApplicationDocument>
@@ -41,7 +44,29 @@ export async function getDatabase(): Promise<AppDatabase> {
     })
 
     await db.addCollections({
-      applications: { schema: applicationSchema },
+      applications: {
+        schema: applicationSchema,
+        migrationStrategies: {
+          // v0 → v1: replace ranking/benefits(string) with isFavorite/benefits(array)/timeline/jobOfferText
+          1: (oldDoc: Record<string, unknown>) => ({
+            ...oldDoc,
+            isFavorite: false,
+            benefits: oldDoc.benefits
+              ? [oldDoc.benefits as string].filter(Boolean)
+              : [],
+            jobOfferText: '',
+            timeline: [
+              {
+                id: uuidv4(),
+                status: oldDoc.status ?? 'pending',
+                date: oldDoc.createdAt ?? new Date().toISOString(),
+                notes: 'Estado inicial',
+              },
+            ],
+            // ranking field is dropped automatically (not in new schema)
+          }),
+        },
+      },
       cvs: { schema: cvSchema },
       settings: { schema: settingsSchema },
       experiences: { schema: experienceSchema },

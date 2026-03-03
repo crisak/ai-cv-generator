@@ -43,7 +43,7 @@ function StatCard({
 }
 
 export default function ApplicationsPage() {
-  const { applications, isLoading, createApplication, updateApplication, deleteApplication } =
+  const { applications, isLoading, createApplication, updateApplication, deleteApplication, toggleFavorite } =
     useApplications()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingApp, setEditingApp] = useState<ApplicationDocument | undefined>()
@@ -181,6 +181,7 @@ export default function ApplicationsPage() {
         onEdit={handleEdit}
         onDelete={deleteApplication}
         onStatusChange={handleStatusChange}
+        onToggleFavorite={toggleFavorite}
       />
 
       {/* Form Sheet */}
