@@ -277,6 +277,7 @@ export function initSelections(cvData: CvData): BulletsBySection {
 
 interface SuggestionResult {
   selections: Record<string, number[]>
+  skills?: string
 }
 
 function buildBulletsSummary(cvData: CvData) {
@@ -312,8 +313,12 @@ REGLAS DE SELECCIÓN:
 - Prioriza bullets con métricas y tecnologías mencionadas en la oferta
 - Prioriza verbos fuertes de impacto
 
+SKILLS ACTUALES DEL CANDIDATO: ${cvData.skills.technical}
+
+También sugiere un nuevo campo "skills" que sea una cadena de habilidades técnicas separadas por comas, priorizando las que aparecen en la oferta y que el candidato ya tiene o puede incluir.
+
 Responde SOLO con JSON válido (sin explicaciones):
-{"selections": {"<id>": [<índices seleccionados>], ...}}
+{"selections": {"<id>": [<índices seleccionados>], ...}, "skills": "<habilidades sugeridas separadas por coma>"}
 
 OFERTA LABORAL:
 ${jobOffer.substring(0, 3000)}
@@ -363,12 +368,12 @@ async function suggestWithOpenAICompat(
     },
     body: JSON.stringify({
       model,
-      max_tokens: 800,
+      max_tokens: 900,
       response_format: { type: 'json_object' },
       messages: [
         {
           role: 'user',
-          content: `Selecciona los bullets más relevantes del candidato para esta oferta. Responde JSON: {"selections": {"<id>": [índices], ...}}. Máx 5 bullets para el rol más reciente, 3 para los demás.\n\nOferta: ${jobOffer.substring(0, 2000)}\n\nBullets: ${JSON.stringify(bulletsSummary)}${extra}`,
+          content: `Selecciona los bullets más relevantes del candidato para esta oferta y sugiere skills. Responde JSON: {"selections": {"<id>": [índices], ...}, "skills": "<habilidades sugeridas separadas por coma>"}. Máx 5 bullets para el rol más reciente, 3 para los demás. Skills actuales: ${cvData.skills.technical}\n\nOferta: ${jobOffer.substring(0, 2000)}\n\nBullets: ${JSON.stringify(bulletsSummary)}${extra}`,
         },
       ],
     }),
@@ -379,13 +384,19 @@ async function suggestWithOpenAICompat(
   return JSON.parse(data.choices[0].message.content) as SuggestionResult
 }
 
+export interface SuggestBulletsResult {
+  selections: BulletsBySection
+  suggestedSkills: string | null
+}
+
 export async function suggestBullets(
   jobOffer: string,
   cvData: CvData,
   settings: SettingsDocument | null,
   customMessage?: string
-): Promise<BulletsBySection> {
-  const fallback = initSelections(cvData)
+): Promise<SuggestBulletsResult> {
+  const fallbackSelections = initSelections(cvData)
+  const fallback: SuggestBulletsResult = { selections: fallbackSelections, suggestedSkills: null }
   if (!settings?.aiApiKey || !jobOffer.trim()) return fallback
 
   try {
@@ -421,7 +432,7 @@ export async function suggestBullets(
       }))
     })
 
-    return suggested
+    return { selections: suggested, suggestedSkills: result.skills ?? null }
   } catch {
     return fallback
   }
@@ -564,4 +575,123 @@ export async function generateCv(
   } catch {
     return { cv: draft, usedAI: false }
   }
+}
+
+// ── CV diff computation for conflict resolution UI ────────────────────────────
+
+export interface BulletDiff {
+  key: string
+  sectionType: 'experience' | 'leadership'
+  sectionId: string
+  sectionLabel: string
+  bulletIdx: number
+  original: string
+  proposed: string
+  changed: boolean
+  accepted: boolean
+}
+
+export interface SkillsDiff {
+  key: 'skills'
+  original: string
+  proposed: string
+  changed: boolean
+  accepted: boolean
+}
+
+export type CvDiffItem = BulletDiff | SkillsDiff
+
+export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
+  const diffs: CvDiffItem[] = []
+
+  const processSection = (
+    draftItems: Array<{ id: string; organization: string; bullets: string[] }>,
+    optimizedItems: Array<{ id: string; bullets: string[] }>,
+    sectionType: 'experience' | 'leadership',
+    getLabel: (item: { organization: string }) => string
+  ) => {
+    draftItems.forEach((draftItem, sectionIdx) => {
+      const optimizedItem = optimizedItems[sectionIdx]
+      if (!optimizedItem) return
+      const maxLen = Math.max(draftItem.bullets.length, optimizedItem.bullets.length)
+      for (let i = 0; i < maxLen; i++) {
+        const orig = draftItem.bullets[i] ?? ''
+        const prop = optimizedItem.bullets[i] ?? ''
+        const changed = orig.trim() !== prop.trim()
+        diffs.push({
+          key: `${draftItem.id}-${i}`,
+          sectionType,
+          sectionId: draftItem.id,
+          sectionLabel: getLabel(draftItem as { organization: string }),
+          bulletIdx: i,
+          original: orig,
+          proposed: prop,
+          changed,
+          accepted: true,
+        })
+      }
+    })
+  }
+
+  processSection(
+    draft.experience,
+    optimized.experience,
+    'experience',
+    (item) => item.organization
+  )
+  processSection(
+    draft.leadership,
+    optimized.leadership,
+    'leadership',
+    (item) => item.organization
+  )
+
+  const origSkills = draft.skills.technical.trim()
+  const propSkills = optimized.skills.technical.trim()
+  if (origSkills !== propSkills) {
+    diffs.push({
+      key: 'skills',
+      original: origSkills,
+      proposed: propSkills,
+      changed: true,
+      accepted: true,
+    })
+  }
+
+  return diffs
+}
+
+export function applyDiffs(draft: CvData, diffs: CvDiffItem[]): CvData {
+  const result: CvData = {
+    ...draft,
+    experience: draft.experience.map((e) => ({ ...e, bullets: [...e.bullets] })),
+    leadership: draft.leadership.map((l) => ({ ...l, bullets: [...l.bullets] })),
+    skills: { ...draft.skills },
+  }
+
+  for (const diff of diffs) {
+    if (!diff.changed) continue
+
+    if (diff.key === 'skills') {
+      const sd = diff as SkillsDiff
+      result.skills = { ...result.skills, technical: sd.accepted ? sd.proposed : sd.original }
+      continue
+    }
+
+    const bd = diff as BulletDiff
+    if (!bd.accepted) continue
+
+    const section = bd.sectionType === 'experience' ? result.experience : result.leadership
+    const item = section.find((s) => s.id === bd.sectionId)
+    if (!item) continue
+
+    if (bd.proposed) {
+      item.bullets[bd.bulletIdx] = bd.proposed
+    } else {
+      // AI removed this bullet — remove from result if user accepted
+      item.bullets.splice(bd.bulletIdx, 1)
+    }
+  }
+
+  return result
 }

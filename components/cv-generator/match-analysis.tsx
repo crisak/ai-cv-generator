@@ -101,8 +101,9 @@ interface MatchAnalysisProps {
   settings: SettingsDocument | null
   onCustomMessageChange: (msg: string) => void
   onDraftCvChange: (cv: CvData) => void
-  onGenerate: () => void
-  isGenerating?: boolean
+  onUseDraft: () => void
+  onOptimize: () => void
+  isOptimizing?: boolean
 }
 
 export function MatchAnalysis({
@@ -112,8 +113,9 @@ export function MatchAnalysis({
   settings,
   onCustomMessageChange,
   onDraftCvChange,
-  onGenerate,
-  isGenerating,
+  onUseDraft,
+  onOptimize,
+  isOptimizing,
 }: MatchAnalysisProps) {
   const [isFixingAts, setIsFixingAts] = useState(false)
 
@@ -246,24 +248,39 @@ export function MatchAnalysis({
         />
       </div>
 
-      {/* Generate button */}
-      <button
-        type="button"
-        onClick={onGenerate}
-        disabled={totalBullets === 0 || isGenerating}
-        className={cn(
-          'w-full rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2',
-          totalBullets > 0 && !isGenerating
-            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-            : 'bg-muted text-muted-foreground cursor-not-allowed'
-        )}
-      >
-        {isGenerating ? (
-          <><div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> Generando CV…</>
-        ) : (
-          `Optimizar con IA (${totalBullets} bullets)`
-        )}
-      </button>
+      {/* Action buttons */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          onClick={onOptimize}
+          disabled={totalBullets === 0 || isOptimizing}
+          className={cn(
+            'w-full rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2',
+            totalBullets > 0 && !isOptimizing
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+              : 'bg-muted text-muted-foreground cursor-not-allowed'
+          )}
+        >
+          {isOptimizing ? (
+            <><div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> Optimizando…</>
+          ) : (
+            <><Sparkles className="h-3.5 w-3.5" /> Optimizar con IA</>
+          )}
+        </button>
+        <button
+          type="button"
+          onClick={onUseDraft}
+          disabled={totalBullets === 0 || isOptimizing}
+          className={cn(
+            'w-full rounded-md px-4 py-2 text-xs font-medium transition-colors border',
+            totalBullets > 0 && !isOptimizing
+              ? 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30'
+              : 'border-border/40 text-muted-foreground/40 cursor-not-allowed'
+          )}
+        >
+          Usar borrador sin IA →
+        </button>
+      </div>
     </div>
   )
 }

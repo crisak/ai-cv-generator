@@ -44,7 +44,8 @@ export default function CvGeneratorPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [generatedCv, setGeneratedCv] = useState<CvData | null>(null)
   const [usedAI, setUsedAI] = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [isOptimizing, setIsOptimizing] = useState(false)
+  const [optimizedCv, setOptimizedCv] = useState<CvData | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [savedCvId, setSavedCvId] = useState<string | null>(null)
 
@@ -61,9 +62,14 @@ export default function CvGeneratorPage() {
     if (!cvData) return
     setIsAnalyzing(true)
     setStep(2)
-    const suggested = await suggestBullets(jobOfferText, cvData, settings, customMessage)
-    setSelections(suggested)
-    setDraftCv(assembleDraftCv(cvData, suggested))
+    const result = await suggestBullets(jobOfferText, cvData, settings, customMessage)
+    setSelections(result.selections)
+    const draft = assembleDraftCv(cvData, result.selections)
+    // Apply suggested skills if AI returned them
+    const finalDraft = result.suggestedSkills
+      ? { ...draft, skills: { ...draft.skills, technical: result.suggestedSkills } }
+      : draft
+    setDraftCv(finalDraft)
     setIsAnalyzing(false)
   }
 
@@ -74,11 +80,18 @@ export default function CvGeneratorPage() {
     }
   }
 
-  async function handleGenerateCv() {
-    if (!cvData) return
-    setIsGenerating(true)
+  function handleUseDraft() {
+    if (!draftCv) return
+    setGeneratedCv(draftCv)
+    setUsedAI(false)
+    setSavedCvId(null)
     setStep(3)
-    const { cv, usedAI: aiUsed } = await generateCv(
+  }
+
+  async function handleOptimize() {
+    if (!cvData) return
+    setIsOptimizing(true)
+    const { cv } = await generateCv(
       jobOfferText,
       cvData,
       selections,
@@ -86,10 +99,21 @@ export default function CvGeneratorPage() {
       customMessage,
       draftCv ?? undefined
     )
+    setOptimizedCv(cv)
+    setIsOptimizing(false)
+  }
+
+  function handleOptimizeConfirm(cv: CvData) {
+    setOptimizedCv(null)
     setGeneratedCv(cv)
-    setUsedAI(aiUsed)
-    setIsGenerating(false)
+    setUsedAI(true)
     setSavedCvId(null)
+    setStep(3)
+  }
+
+  function handleOptimizeCancel() {
+    setOptimizedCv(null)
+    setIsOptimizing(false)
   }
 
   async function handleSaveCv() {
@@ -118,7 +142,7 @@ export default function CvGeneratorPage() {
   const stepLabels: Record<Step, string> = {
     1: 'Oferta laboral',
     2: 'Seleccionar bullets',
-    3: 'Vista previa',
+    3: 'Resultado final',
   }
 
   return (
@@ -202,11 +226,15 @@ export default function CvGeneratorPage() {
             jobOfferText={jobOfferText}
             customMessage={customMessage}
             settings={settings}
-            isGenerating={isGenerating}
+            isOptimizing={isOptimizing}
+            optimizedCv={optimizedCv}
             onSelectionsChange={handleSelectionsChange}
             onDraftCvChange={setDraftCv}
             onCustomMessageChange={setCustomMessage}
-            onNext={handleGenerateCv}
+            onUseDraft={handleUseDraft}
+            onOptimize={handleOptimize}
+            onOptimizeConfirm={handleOptimizeConfirm}
+            onOptimizeCancel={handleOptimizeCancel}
             onBack={() => setStep(1)}
           />
         )}
@@ -215,7 +243,7 @@ export default function CvGeneratorPage() {
           <StepPreview
             cv={generatedCv ?? cvData!}
             usedAI={usedAI}
-            isGenerating={isGenerating}
+            isGenerating={false}
             isSaving={isSaving}
             savedCvId={savedCvId}
             onBack={() => setStep(2)}

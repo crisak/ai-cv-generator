@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Pencil, Check, X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText } from 'lucide-react'
+import { Pencil, Check, X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { MatchAnalysis } from './match-analysis'
 import { CvEditor } from './cv-editor'
 import { AiChat } from './ai-chat'
+import { CvPreviewDialog } from './cv-preview-dialog'
+import { CvOptimizeDialog } from './cv-optimize-dialog'
 import { cn } from '@/lib/utils'
 import { improveBullet } from '@/lib/ai-cv'
 import type { BulletsBySection, BulletState, ChatMessage, ChatStyle } from '@/lib/ai-cv'
@@ -25,11 +27,15 @@ interface StepGoalsProps {
   jobOfferText: string
   customMessage: string
   settings: SettingsDocument | null
-  isGenerating?: boolean
+  isOptimizing?: boolean
+  optimizedCv: CvData | null
   onSelectionsChange: (selections: BulletsBySection) => void
   onDraftCvChange: (cv: CvData) => void
   onCustomMessageChange: (msg: string) => void
-  onNext: () => void
+  onUseDraft: () => void
+  onOptimize: () => void
+  onOptimizeConfirm: (cv: CvData) => void
+  onOptimizeCancel: () => void
   onBack: () => void
 }
 
@@ -41,11 +47,15 @@ export function StepGoals({
   jobOfferText,
   customMessage,
   settings,
-  isGenerating,
+  isOptimizing,
+  optimizedCv,
   onSelectionsChange,
   onDraftCvChange,
   onCustomMessageChange,
-  onNext,
+  onUseDraft,
+  onOptimize,
+  onOptimizeConfirm,
+  onOptimizeCancel,
   onBack,
 }: StepGoalsProps) {
   const [chatOpen, setChatOpen] = useState(false)
@@ -54,6 +64,8 @@ export function StepGoals({
   const [chatLoading, setChatLoading] = useState(false)
   const [chatStyle, setChatStyle] = useState<ChatStyle>('normal')
   const [offerOpen, setOfferOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [offerSearch, setOfferSearch] = useState('')
 
   const totalSelected = Object.values(selections).reduce(
     (sum, bullets) => sum + bullets.filter((b) => b.selected).length,
@@ -79,8 +91,6 @@ export function StepGoals({
     })),
   ]
 
-  const lastMessage = chatMessages[chatMessages.length - 1]
-
   return (
     <div className="space-y-3">
       {isAnalyzing && (
@@ -91,14 +101,35 @@ export function StepGoals({
       )}
 
       {/* Toolbar row */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Eye className="h-3.5 w-3.5" />
+          Vista previa
+        </button>
         <button
           type="button"
           onClick={() => setOfferOpen(true)}
-          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <FileText className="h-3.5 w-3.5" />
           Ver oferta laboral
+        </button>
+        <button
+          type="button"
+          onClick={() => setChatOpen(true)}
+          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          Chat con IA
+          {chatMessages.length > 0 && (
+            <span className="rounded-full bg-primary/20 px-1.5 text-[10px] font-medium text-primary">
+              {chatMessages.length}
+            </span>
+          )}
         </button>
       </div>
 
@@ -180,7 +211,7 @@ export function StepGoals({
           />
         </div>
 
-        {/* Column 3: Match analysis + chat trigger */}
+        {/* Column 3: Match analysis */}
         <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
           <MatchAnalysis
             jobOfferText={jobOfferText}
@@ -189,46 +220,15 @@ export function StepGoals({
             settings={settings}
             onCustomMessageChange={onCustomMessageChange}
             onDraftCvChange={onDraftCvChange}
-            onGenerate={onNext}
-            isGenerating={isGenerating}
+            onUseDraft={onUseDraft}
+            onOptimize={onOptimize}
+            isOptimizing={isOptimizing}
           />
-
-          {/* Chat trigger card */}
-          <button
-            type="button"
-            onClick={() => setChatOpen(true)}
-            className="group w-full rounded-lg border border-border/60 bg-card hover:border-primary/40 hover:bg-primary/5 transition-all text-left p-3"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-semibold text-foreground">Chat con IA</span>
-              </div>
-              {chatMessages.length > 0 && (
-                <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-                  {chatMessages.length}
-                </span>
-              )}
-            </div>
-            {lastMessage ? (
-              <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                {lastMessage.role === 'assistant' ? '✦ ' : ''}
-                {lastMessage.content}
-              </p>
-            ) : (
-              <p className="text-[11px] text-muted-foreground/60">
-                Consulta al asistente sobre tu CV, la oferta o mejoras específicas…
-              </p>
-            )}
-            <p className="mt-2 text-[10px] text-primary/70 font-medium group-hover:text-primary transition-colors">
-              Abrir chat →
-            </p>
-          </button>
         </div>
       </div>
 
       {/* Job offer dialog */}
-      <Dialog open={offerOpen} onOpenChange={setOfferOpen}>
+      <Dialog open={offerOpen} onOpenChange={(o) => { setOfferOpen(o); if (!o) setOfferSearch('') }}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-sm">
@@ -236,17 +236,45 @@ export function StepGoals({
               Oferta laboral
             </DialogTitle>
           </DialogHeader>
+          {jobOfferText && (
+            <div className="shrink-0 flex items-center gap-2 rounded-md border border-input bg-muted/30 px-2.5 py-1.5">
+              <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <input
+                type="text"
+                value={offerSearch}
+                onChange={(e) => setOfferSearch(e.target.value)}
+                placeholder="Buscar en la oferta…"
+                className="flex-1 bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground/50"
+              />
+              {offerSearch && (
+                <button type="button" onClick={() => setOfferSearch('')} className="text-muted-foreground/60 hover:text-foreground">
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto">
             {jobOfferText ? (
-              <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">
-                {jobOfferText}
-              </pre>
+              <HighlightedJobOffer text={jobOfferText} query={offerSearch} />
             ) : (
               <p className="text-sm text-muted-foreground italic">No se ingresó texto de oferta laboral.</p>
             )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* CV Preview dialog */}
+      <CvPreviewDialog cv={draftCv} open={previewOpen} onOpenChange={setPreviewOpen} />
+
+      {/* AI Optimize dialog */}
+      <CvOptimizeDialog
+        open={optimizedCv !== null || (isOptimizing ?? false)}
+        onOpenChange={(o) => { if (!o) onOptimizeCancel() }}
+        draftCv={draftCv}
+        optimizedCv={optimizedCv}
+        isLoading={isOptimizing ?? false}
+        onConfirm={onOptimizeConfirm}
+      />
 
       {/* Chat Sheet */}
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
@@ -280,6 +308,29 @@ export function StepGoals({
         </SheetContent>
       </Sheet>
     </div>
+  )
+}
+
+function HighlightedJobOffer({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) {
+    return <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">{text}</pre>
+  }
+
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+
+  return (
+    <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-300 dark:bg-yellow-600/60 text-foreground rounded-sm px-0.5">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </pre>
   )
 }
 

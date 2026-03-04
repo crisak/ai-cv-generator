@@ -1,11 +1,20 @@
 'use client'
 
-import { useState } from 'react'
-import { Download, Save, ChevronLeft, Sparkles, Loader2 } from 'lucide-react'
+import { Download, Save, ChevronLeft, Sparkles, Loader2, FileJson } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { CvViewer } from '@/components/cv/cv-viewer'
 import type { CvData } from '@/types/experience'
+
+function downloadJson(cv: CvData) {
+  const blob = new Blob([JSON.stringify(cv, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `cv-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 interface StepPreviewProps {
   cv: CvData
@@ -28,8 +37,6 @@ export function StepPreview({
   onSave,
   onDownload,
 }: StepPreviewProps) {
-  const [isScrolled, setIsScrolled] = useState(false)
-
   if (isGenerating) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -56,7 +63,7 @@ export function StepPreview({
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {!savedCvId ? (
             <Button
               variant="outline"
@@ -77,6 +84,10 @@ export function StepPreview({
               CV guardado
             </Badge>
           )}
+          <Button variant="outline" size="sm" onClick={() => downloadJson(cv)} className="gap-1.5 h-8">
+            <FileJson className="h-3.5 w-3.5" />
+            Descargar JSON
+          </Button>
           <Button size="sm" onClick={onDownload} className="gap-1.5 h-8">
             <Download className="h-3.5 w-3.5" />
             Descargar PDF
@@ -85,10 +96,7 @@ export function StepPreview({
       </div>
 
       {/* CV preview */}
-      <div
-        className="rounded-lg border border-border shadow-sm overflow-auto max-h-[620px] bg-white"
-        onScroll={(e) => setIsScrolled(e.currentTarget.scrollTop > 0)}
-      >
+      <div className="rounded-lg border border-border shadow-sm overflow-auto max-h-[620px] bg-white">
         <CvViewer cv={cv} />
       </div>
 
