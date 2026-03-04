@@ -84,6 +84,86 @@ Responde ÚNICAMENTE con el texto del bullet mejorado, sin comillas ni prefijos.
   }
 }
 
+// ── Improve a single bullet — 3 variants ─────────────────────────────────────
+
+const BULLET_VARIANTS_RULES = `EVITA señales de CV escrito por IA:
+1. Guiones largos (–): usa puntos o comas en su lugar
+2. Porcentajes sin contexto: usa cifras concretas (ej: "aumenté ingresos en €200K", no "mejoré un 20%")
+3. Frases vacías como "mejoré la eficiencia operativa": sé específico ("Reduje el tiempo de X de 8h a 2h")
+4. Lenguaje genérico: verbo fuerte en pasado + Qué + Cómo + Resultado cuantificable real`
+
+export async function improveBulletVariants(
+  bulletText: string,
+  instruction: string,
+  jobOffer: string,
+  settings: SettingsDocument | null
+): Promise<string[]> {
+  if (!settings?.aiApiKey) return []
+
+  const prompt = `Eres un experto en CVs ATS. Genera EXACTAMENTE 3 versiones mejoradas de este bullet con enfoques distintos.
+${BULLET_VARIANTS_RULES}
+Solo español. No inventes datos que no estén en el original. Cada versión debe tener un ángulo distinto.
+
+BULLET ORIGINAL: ${bulletText}
+INSTRUCCIÓN DEL CANDIDATO: ${instruction}
+CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
+
+Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}`
+
+  try {
+    const result = await callAI(prompt, settings, 700)
+    const match = result.match(/\{[\s\S]*\}/)
+    if (!match) return []
+    const parsed = JSON.parse(match[0]) as { variants?: unknown }
+    return (Array.isArray(parsed.variants) ? parsed.variants : [])
+      .slice(0, 3)
+      .filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0)
+  } catch {
+    return []
+  }
+}
+
+// ── Improve technical skills list ────────────────────────────────────────────
+
+export async function improveSkills(
+  currentSkills: string,
+  jobOffer: string,
+  instruction: string,
+  settings: SettingsDocument | null
+): Promise<string | null> {
+  if (!settings?.aiApiKey) return null
+
+  const prompt = `Eres un experto en CVs ATS. Genera una lista de habilidades técnicas optimizada para este perfil.
+
+HABILIDADES ACTUALES DEL CANDIDATO:
+${currentSkills}
+
+OFERTA LABORAL:
+${jobOffer.substring(0, 2000)}
+
+INSTRUCCIÓN DEL CANDIDATO: ${instruction}
+
+REGLAS:
+- Incluye habilidades del candidato que sigan siendo relevantes para la oferta
+- Extrae y añade habilidades mencionadas en la oferta que el candidato pueda dominar dado su perfil
+- Ordena de mayor a menor relevancia para la oferta (las más solicitadas primero)
+- Sin duplicados, sin categorías ni prefijos, solo los nombres de las habilidades
+- Usa el mismo formato separado por comas
+- Si la instrucción pide mínimo N skills, asegúrate de cumplirlo
+
+Responde SOLO con JSON: {"skills": "skill1, skill2, skill3, ..."}`
+
+  try {
+    const result = await callAI(prompt, settings, 600)
+    const match = result.match(/\{[\s\S]*\}/)
+    if (!match) return null
+    const parsed = JSON.parse(match[0]) as { skills?: unknown }
+    return typeof parsed.skills === 'string' && parsed.skills.trim() ? parsed.skills.trim() : null
+  } catch {
+    return null
+  }
+}
+
 // ── Batch-improve all non-ATS bullets (works on CvData directly) ─────────────
 
 export async function improveNonAtsBullets(
@@ -441,7 +521,8 @@ export async function suggestBullets(
 // ── AI CV generation (optimize/rewrite selected bullets) ─────────────────────
 
 const CV_GEN_SYSTEM = `Eres un experto en CVs ATS. Tienes un borrador de CV y una oferta laboral.
-Reescribe SOLO los bullets del candidato para que sean más impactantes y relevantes para ESTA oferta.
+Reescribe los bullets del candidato para que sean más impactantes y relevantes para ESTA oferta.
+También puedes actualizar el campo "title" (experiencia) o "role" (liderazgo) si un título más específico mejora el ATS match (ej: "Software Engineer" → "Backend Software Engineer Senior").
 
 REGLAS:
 - Verbo de acción en pasado (Diseñé, Implementé, Optimicé, Reduje, Migré, Lideré, Establecí, Mejoré)
@@ -462,7 +543,8 @@ ${jobOffer.substring(0, 2000)}
 BORRADOR CV (JSON):
 ${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
 
-Responde SOLO con JSON: {"experience": [...], "leadership": [...], "skills": {"technical": "...", "language": "...", "laboratory": "...", "interests": "..."}}`
+Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title", "bullets"}. Por cada item de leadership incluye solo: {"id", "role", "bullets"}.
+{"experience": [{"id":"...","title":"...","bullets":[...]}], "leadership": [{"id":"...","role":"...","bullets":[...]}], "skills": {"technical":"...","language":"...","laboratory":"...","interests":"..."}}`
 }
 
 async function generateWithClaude(
@@ -481,7 +563,8 @@ ${jobOffer.substring(0, 2000)}
 BORRADOR CV (JSON):
 ${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
 
-Responde SOLO con JSON: {"experience": [...], "leadership": [...], "skills": {"technical": "...", "language": "...", "laboratory": "...", "interests": "..."}}
+Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title", "bullets"}. Por cada item de leadership incluye solo: {"id", "role", "bullets"}.
+{"experience": [{"id":"...","title":"...","bullets":[...]}], "leadership": [{"id":"...","role":"...","bullets":[...]}], "skills": {"technical":"...","language":"...","laboratory":"...","interests":"..."}}
 JSON:`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -505,11 +588,19 @@ JSON:`
   const match = content.match(/\{[\s\S]*\}/)
   if (!match) throw new Error('No JSON in response')
 
-  const parsed = JSON.parse(match[0]) as Partial<CvData>
+  const parsed = JSON.parse(match[0]) as { experience?: Array<{ id?: string; title?: string; bullets?: string[] }>; leadership?: Array<{ id?: string; role?: string; bullets?: string[] }>; skills?: Partial<CvData['skills']> }
   return {
     ...draft,
-    experience: parsed.experience ?? draft.experience,
-    leadership: parsed.leadership ?? draft.leadership,
+    experience: draft.experience.map((exp, idx) => {
+      const opt = (parsed.experience ?? [])[idx]
+      if (!opt) return exp
+      return { ...exp, ...(opt.title ? { title: opt.title } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+    }),
+    leadership: draft.leadership.map((lead, idx) => {
+      const opt = (parsed.leadership ?? [])[idx]
+      if (!opt) return lead
+      return { ...lead, ...(opt.role ? { role: opt.role } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+    }),
     skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
   }
 }
@@ -538,11 +629,19 @@ async function generateWithOpenAICompat(
 
   if (!res.ok) throw new Error(`API error ${res.status}`)
   const data = await res.json()
-  const parsed = JSON.parse(data.choices[0].message.content) as Partial<CvData>
+  const parsed = JSON.parse(data.choices[0].message.content) as { experience?: Array<{ id?: string; title?: string; bullets?: string[] }>; leadership?: Array<{ id?: string; role?: string; bullets?: string[] }>; skills?: Partial<CvData['skills']> }
   return {
     ...draft,
-    experience: parsed.experience ?? draft.experience,
-    leadership: parsed.leadership ?? draft.leadership,
+    experience: draft.experience.map((exp, idx) => {
+      const opt = (parsed.experience ?? [])[idx]
+      if (!opt) return exp
+      return { ...exp, ...(opt.title ? { title: opt.title } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+    }),
+    leadership: draft.leadership.map((lead, idx) => {
+      const opt = (parsed.leadership ?? [])[idx]
+      if (!opt) return lead
+      return { ...lead, ...(opt.role ? { role: opt.role } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+    }),
     skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
   }
 }
@@ -603,20 +702,51 @@ export interface SkillsDiff {
   accepted: boolean
 }
 
-export type CvDiffItem = BulletDiff | SkillsDiff
+export interface TitleDiff {
+  key: string          // format: `${sectionId}-title`
+  sectionType: 'experience' | 'leadership'
+  sectionId: string
+  sectionLabel: string
+  field: 'title' | 'role'
+  original: string
+  proposed: string
+  changed: boolean
+  accepted: boolean
+}
+
+export type CvDiffItem = BulletDiff | SkillsDiff | TitleDiff
 
 export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
   const diffs: CvDiffItem[] = []
 
   const processSection = (
-    draftItems: Array<{ id: string; organization: string; bullets: string[] }>,
-    optimizedItems: Array<{ id: string; bullets: string[] }>,
+    draftItems: Array<{ id: string; organization: string; bullets: string[]; title?: string; role?: string }>,
+    optimizedItems: Array<{ id: string; bullets: string[]; title?: string; role?: string }>,
     sectionType: 'experience' | 'leadership',
-    getLabel: (item: { organization: string }) => string
+    getLabel: (item: { organization: string }) => string,
+    titleField: 'title' | 'role'
   ) => {
     draftItems.forEach((draftItem, sectionIdx) => {
       const optimizedItem = optimizedItems[sectionIdx]
       if (!optimizedItem) return
+
+      // Detect title/role change
+      const draftTitle = (draftItem[titleField] ?? '').trim()
+      const optimizedTitle = (optimizedItem[titleField] ?? '').trim()
+      if (optimizedTitle && draftTitle !== optimizedTitle) {
+        diffs.push({
+          key: `${draftItem.id}-title`,
+          sectionType,
+          sectionId: draftItem.id,
+          sectionLabel: getLabel(draftItem),
+          field: titleField,
+          original: draftTitle,
+          proposed: optimizedTitle,
+          changed: true,
+          accepted: true,
+        } as TitleDiff)
+      }
+
       const optimizedBullets = optimizedItem.bullets ?? []
       const maxLen = Math.max(draftItem.bullets.length, optimizedBullets.length)
       for (let i = 0; i < maxLen; i++) {
@@ -642,13 +772,15 @@ export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
     draft.experience,
     optimized.experience,
     'experience',
-    (item) => item.organization
+    (item) => item.organization,
+    'title'
   )
   processSection(
     draft.leadership,
     optimized.leadership,
     'leadership',
-    (item) => item.organization
+    (item) => item.organization,
+    'role'
   )
 
   const origSkills = draft.skills.technical.trim()
@@ -680,6 +812,19 @@ export function applyDiffs(draft: CvData, diffs: CvDiffItem[]): CvData {
     if (diff.key === 'skills') {
       const sd = diff as SkillsDiff
       result.skills = { ...result.skills, technical: sd.accepted ? sd.proposed : sd.original }
+      continue
+    }
+
+    if (diff.key.endsWith('-title')) {
+      const td = diff as TitleDiff
+      if (!td.accepted) continue
+      if (td.sectionType === 'experience') {
+        const exp = result.experience.find((s) => s.id === td.sectionId)
+        if (exp) exp.title = td.proposed
+      } else {
+        const lead = result.leadership.find((s) => s.id === td.sectionId)
+        if (lead) lead.role = td.proposed
+      }
       continue
     }
 

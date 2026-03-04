@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Pencil, Check, X, Trash2, Plus, Sparkles, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { improveBullet, ATS_VERBS_RE } from '@/lib/ai-cv'
+import { improveBulletVariants, improveSkills, ATS_VERBS_RE } from '@/lib/ai-cv'
 import type { CvData, ExperienceItem, LeadershipItem, EducationItem } from '@/types/experience'
 import type { SettingsDocument } from '@/lib/db/schemas'
 
@@ -37,10 +37,12 @@ function TagsField({
   label,
   value,
   onChange,
+  action,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
+  action?: React.ReactNode
 }) {
   const [newTag, setNewTag] = useState('')
   const [focused, setFocused] = useState(false)
@@ -73,7 +75,10 @@ function TagsField({
 
   return (
     <div>
-      <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mb-1.5">{label}</p>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+        {action}
+      </div>
       <div
         className={cn(
           'flex flex-wrap gap-1.5 rounded-md border bg-muted/10 px-2 py-1.5 cursor-text transition-colors',
@@ -183,6 +188,277 @@ function InlineField({
   )
 }
 
+// ── AI Improve Popover ─────────────────────────────────────────────────────────
+
+const AI_BULLET_CHIPS = [
+  'Hazlo más conciso y específico',
+  'Agrega métricas concretas con contexto',
+  'Reemplaza términos vagos por impacto real',
+  'Optimiza el verbo de acción para ATS',
+]
+
+type PopoverMode = 'input' | 'loading' | 'variants'
+
+function BulletAiPopover({
+  bulletText,
+  jobOfferText,
+  settings,
+  onUpdate,
+  onClose,
+  onLoadingChange,
+}: {
+  bulletText: string
+  jobOfferText: string
+  settings: SettingsDocument | null
+  onUpdate: (t: string) => void
+  onClose: () => void
+  onLoadingChange: (loading: boolean) => void
+}) {
+  const [mode, setMode] = useState<PopoverMode>('input')
+  const [instruction, setInstruction] = useState('')
+  const [variants, setVariants] = useState<string[]>([])
+
+  async function handleSubmit() {
+    if (!instruction.trim()) return
+    setMode('loading')
+    onLoadingChange(true)
+    const result = await improveBulletVariants(bulletText, instruction, jobOfferText, settings)
+    onLoadingChange(false)
+    if (result.length > 0) {
+      setVariants(result)
+      setMode('variants')
+    } else {
+      setMode('input')
+    }
+  }
+
+  return (
+    <div className="absolute right-0 bottom-full mb-1.5 z-50 w-96 rounded-lg border border-border bg-popover shadow-lg text-xs">
+      {/* Header with title + X close button */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
+        <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
+          {mode === 'variants' ? 'Elige la mejor versión' : 'Mejorar con IA'}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground/50 hover:text-foreground transition-colors"
+          title="Cerrar"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {mode === 'input' && (
+        <div className="p-3 space-y-2.5">
+          <textarea
+            autoFocus
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } if (e.key === 'Escape') onClose() }}
+            placeholder='Ej: "hazlo más conciso y agrega impacto cuantificable"'
+            className="w-full rounded border border-input bg-background px-2 py-1.5 text-[11px] resize-none min-h-[56px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+          />
+          <div className="flex flex-wrap gap-1">
+            {AI_BULLET_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setInstruction(chip)}
+                className={cn(
+                  'rounded-full border px-2 py-0.5 text-[10px] transition-colors',
+                  instruction === chip
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : 'border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                )}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 pt-0.5">
+            <button
+              type="button"
+              disabled={!instruction.trim()}
+              onClick={handleSubmit}
+              className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            >
+              <Sparkles className="h-3 w-3" /> Generar variantes
+            </button>
+            <button type="button" onClick={onClose} className="rounded border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'loading' && (
+        <div className="flex items-center justify-center gap-2 p-6 text-muted-foreground">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-[11px]">Generando variantes…</span>
+        </div>
+      )}
+
+      {mode === 'variants' && (
+        <div className="p-3 space-y-2">
+          {variants.map((v, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => { onUpdate(v); onClose() }}
+              className="w-full text-left rounded-md border border-border/50 bg-background hover:bg-muted/40 hover:border-primary/30 transition-colors p-2"
+            >
+              <div className="flex items-start gap-1.5">
+                <span className="text-[10px] font-bold text-primary shrink-0 mt-0.5">{i + 1}</span>
+                <p className="text-[11px] leading-relaxed text-foreground">{v}</p>
+              </div>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setMode('input')}
+            className="w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors text-center pt-0.5"
+          >
+            ← Reintentar con otras instrucciones
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Skills AI Popover ─────────────────────────────────────────────────────────
+
+const SKILLS_AI_CHIPS = [
+  'Extrae skills de la oferta que coincidan con mi perfil',
+  'Genera mínimo 10 skills: match + complemento',
+  'Reordena por relevancia para la oferta',
+  'Agrega skills técnicas que complementen mi experiencia',
+]
+
+type SkillsPopoverMode = 'input' | 'loading' | 'result'
+
+function SkillsAiPopover({
+  currentSkills,
+  jobOfferText,
+  settings,
+  onUpdate,
+  onClose,
+}: {
+  currentSkills: string
+  jobOfferText: string
+  settings: SettingsDocument | null
+  onUpdate: (skills: string) => void
+  onClose: () => void
+}) {
+  const [mode, setMode] = useState<SkillsPopoverMode>('input')
+  const [instruction, setInstruction] = useState('')
+  const [result, setResult] = useState('')
+
+  async function handleSubmit() {
+    if (!instruction.trim()) return
+    setMode('loading')
+    const suggested = await improveSkills(currentSkills, jobOfferText, instruction, settings)
+    if (suggested) {
+      setResult(suggested)
+      setMode('result')
+    } else {
+      setMode('input')
+    }
+  }
+
+  return (
+    <div className="absolute right-0 bottom-full mb-1.5 z-50 w-96 rounded-lg border border-border bg-popover shadow-lg text-xs">
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
+        <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
+          {mode === 'result' ? 'Habilidades sugeridas por IA' : 'Mejorar habilidades con IA'}
+        </p>
+        <button type="button" onClick={onClose} className="text-muted-foreground/50 hover:text-foreground transition-colors" title="Cerrar">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {mode === 'input' && (
+        <div className="p-3 space-y-2.5">
+          <textarea
+            autoFocus
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } if (e.key === 'Escape') onClose() }}
+            placeholder='Ej: "Extrae al menos 10 skills que hagan match con la oferta y agrega complementos"'
+            className="w-full rounded border border-input bg-background px-2 py-1.5 text-[11px] resize-none min-h-[56px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+          />
+          <div className="flex flex-wrap gap-1">
+            {SKILLS_AI_CHIPS.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => setInstruction(chip)}
+                className={cn(
+                  'rounded-full border px-2 py-0.5 text-[10px] transition-colors',
+                  instruction === chip
+                    ? 'border-primary/40 bg-primary/10 text-primary'
+                    : 'border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                )}
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 pt-0.5">
+            <button
+              type="button"
+              disabled={!instruction.trim()}
+              onClick={handleSubmit}
+              className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors"
+            >
+              <Sparkles className="h-3 w-3" /> Generar sugerencia
+            </button>
+            <button type="button" onClick={onClose} className="rounded border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'loading' && (
+        <div className="flex items-center justify-center gap-2 p-6 text-muted-foreground">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <span className="text-[11px]">Analizando oferta y perfil…</span>
+        </div>
+      )}
+
+      {mode === 'result' && (
+        <div className="p-3 space-y-2.5">
+          <p className="text-[10px] text-muted-foreground">Revisa y edita antes de aceptar:</p>
+          <textarea
+            value={result}
+            onChange={(e) => setResult(e.target.value)}
+            className="w-full rounded border border-input bg-background px-2 py-1.5 text-[11px] resize-y min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <div className="flex gap-1.5">
+            <button
+              type="button"
+              onClick={() => { onUpdate(result); onClose() }}
+              className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Check className="h-3 w-3" /> Aceptar
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('input')}
+              className="rounded border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Reintentar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Bullet row with edit/AI/delete ────────────────────────────────────────────
 
 function BulletRow({
@@ -200,24 +476,13 @@ function BulletRow({
 }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(text)
-  const [aiInput, setAiInput] = useState('')
-  const [showAiInput, setShowAiInput] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const isAts = ATS_VERBS_RE.test(text.trimStart())
 
   function save() {
     onUpdate(editText)
     setEditing(false)
-  }
-
-  async function handleAiImprove() {
-    if (!aiInput.trim() || !settings) return
-    setAiLoading(true)
-    const improved = await improveBullet(text, aiInput, jobOfferText, settings)
-    onUpdate(improved)
-    setShowAiInput(false)
-    setAiInput('')
-    setAiLoading(false)
   }
 
   if (editing) {
@@ -242,20 +507,60 @@ function BulletRow({
   }
 
   return (
-    <div className="group">
-      <div className="flex gap-2 items-start py-1.5">
-        <div className={cn('mt-1.5 h-1.5 w-1.5 rounded-full shrink-0', isAts ? 'bg-green-500' : 'bg-amber-400')} title={isAts ? 'Verbo ATS fuerte' : 'Sin verbo ATS'} />
-        <p className="flex-1 text-xs leading-relaxed">{text}</p>
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="group relative">
+      {/* Background + scan layer — overflow-hidden here so scan line is clipped but popover escapes */}
+      <div
+        className={cn(
+          'absolute inset-0 overflow-hidden rounded-sm transition-colors duration-200 pointer-events-none',
+          aiOpen && !aiLoading && 'bg-primary/[0.04]',
+          aiLoading && 'bg-amber-400/[0.05]'
+        )}
+      >
+        {aiOpen && !aiLoading && (
+          <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary/50" />
+        )}
+        {aiLoading && (
+          <>
+            <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-amber-400/70" />
+            <div className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent animate-ai-scan" />
+          </>
+        )}
+      </div>
+
+      {/* Content — relative so it sits above background layer */}
+      <div className={cn('relative flex gap-2 items-start py-1.5 transition-all duration-200', aiOpen && 'pl-2.5')}>
+        <div
+          className={cn(
+            'mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 transition-colors duration-200',
+            aiLoading ? 'bg-amber-400 animate-pulse' :
+            aiOpen    ? 'bg-primary' :
+            isAts     ? 'bg-green-500' : 'bg-amber-400'
+          )}
+          title={isAts ? 'Verbo ATS fuerte' : 'Sin verbo ATS'}
+        />
+        <p className={cn('flex-1 text-xs leading-relaxed transition-opacity duration-200', aiLoading && 'opacity-50')}>
+          {text}
+        </p>
+        <div className={cn('relative flex items-center gap-1 shrink-0 transition-opacity', aiOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
           {settings?.aiApiKey && (
             <button
               type="button"
-              onClick={() => setShowAiInput((v) => !v)}
-              className={cn('transition-colors', showAiInput ? 'text-primary' : 'text-muted-foreground/50 hover:text-primary')}
+              onClick={() => setAiOpen((v) => !v)}
+              className={cn('transition-colors', aiOpen ? 'text-primary' : 'text-muted-foreground/50 hover:text-primary')}
               title="Mejorar con IA"
             >
               <Sparkles className="h-3.5 w-3.5" />
             </button>
+          )}
+          {aiOpen && settings?.aiApiKey && (
+            <BulletAiPopover
+              bulletText={text}
+              jobOfferText={jobOfferText}
+              settings={settings}
+              onUpdate={(t) => { onUpdate(t); setAiOpen(false) }}
+              onClose={() => { setAiOpen(false); setAiLoading(false) }}
+              onLoadingChange={setAiLoading}
+            />
           )}
           <button type="button" onClick={() => { setEditText(text); setEditing(true) }} className="text-muted-foreground/50 hover:text-foreground transition-colors">
             <Pencil className="h-3.5 w-3.5" />
@@ -265,29 +570,6 @@ function BulletRow({
           </button>
         </div>
       </div>
-
-      {showAiInput && (
-        <div className="ml-3.5 mb-2 flex gap-1.5">
-          <input
-            autoFocus
-            type="text"
-            value={aiInput}
-            onChange={(e) => setAiInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') handleAiImprove(); if (e.key === 'Escape') setShowAiInput(false) }}
-            placeholder='Ej: "hazlo más conciso y agrega impacto"'
-            className="flex-1 rounded border border-input bg-background px-2 py-1 text-[11px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
-          />
-          <button
-            type="button"
-            disabled={!aiInput.trim() || aiLoading}
-            onClick={handleAiImprove}
-            className="flex items-center gap-1 rounded bg-primary px-2 py-1 text-[11px] text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors"
-          >
-            {aiLoading ? <span className="h-3 w-3 animate-spin rounded-full border border-primary-foreground border-t-transparent" /> : <Sparkles className="h-3 w-3" />}
-            IA
-          </button>
-        </div>
-      )}
     </div>
   )
 }
@@ -299,15 +581,19 @@ function RoleSection({
   jobOfferText,
   settings,
   onUpdate,
+  onDelete,
 }: {
   item: ExperienceItem | LeadershipItem
   jobOfferText: string
   settings: SettingsDocument | null
   onUpdate: (updated: ExperienceItem | LeadershipItem) => void
+  onDelete?: () => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
+  const [headerEditing, setHeaderEditing] = useState(false)
+  const isExp = 'title' in item
   const org = item.organization
-  const role = 'title' in item ? item.title : item.role
+  const role = isExp ? item.title : item.role
 
   function updateBullet(idx: number, text: string) {
     onUpdate({ ...item, bullets: item.bullets.map((b, i) => (i === idx ? text : b)) })
@@ -321,24 +607,79 @@ function RoleSection({
 
   return (
     <div className="rounded-md border border-border/40">
-      <div
-        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted transition-colors sticky top-0 z-10 bg-card rounded-t-md"
-        onClick={() => setCollapsed((v) => !v)}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-semibold">{org}</span>
-            <span className="text-[11px] text-muted-foreground">· {role}</span>
+      <div className="px-3 py-2 sticky top-0 z-10 bg-card rounded-t-md group/header">
+        {headerEditing ? (
+          <div className="space-y-2">
+            <InlineField
+              label="Organización"
+              value={item.organization}
+              onSave={(v) => onUpdate({ ...item, organization: v })}
+            />
+            <InlineField
+              label={isExp ? 'Título / Cargo' : 'Rol'}
+              value={role}
+              onSave={(v) =>
+                onUpdate(
+                  isExp
+                    ? ({ ...item, title: v } as ExperienceItem)
+                    : ({ ...item, role: v } as LeadershipItem)
+                )
+              }
+            />
+            <InlineField
+              label="Período"
+              value={item.dates}
+              onSave={(v) => onUpdate({ ...item, dates: v })}
+            />
+            <button
+              type="button"
+              onClick={() => setHeaderEditing(false)}
+              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Cerrar edición
+            </button>
           </div>
-          <p className="text-[11px] text-muted-foreground">{item.dates}</p>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[10px] text-muted-foreground">{item.bullets.length} bullets</span>
-          {collapsed ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />}
-        </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div
+              className="flex-1 min-w-0 cursor-pointer"
+              onClick={() => setCollapsed((v) => !v)}
+            >
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs font-semibold">{org}</span>
+                <span className="text-[11px] text-muted-foreground">· {role}</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground">{item.dates}</p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => { setHeaderEditing(true); setCollapsed(false) }}
+                className="opacity-0 group-hover/header:opacity-100 transition-opacity text-muted-foreground/50 hover:text-foreground"
+                title="Editar cabecera"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="opacity-0 group-hover/header:opacity-100 transition-opacity text-muted-foreground/50 hover:text-destructive"
+                  title="Eliminar entrada"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
+              <span className="text-[10px] text-muted-foreground ml-1">{item.bullets.length} bullets</span>
+              <button type="button" onClick={() => setCollapsed((v) => !v)} className="text-muted-foreground">
+                {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {!collapsed && (
+      {!collapsed && !headerEditing && (
         <div className="px-3 pb-2 border-t border-border/30 divide-y divide-border/20">
           {item.bullets.map((b, i) => (
             <BulletRow
@@ -497,14 +838,24 @@ function CvSection({ title, action, children }: { title: string; action?: React.
 // ── CvEditor main ─────────────────────────────────────────────────────────────
 
 export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange }: CvEditorProps) {
+  const [skillsAiOpen, setSkillsAiOpen] = useState(false)
   const pages = estimatePageLength(draftCv)
   const pageColor = pages > 2 ? 'text-red-500' : pages > 1.5 ? 'text-amber-500' : 'text-green-600 dark:text-green-400'
 
   function updateExperience(id: string, updated: ExperienceItem) {
     onChange({ ...draftCv, experience: draftCv.experience.map((e) => (e.id === id ? updated as ExperienceItem : e)) })
   }
+  function deleteExperience(id: string) {
+    onChange({ ...draftCv, experience: draftCv.experience.filter((e) => e.id !== id) })
+  }
   function updateLeadership(id: string, updated: LeadershipItem) {
     onChange({ ...draftCv, leadership: draftCv.leadership.map((l) => (l.id === id ? updated as LeadershipItem : l)) })
+  }
+  function deleteLeadershipItem(id: string) {
+    onChange({ ...draftCv, leadership: draftCv.leadership.filter((l) => l.id !== id) })
+  }
+  function clearLeadership() {
+    onChange({ ...draftCv, leadership: [] })
   }
   function updateEducation(id: string, updated: EducationItem) {
     onChange({ ...draftCv, education: draftCv.education.map((e) => (e.id === id ? updated : e)) })
@@ -571,6 +922,7 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
               jobOfferText={jobOfferText}
               settings={settings}
               onUpdate={(u) => updateExperience(exp.id, u as ExperienceItem)}
+              onDelete={() => deleteExperience(exp.id)}
             />
           ))}
         </CvSection>
@@ -578,7 +930,19 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
 
       {/* Leadership */}
       {leadWithBullets.length > 0 && (
-        <CvSection title="Liderazgo y Mentoría">
+        <CvSection
+          title="Liderazgo y Mentoría"
+          action={
+            <button
+              type="button"
+              onClick={clearLeadership}
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+              title="Eliminar sección completa"
+            >
+              <Trash2 className="h-3 w-3" /> Eliminar sección
+            </button>
+          }
+        >
           {leadWithBullets.sort((a, b) => a.order - b.order).map((lead) => (
             <RoleSection
               key={lead.id}
@@ -586,6 +950,7 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
               jobOfferText={jobOfferText}
               settings={settings}
               onUpdate={(u) => updateLeadership(lead.id, u as LeadershipItem)}
+              onDelete={() => deleteLeadershipItem(lead.id)}
             />
           ))}
         </CvSection>
@@ -623,6 +988,34 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
             label="Técnicas"
             value={draftCv.skills.technical}
             onChange={(v) => onChange({ ...draftCv, skills: { ...draftCv.skills, technical: v } })}
+            action={
+              settings?.aiApiKey ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setSkillsAiOpen((v) => !v)}
+                    className={cn(
+                      'flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
+                      skillsAiOpen
+                        ? 'text-primary bg-primary/10'
+                        : 'text-muted-foreground hover:text-primary hover:bg-primary/5'
+                    )}
+                    title="Mejorar habilidades con IA"
+                  >
+                    <Sparkles className="h-3 w-3" /> IA
+                  </button>
+                  {skillsAiOpen && (
+                    <SkillsAiPopover
+                      currentSkills={draftCv.skills.technical}
+                      jobOfferText={jobOfferText}
+                      settings={settings}
+                      onUpdate={(v) => { onChange({ ...draftCv, skills: { ...draftCv.skills, technical: v } }); setSkillsAiOpen(false) }}
+                      onClose={() => setSkillsAiOpen(false)}
+                    />
+                  )}
+                </div>
+              ) : undefined
+            }
           />
           <TagsField
             label="Idiomas"

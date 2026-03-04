@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { cn } from '@/lib/utils'
 import { computeCvDiffs, applyDiffs } from '@/lib/ai-cv'
 import type { CvData } from '@/types/experience'
-import type { CvDiffItem, BulletDiff, SkillsDiff } from '@/lib/ai-cv'
+import type { CvDiffItem, BulletDiff, SkillsDiff, TitleDiff } from '@/lib/ai-cv'
 
 interface CvOptimizeDialogProps {
   open: boolean
@@ -59,14 +59,14 @@ export function CvOptimizeDialog({
 
   // Group bullet diffs by section
   const sections = useMemo(() => {
-    const map = new Map<string, { label: string; items: BulletDiff[] }>()
+    const map = new Map<string, { label: string; items: (BulletDiff | TitleDiff)[] }>()
     diffs.forEach((d) => {
       if (d.key === 'skills') return
-      const bd = d as BulletDiff
-      if (!map.has(bd.sectionId)) {
-        map.set(bd.sectionId, { label: bd.sectionLabel, items: [] })
+      const item = d as BulletDiff | TitleDiff
+      if (!map.has(item.sectionId)) {
+        map.set(item.sectionId, { label: item.sectionLabel, items: [] })
       }
-      map.get(bd.sectionId)!.items.push(bd)
+      map.get(item.sectionId)!.items.push(item)
     })
     return Array.from(map.entries())
   }, [diffs])
@@ -136,14 +136,20 @@ export function CvOptimizeDialog({
               <div key={sectionId} className="space-y-2">
                 <p className="text-xs font-semibold text-foreground">{label}</p>
                 <div className="space-y-2">
-                  {changedItems.map((diff) => (
-                    <SideBySideCard
-                      key={diff.key}
-                      diff={diff}
-                      label={`Bullet ${diff.bulletIdx + 1}`}
-                      onToggle={() => toggleAccept(diff.key)}
-                    />
-                  ))}
+                  {changedItems.map((diff) => {
+                    const isTitleDiff = diff.key.endsWith('-title')
+                    const label = isTitleDiff
+                      ? ((diff as TitleDiff).field === 'title' ? 'Cargo / Título' : 'Rol')
+                      : `Bullet ${(diff as BulletDiff).bulletIdx + 1}`
+                    return (
+                      <SideBySideCard
+                        key={diff.key}
+                        diff={diff as CvDiffItem}
+                        label={label}
+                        onToggle={() => toggleAccept(diff.key)}
+                      />
+                    )
+                  })}
                 </div>
               </div>
             )
@@ -173,8 +179,8 @@ function SideBySideCard({
   label?: string
   onToggle: () => void
 }) {
-  const original = diff.key === 'skills' ? (diff as SkillsDiff).original : (diff as BulletDiff).original
-  const proposed = diff.key === 'skills' ? (diff as SkillsDiff).proposed : (diff as BulletDiff).proposed
+  const original = (diff as { original: string }).original
+  const proposed = (diff as { proposed: string }).proposed
 
   return (
     <div
