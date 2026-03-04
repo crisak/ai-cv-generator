@@ -40,7 +40,6 @@ export default function CvGeneratorPage() {
   const [applicationId, setApplicationId] = useState('')
   const [selections, setSelections] = useState<BulletsBySection>({})
   const [draftCv, setDraftCv] = useState<CvData | null>(null)
-  const [customMessage, setCustomMessage] = useState('')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [generatedCv, setGeneratedCv] = useState<CvData | null>(null)
   const [usedAI, setUsedAI] = useState(false)
@@ -62,7 +61,7 @@ export default function CvGeneratorPage() {
     if (!cvData) return
     setIsAnalyzing(true)
     setStep(2)
-    const result = await suggestBullets(jobOfferText, cvData, settings, customMessage)
+    const result = await suggestBullets(jobOfferText, cvData, settings)
     setSelections(result.selections)
     const draft = assembleDraftCv(cvData, result.selections)
     // Apply suggested skills if AI returned them
@@ -88,7 +87,7 @@ export default function CvGeneratorPage() {
     setStep(3)
   }
 
-  async function handleOptimize() {
+  async function handleOptimize(msg: string) {
     if (!cvData) return
     setIsOptimizing(true)
     const { cv } = await generateCv(
@@ -96,7 +95,7 @@ export default function CvGeneratorPage() {
       cvData,
       selections,
       settings,
-      customMessage,
+      msg,
       draftCv ?? undefined
     )
     setOptimizedCv(cv)
@@ -105,10 +104,7 @@ export default function CvGeneratorPage() {
 
   function handleOptimizeConfirm(cv: CvData) {
     setOptimizedCv(null)
-    setGeneratedCv(cv)
-    setUsedAI(true)
-    setSavedCvId(null)
-    setStep(3)
+    setDraftCv(cv)
   }
 
   function handleOptimizeCancel() {
@@ -224,14 +220,12 @@ export default function CvGeneratorPage() {
             draftCv={draftCv ?? cvData}
             isAnalyzing={isAnalyzing}
             jobOfferText={jobOfferText}
-            customMessage={customMessage}
             settings={settings}
             isOptimizing={isOptimizing}
             optimizedCv={optimizedCv}
             onSelectionsChange={handleSelectionsChange}
             onDraftCvChange={setDraftCv}
-            onCustomMessageChange={setCustomMessage}
-            onUseDraft={handleUseDraft}
+            onContinue={handleUseDraft}
             onOptimize={handleOptimize}
             onOptimizeConfirm={handleOptimizeConfirm}
             onOptimizeCancel={handleOptimizeCancel}

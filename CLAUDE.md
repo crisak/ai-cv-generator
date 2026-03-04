@@ -50,14 +50,43 @@ A web platform that streamlines the CV generation process for job applications. 
 - Export in same JSON format
 - Stores locally in RxDB
 
-### 4. CV Generator Workflow
-- Step 1: Input job posting details
-- Step 2: AI preview of suggested goals
-  - User can uncheck goals they disagree with
-  - Generate alternative goals matching their experience
-- Step 3: Generate CV in json-schema-cv-generator.json format
-- Step 4: Beautiful web rendering of generated CV
-- Stores metadata and CV reference for tracking
+### 4. CV Generator Workflow (3-Step Process)
+
+**Step 1: Oferta laboral**
+- User inputs or pastes full job posting text
+- Optional: link to application in dashboard
+- System auto-parses with AI (Claude/GPT) to extract key requirements
+
+**Step 2: Seleccionar bullets (Advanced 3-column layout)**
+- **Column 1 — Bullets checklist**: Collapsible sections per role, toggle/select bullets, edit inline, AI improve per bullet
+- **Column 2 — Live CV Editor**: Real-time editable CV preview with changes from column 1
+- **Column 3 — Match Analysis**: Sticky sidebar with:
+  - Match score % (green/amber/red) with found/missing keywords
+  - Collapsible **Alerts Accordion** (warn/error pills in header) showing:
+    - Estimated pages (color-coded: ✓ OK / ⚠ warn / ✕ error)
+    - Non-ATS bullets warning + quick fix button
+    - Missing key requirements
+  - Sticky **Continuar** button at bottom
+- **Toolbar (4 buttons with Help Tooltips)**:
+  - Vista previa (print CV, check 1-page limit)
+  - Ver oferta laboral (search in text)
+  - Chat con IA (adjust bullets via conversation)
+  - **Optimizar con IA** (→ context modal → suggest optimizations → review diffs → apply to draft, stay in step 2)
+- User manually selects bullets or uses AI optimization
+- Resulting `draftCv` is saved locally
+
+**Step 3: Resultado final**
+- Beautiful ATS-optimized CV rendering in web format
+- Download/print to PDF
+- Save CV to RxDB (with link to application if applicable)
+- Option to go back and edit more, or start new CV
+
+**AI Optimization Flow**
+- Click "Optimizar con IA" → opens context modal (optional custom message + predefined suggestion chips)
+- Confirms → AI rewrites bullets + reorders skills.technical for max match
+- **Diff review dialog**: side-by-side layout (Before | IA suggests), toggle accept/reject per change
+- Confirms → applies accepted changes to `draftCv` in Step 2 (does NOT advance to Step 3)
+- User can review live in column 2, try "Optimizar" again, or manually edit
 
 ### 5. Settings
 - Select AI model: Claude, GPT, Gemini, Grok, DeepSeek
@@ -106,6 +135,45 @@ A web platform that streamlines the CV generation process for job applications. 
 - `/types` - TypeScript definitions
 - `/styles` - Global TailwindCSS config
 
+## Recent Implementations (Phase 3 Complete)
+
+### CV Generator Step 2 Redesign (3-Column Layout)
+- **Column 1**: Bullets selector with collapse/expand per section, inline edit, AI improve
+- **Column 2**: Live CV editor showing real-time changes
+- **Column 3**: Match analysis sidebar with accordion alerts, sticky continue button
+- **Toolbar**: 4 buttons (Vista previa, Ver oferta, Chat IA, Optimizar con IA) with help tooltips
+- All buttons styled consistently, disabled states handled
+
+### Match Analysis Component
+- Displays keyword match % (green/amber/red coloring)
+- Shows found vs missing keywords from job offer
+- **Accordion-style Alerts** section with collapsible toggle
+- Pills showing warn ⚠ and error ✕ counts in accordion header
+- Scrollable keywords list (max-h-[140px])
+- Alerts include: page estimate, non-ATS bullets (with quick fix), missing keywords
+- "Continuar" button always at bottom via `flex flex-col h-full` + spacer pattern
+
+### CV Optimize with AI
+- **Context Modal**: Opens when "Optimizar con IA" clicked
+  - Optional textarea for additional context
+  - 4 predefined suggestion chips (click to select)
+  - Confirm button triggers `onOptimize(message)`
+- **Optimization Process**:
+  - AI rewrites `experience.bullets` + `leadership.bullets` to match job requirements
+  - AI reorders/updates `skills.technical` for relevance
+  - Returns optimized CV with all fields
+- **Diff Review Dialog**: Side-by-side layout
+  - Left column: "Antes" (original)
+  - Right column: "IA sugiere" (proposed)
+  - Toggle accept/reject per change
+  - Status badge (Aceptado/Rechazado) per item
+- **Flow**: Diff confirm → applies to `draftCv` → stays in Step 2 (NOT auto-advance)
+- User can review live in column 2, run optimize again, or manually edit
+
+### Bug Fixes
+- Fixed `computeCvDiffs` crash: guard `optimizedItem.bullets` with `?? []` fallback
+- Fixed Dialog accessibility warnings: added DialogDescription/aria-describedby (shadcn/ui requirement)
+
 ## Important Notes
 - No backend API required (RxDB handles local persistence)
 - Hardcoded credentials must be hashed to prevent exposure
@@ -113,3 +181,7 @@ A web platform that streamlines the CV generation process for job applications. 
 - All content in Spanish
 - No tests to implement (Vitest config only)
 - In "docs/*.json" are the files related of "json-schema-cv-generator.json" and "cv-experiencia-real.json"
+- **Step 2 layout**: Grid 3-column `grid-cols-[300px_1fr_300px] h-[calc(100vh-280px)]` for proper viewport height
+- **Sticky patterns**: Use `flex flex-col h-full` on containers with `flex-1` spacer to push bottom element down
+- **AI Integration**: generateCv() now includes skills in prompt and parses them back
+- **Tooltip pattern**: Use `group` + `group-hover:block` with positioned absolute element for consistent help text

@@ -454,14 +454,15 @@ REGLAS:
 function buildCvGenPrompt(jobOffer: string, draft: CvData, customMessage?: string): string {
   const extra = customMessage ? `\n\nCONTEXTO ADICIONAL DEL CANDIDATO:\n${customMessage}` : ''
   return `${CV_GEN_SYSTEM}
+También optimiza el campo "skills.technical" para hacer match con la oferta.
 
 OFERTA LABORAL:
 ${jobOffer.substring(0, 2000)}
 
 BORRADOR CV (JSON):
-${JSON.stringify({ experience: draft.experience, leadership: draft.leadership }, null, 2).substring(0, 4000)}${extra}
+${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
 
-Responde SOLO con JSON: {"experience": [...], "leadership": [...]}`
+Responde SOLO con JSON: {"experience": [...], "leadership": [...], "skills": {"technical": "...", "language": "...", "laboratory": "...", "interests": "..."}}`
 }
 
 async function generateWithClaude(
@@ -472,14 +473,15 @@ async function generateWithClaude(
 ): Promise<CvData> {
   const extra = customMessage ? `\n\nCONTEXTO ADICIONAL DEL CANDIDATO:\n${customMessage}` : ''
   const prompt = `${CV_GEN_SYSTEM}
+También optimiza el campo "skills.technical": reordena o ajusta las habilidades técnicas para hacer match con la oferta, usando las que ya tiene el candidato.
 
 OFERTA LABORAL:
 ${jobOffer.substring(0, 2000)}
 
 BORRADOR CV (JSON):
-${JSON.stringify({ experience: draft.experience, leadership: draft.leadership }, null, 2).substring(0, 4000)}${extra}
+${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
 
-Responde SOLO con el JSON del CV completo (misma estructura del borrador con bullets mejorados):
+Responde SOLO con JSON: {"experience": [...], "leadership": [...], "skills": {"technical": "...", "language": "...", "laboratory": "...", "interests": "..."}}
 JSON:`
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -508,6 +510,7 @@ JSON:`
     ...draft,
     experience: parsed.experience ?? draft.experience,
     leadership: parsed.leadership ?? draft.leadership,
+    skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
   }
 }
 
@@ -540,6 +543,7 @@ async function generateWithOpenAICompat(
     ...draft,
     experience: parsed.experience ?? draft.experience,
     leadership: parsed.leadership ?? draft.leadership,
+    skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
   }
 }
 
@@ -613,10 +617,11 @@ export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
     draftItems.forEach((draftItem, sectionIdx) => {
       const optimizedItem = optimizedItems[sectionIdx]
       if (!optimizedItem) return
-      const maxLen = Math.max(draftItem.bullets.length, optimizedItem.bullets.length)
+      const optimizedBullets = optimizedItem.bullets ?? []
+      const maxLen = Math.max(draftItem.bullets.length, optimizedBullets.length)
       for (let i = 0; i < maxLen; i++) {
         const orig = draftItem.bullets[i] ?? ''
-        const prop = optimizedItem.bullets[i] ?? ''
+        const prop = optimizedBullets[i] ?? ''
         const changed = orig.trim() !== prop.trim()
         diffs.push({
           key: `${draftItem.id}-${i}`,

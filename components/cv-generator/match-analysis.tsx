@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CheckCircle2, AlertCircle, AlertTriangle, FileText, Key, Sparkles } from 'lucide-react'
+import { CheckCircle2, AlertCircle, AlertTriangle, FileText, Key, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ATS_VERBS_RE, improveNonAtsBullets } from '@/lib/ai-cv'
 import type { CvData } from '@/types/experience'
@@ -97,27 +97,20 @@ function getNonAtsBullets(cv: CvData): number {
 interface MatchAnalysisProps {
   jobOfferText: string
   draftCv: CvData
-  customMessage: string
   settings: SettingsDocument | null
-  onCustomMessageChange: (msg: string) => void
   onDraftCvChange: (cv: CvData) => void
-  onUseDraft: () => void
-  onOptimize: () => void
-  isOptimizing?: boolean
+  onContinue: () => void
 }
 
 export function MatchAnalysis({
   jobOfferText,
   draftCv,
-  customMessage,
   settings,
-  onCustomMessageChange,
   onDraftCvChange,
-  onUseDraft,
-  onOptimize,
-  isOptimizing,
+  onContinue,
 }: MatchAnalysisProps) {
   const [isFixingAts, setIsFixingAts] = useState(false)
+  const [alertsOpen, setAlertsOpen] = useState(true)
 
   const keywords = useMemo(() => extractKeywords(jobOfferText), [jobOfferText])
   const allCvText = useMemo(() => cvText(draftCv), [draftCv])
@@ -150,6 +143,18 @@ export function MatchAnalysis({
     matchScore >= 40 ? 'bg-amber-500' :
     'bg-red-500'
 
+  // Count alert severities
+  const pageVariant = pages > 3 ? 'error' : pages > 2 ? 'warn' : 'ok'
+  const warnCount = [
+    nonAtsCount > 0 ? 1 : 0,
+    missingKeywords.length > 0 ? 1 : 0,
+    pageVariant === 'warn' ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
+  const errorCount = [
+    pageVariant === 'error' ? 1 : 0,
+    totalBullets === 0 ? 1 : 0,
+  ].reduce((a, b) => a + b, 0)
+
   async function handleFixAts() {
     if (!settings?.aiApiKey) return
     setIsFixingAts(true)
@@ -159,10 +164,10 @@ export function MatchAnalysis({
   }
 
   return (
-    <div className="space-y-4">
-      {/* Match Score */}
+    <div className="flex flex-col h-full gap-3">
+      {/* Match Score — scrollable section with max-height */}
       {keywords.length > 0 && (
-        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+        <div className="rounded-lg border border-border/60 p-3 space-y-2 flex-shrink-0">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold text-foreground">Match con la oferta</p>
             <span className={cn('text-lg font-bold', scoreColor)}>{matchScore}%</span>
@@ -170,7 +175,7 @@ export function MatchAnalysis({
           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div className={cn('h-full rounded-full transition-all duration-500', scoreBg)} style={{ width: `${matchScore}%` }} />
           </div>
-          <div className="space-y-1">
+          <div className="overflow-y-auto max-h-[140px] space-y-1 pr-0.5">
             {foundKeywords.map(({ keyword }) => (
               <div key={keyword} className="flex items-center gap-1.5">
                 <CheckCircle2 className="h-3 w-3 shrink-0 text-green-500" />
@@ -188,99 +193,105 @@ export function MatchAnalysis({
         </div>
       )}
 
-      {/* Alerts */}
-      <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-foreground">Alertas</p>
+      {/* Alerts — Accordion */}
+      <div className="rounded-lg border border-border/60 overflow-hidden flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setAlertsOpen(!alertsOpen)}
+          className="w-full flex items-center justify-between px-3 py-2 bg-card hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            {alertsOpen
+              ? <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              : <ChevronRight className="h-3 w-3 text-muted-foreground" />
+            }
+            <span className="text-xs font-semibold text-foreground">Alertas</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {warnCount > 0 && (
+              <span className="rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400 px-1.5 py-0 text-[10px] font-semibold">
+                {warnCount}⚠
+              </span>
+            )}
+            {errorCount > 0 && (
+              <span className="rounded-full bg-red-500/15 text-red-700 dark:text-red-400 px-1.5 py-0 text-[10px] font-semibold">
+                {errorCount}✕
+              </span>
+            )}
+            {warnCount === 0 && errorCount === 0 && (
+              <span className="rounded-full bg-green-500/15 text-green-700 dark:text-green-400 px-1.5 py-0 text-[10px] font-semibold">
+                ✓ OK
+              </span>
+            )}
+          </div>
+        </button>
 
-        <AlertRow
-          icon={<FileText className="h-3.5 w-3.5" />}
-          variant={pages > 3 ? 'error' : pages > 2 ? 'warn' : 'ok'}
-          message={
-            pages > 3 ? `~${pages.toFixed(1)} páginas — reduce bullets` :
-            pages > 2 ? `~${pages.toFixed(1)} páginas — considera reducir` :
-            `~${pages.toFixed(1)} página${pages >= 1.5 ? 's' : ''} estimada`
-          }
-        />
+        {alertsOpen && (
+          <div className="px-3 pb-3 pt-2 space-y-1.5 overflow-y-auto max-h-[200px] border-t border-border/30">
+            <AlertRow
+              icon={<FileText className="h-3.5 w-3.5" />}
+              variant={pageVariant}
+              message={
+                pages > 3 ? `~${pages.toFixed(1)} páginas — reduce bullets` :
+                pages > 2 ? `~${pages.toFixed(1)} páginas — considera reducir` :
+                `~${pages.toFixed(1)} página${pages >= 1.5 ? 's' : ''} estimada`
+              }
+            />
 
-        {nonAtsCount > 0 && (
-          <div className="rounded-md px-2.5 py-1.5 text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              <span className="flex-1">{nonAtsCount} bullet{nonAtsCount > 1 ? 's' : ''} sin verbo de impacto</span>
-              {settings?.aiApiKey && (
-                <button
-                  type="button"
-                  disabled={isFixingAts}
-                  onClick={handleFixAts}
-                  className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/20 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
-                >
-                  {isFixingAts
-                    ? <span className="h-2.5 w-2.5 animate-spin rounded-full border border-current border-t-transparent" />
-                    : <Sparkles className="h-2.5 w-2.5" />}
-                  {isFixingAts ? 'Mejorando…' : 'Mejorar'}
-                </button>
-              )}
-            </div>
+            {nonAtsCount > 0 && (
+              <div className="rounded-md px-2.5 py-1.5 text-xs bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                  <span className="flex-1">{nonAtsCount} bullet{nonAtsCount > 1 ? 's' : ''} sin verbo de impacto</span>
+                  {settings?.aiApiKey && (
+                    <button
+                      type="button"
+                      disabled={isFixingAts}
+                      onClick={handleFixAts}
+                      className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium bg-amber-500/20 hover:bg-amber-500/30 transition-colors disabled:opacity-50"
+                    >
+                      {isFixingAts
+                        ? <span className="h-2.5 w-2.5 animate-spin rounded-full border border-current border-t-transparent" />
+                        : <Sparkles className="h-2.5 w-2.5" />}
+                      {isFixingAts ? 'Mejorando…' : 'Mejorar'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {missingKeywords.length > 0 && (
+              <AlertRow
+                icon={<Key className="h-3.5 w-3.5" />}
+                variant="warn"
+                message={`${missingKeywords.length} requisito${missingKeywords.length > 1 ? 's' : ''} clave sin cubrir`}
+              />
+            )}
+
+            {totalBullets === 0 && (
+              <AlertRow icon={<AlertCircle className="h-3.5 w-3.5" />} variant="error" message="Agrega al menos un bullet al CV" />
+            )}
           </div>
         )}
+      </div>
 
-        {missingKeywords.length > 0 && (
-          <AlertRow
-            icon={<Key className="h-3.5 w-3.5" />}
-            variant="warn"
-            message={`${missingKeywords.length} requisito${missingKeywords.length > 1 ? 's' : ''} clave sin cubrir`}
-          />
+      {/* Spacer pushes continue button to bottom */}
+      <div className="flex-1" />
+
+      {/* Continue button — always at bottom */}
+      <button
+        type="button"
+        onClick={onContinue}
+        disabled={totalBullets === 0}
+        className={cn(
+          'w-full rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 shrink-0',
+          totalBullets > 0
+            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+            : 'bg-muted text-muted-foreground cursor-not-allowed'
         )}
-
-        {totalBullets === 0 && (
-          <AlertRow icon={<AlertCircle className="h-3.5 w-3.5" />} variant="error" message="Agrega al menos un bullet al CV" />
-        )}
-      </div>
-
-      {/* Custom message */}
-      <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-foreground">Contexto adicional para la IA</p>
-        <textarea
-          value={customMessage}
-          onChange={(e) => onCustomMessageChange(e.target.value)}
-          placeholder='Ej: "Menciona experiencia con Go aunque sea de proyectos personales"'
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs resize-y min-h-[64px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/60"
-        />
-      </div>
-
-      {/* Action buttons */}
-      <div className="space-y-2">
-        <button
-          type="button"
-          onClick={onOptimize}
-          disabled={totalBullets === 0 || isOptimizing}
-          className={cn(
-            'w-full rounded-md px-4 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2',
-            totalBullets > 0 && !isOptimizing
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-              : 'bg-muted text-muted-foreground cursor-not-allowed'
-          )}
-        >
-          {isOptimizing ? (
-            <><div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" /> Optimizando…</>
-          ) : (
-            <><Sparkles className="h-3.5 w-3.5" /> Optimizar con IA</>
-          )}
-        </button>
-        <button
-          type="button"
-          onClick={onUseDraft}
-          disabled={totalBullets === 0 || isOptimizing}
-          className={cn(
-            'w-full rounded-md px-4 py-2 text-xs font-medium transition-colors border',
-            totalBullets > 0 && !isOptimizing
-              ? 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/30'
-              : 'border-border/40 text-muted-foreground/40 cursor-not-allowed'
-          )}
-        >
-          Usar borrador sin IA →
-        </button>
-      </div>
+      >
+        Continuar →
+      </button>
     </div>
   )
 }

@@ -1,23 +1,29 @@
 'use client'
 
-import { useState } from 'react'
-import { Pencil, Check, X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search, Briefcase, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { MatchAnalysis } from './match-analysis'
 import { CvEditor } from './cv-editor'
 import { AiChat } from './ai-chat'
 import { CvPreviewDialog } from './cv-preview-dialog'
 import { CvOptimizeDialog } from './cv-optimize-dialog'
 import { cn } from '@/lib/utils'
-import { improveBullet } from '@/lib/ai-cv'
 import type { BulletsBySection, BulletState, ChatMessage, ChatStyle } from '@/lib/ai-cv'
 import type { CvData } from '@/types/experience'
 import type { SettingsDocument } from '@/lib/db/schemas'
+
+const OPTIMIZE_SUGGESTIONS = [
+  'Enfócate en habilidades técnicas relevantes',
+  'Optimiza para sistemas ATS',
+  'Añade métricas y resultados cuantificables',
+  'Resalta liderazgo y gestión de equipos',
+]
 
 interface StepGoalsProps {
   cvData: CvData
@@ -25,15 +31,13 @@ interface StepGoalsProps {
   draftCv: CvData
   isAnalyzing: boolean
   jobOfferText: string
-  customMessage: string
   settings: SettingsDocument | null
   isOptimizing?: boolean
   optimizedCv: CvData | null
   onSelectionsChange: (selections: BulletsBySection) => void
   onDraftCvChange: (cv: CvData) => void
-  onCustomMessageChange: (msg: string) => void
-  onUseDraft: () => void
-  onOptimize: () => void
+  onContinue: () => void
+  onOptimize: (msg: string) => void
   onOptimizeConfirm: (cv: CvData) => void
   onOptimizeCancel: () => void
   onBack: () => void
@@ -45,14 +49,12 @@ export function StepGoals({
   draftCv,
   isAnalyzing,
   jobOfferText,
-  customMessage,
   settings,
   isOptimizing,
   optimizedCv,
   onSelectionsChange,
   onDraftCvChange,
-  onCustomMessageChange,
-  onUseDraft,
+  onContinue,
   onOptimize,
   onOptimizeConfirm,
   onOptimizeCancel,
@@ -66,30 +68,114 @@ export function StepGoals({
   const [offerOpen, setOfferOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [offerSearch, setOfferSearch] = useState('')
+  const [offerMatchIdx, setOfferMatchIdx] = useState(0)
+  const [offerMatchTotal, setOfferMatchTotal] = useState(0)
+  const offerListRef = useRef<HTMLDivElement>(null)
+  const [bulletSearch, setBulletSearch] = useState('')
+  const [matchIdx, setMatchIdx] = useState(0)
+  const [matchTotal, setMatchTotal] = useState(0)
+  const listRef = useRef<HTMLDivElement>(null)
+  const [optimizeContextOpen, setOptimizeContextOpen] = useState(false)
+  const [optimizeMessage, setOptimizeMessage] = useState('')
 
   const totalSelected = Object.values(selections).reduce(
     (sum, bullets) => sum + bullets.filter((b) => b.selected).length,
     0
   )
 
+  useEffect(() => {
+    if (!bulletSearch.trim()) {
+      setMatchTotal(0)
+      setMatchIdx(0)
+      return
+    }
+    const timer = setTimeout(() => {
+      if (!listRef.current) return
+      const marks = listRef.current.querySelectorAll('mark[data-match]')
+      const total = marks.length
+      setMatchTotal(total)
+      setMatchIdx(0)
+      if (marks[0]) {
+        highlightMark(marks, 0)
+        marks[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [bulletSearch])
+
+  useEffect(() => {
+    if (!offerSearch.trim()) {
+      setOfferMatchTotal(0)
+      setOfferMatchIdx(0)
+      return
+    }
+    const timer = setTimeout(() => {
+      if (!offerListRef.current) return
+      const marks = offerListRef.current.querySelectorAll('mark[data-match]')
+      const total = marks.length
+      setOfferMatchTotal(total)
+      setOfferMatchIdx(0)
+      if (marks[0]) {
+        highlightMark(marks, 0)
+        marks[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [offerSearch])
+
+  function navigateOfferMatch(dir: 1 | -1) {
+    if (!offerListRef.current) return
+    const marks = offerListRef.current.querySelectorAll('mark[data-match]')
+    const total = marks.length
+    if (total === 0) return
+    const nextIdx = (offerMatchIdx + dir + total) % total
+    setOfferMatchIdx(nextIdx)
+    setOfferMatchTotal(total)
+    highlightMark(marks, nextIdx)
+    marks[nextIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
+  function highlightMark(marks: NodeListOf<Element>, idx: number) {
+    marks.forEach((m, i) => {
+      const el = m as HTMLElement
+      el.style.boxShadow = i === idx ? '0 0 0 2px #f59e0b' : ''
+    })
+  }
+
+  function navigateMatch(dir: 1 | -1) {
+    if (!listRef.current) return
+    const marks = listRef.current.querySelectorAll('mark[data-match]')
+    const total = marks.length
+    if (total === 0) return
+    const nextIdx = (matchIdx + dir + total) % total
+    setMatchIdx(nextIdx)
+    setMatchTotal(total)
+    highlightMark(marks, nextIdx)
+    marks[nextIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }
+
   function setItemBullets(id: string, bullets: BulletState[]) {
     onSelectionsChange({ ...selections, [id]: bullets })
   }
 
-  const sections = [
-    ...cvData.experience.map((exp) => ({
-      id: exp.id,
-      header: exp.organization,
-      subheader: exp.title,
-      dates: exp.dates,
-    })),
-    ...cvData.leadership.map((lead) => ({
-      id: lead.id,
-      header: lead.organization,
-      subheader: lead.role,
-      dates: lead.dates,
-    })),
-  ]
+  const experienceSections = cvData.experience.map((exp) => ({
+    id: exp.id,
+    header: exp.organization,
+    subheader: exp.title,
+    dates: exp.dates,
+  }))
+
+  const leadershipSections = cvData.leadership.map((lead) => ({
+    id: lead.id,
+    header: lead.organization,
+    subheader: lead.role,
+    dates: lead.dates,
+  }))
+
+  function handleOptimizeConfirmClick() {
+    setOptimizeContextOpen(false)
+    onOptimize(optimizeMessage)
+  }
 
   return (
     <div className="space-y-3">
@@ -102,35 +188,55 @@ export function StepGoals({
 
       {/* Toolbar row */}
       <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={() => setPreviewOpen(true)}
-          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <Eye className="h-3.5 w-3.5" />
-          Vista previa
-        </button>
-        <button
-          type="button"
-          onClick={() => setOfferOpen(true)}
-          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <FileText className="h-3.5 w-3.5" />
-          Ver oferta laboral
-        </button>
-        <button
-          type="button"
-          onClick={() => setChatOpen(true)}
-          className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
-          Chat con IA
-          {chatMessages.length > 0 && (
-            <span className="rounded-full bg-primary/20 px-1.5 text-[10px] font-medium text-primary">
-              {chatMessages.length}
-            </span>
-          )}
-        </button>
+        <Tooltip label="Previsualiza el CV y verifica que no supere 1 página">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Vista previa
+          </button>
+        </Tooltip>
+        <Tooltip label="Consulta el texto completo de la oferta laboral">
+          <button
+            type="button"
+            onClick={() => setOfferOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Ver oferta
+          </button>
+        </Tooltip>
+        <Tooltip label="Ajusta bullets individuales con ayuda del chat de IA">
+          <button
+            type="button"
+            onClick={() => setChatOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Chat con IA
+            {chatMessages.length > 0 && (
+              <span className="rounded-full bg-primary/20 px-1.5 text-[10px] font-medium text-primary">
+                {chatMessages.length}
+              </span>
+            )}
+          </button>
+        </Tooltip>
+        <Tooltip label="La IA optimiza todo el CV para hacer mejor match con la oferta">
+          <button
+            type="button"
+            disabled={isOptimizing}
+            onClick={() => setOptimizeContextOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 hover:bg-primary/10 px-2.5 py-1.5 text-xs text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isOptimizing
+              ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              : <Sparkles className="h-3.5 w-3.5" />
+            }
+            {isOptimizing ? 'Optimizando…' : 'Optimizar con IA'}
+          </button>
+        </Tooltip>
       </div>
 
       {/* 3-column layout */}
@@ -173,12 +279,68 @@ export function StepGoals({
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-0 rounded-md border border-border/40 min-h-0">
-            {sections.map((section) => {
+          {/* Search bar — fixed */}
+          <div className="flex items-center gap-1.5 rounded-md border border-input bg-muted/30 px-2.5 py-1.5 shrink-0">
+            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={bulletSearch}
+              onChange={(e) => setBulletSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); navigateMatch(e.shiftKey ? -1 : 1) }
+                if (e.key === 'Escape') setBulletSearch('')
+              }}
+              placeholder="Buscar tecnología, herramienta…"
+              className="flex-1 bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground/50 min-w-0"
+            />
+            {bulletSearch && (
+              <>
+                {matchTotal > 0 ? (
+                  <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                    {matchIdx + 1}/{matchTotal}
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-red-500/70 shrink-0">Sin resultados</span>
+                )}
+                <div className="flex items-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => navigateMatch(-1)}
+                    disabled={matchTotal === 0}
+                    title="Anterior (Shift+Enter)"
+                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateMatch(1)}
+                    disabled={matchTotal === 0}
+                    title="Siguiente (Enter)"
+                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <button type="button" onClick={() => setBulletSearch('')} className="text-muted-foreground/60 hover:text-foreground shrink-0">
+                  <X className="h-3 w-3" />
+                </button>
+              </>
+            )}
+          </div>
+
+          <div ref={listRef} className="flex-1 overflow-y-auto rounded-md border border-border/40 min-h-0">
+            {/* Experiencia */}
+            {experienceSections.some((s) => (selections[s.id] ?? []).length > 0) && (
+              <div className="sticky top-0 z-20 flex items-center gap-2 px-3 py-1.5 bg-muted/60 backdrop-blur-md border-b border-border/40">
+                <Briefcase className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Experiencia</span>
+              </div>
+            )}
+            {experienceSections.map((section) => {
               const bullets = selections[section.id] ?? []
               const selectedCount = bullets.filter((b) => b.selected).length
               if (bullets.length === 0) return null
-
               return (
                 <SectionGroup
                   key={section.id}
@@ -187,8 +349,32 @@ export function StepGoals({
                   dates={section.dates}
                   bullets={bullets}
                   selectedCount={selectedCount}
-                  jobOfferText={jobOfferText}
-                  settings={settings}
+                  searchQuery={bulletSearch}
+                  onChange={(updated) => setItemBullets(section.id, updated)}
+                />
+              )
+            })}
+
+            {/* Liderazgo */}
+            {leadershipSections.some((s) => (selections[s.id] ?? []).length > 0) && (
+              <div className="sticky top-0 z-20 flex items-center gap-2 px-3 py-1.5 bg-muted/60 backdrop-blur-md border-y border-border/40">
+                <Users className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Liderazgo</span>
+              </div>
+            )}
+            {leadershipSections.map((section) => {
+              const bullets = selections[section.id] ?? []
+              const selectedCount = bullets.filter((b) => b.selected).length
+              if (bullets.length === 0) return null
+              return (
+                <SectionGroup
+                  key={section.id}
+                  header={section.header}
+                  subheader={section.subheader}
+                  dates={section.dates}
+                  bullets={bullets}
+                  selectedCount={selectedCount}
+                  searchQuery={bulletSearch}
                   onChange={(updated) => setItemBullets(section.id, updated)}
                 />
               )
@@ -211,18 +397,14 @@ export function StepGoals({
           />
         </div>
 
-        {/* Column 3: Match analysis */}
-        <div className="flex flex-col gap-3 min-h-0 overflow-y-auto">
+        {/* Column 3: Match analysis — fills height internally */}
+        <div className="min-h-0 flex flex-col">
           <MatchAnalysis
             jobOfferText={jobOfferText}
             draftCv={draftCv}
-            customMessage={customMessage}
             settings={settings}
-            onCustomMessageChange={onCustomMessageChange}
             onDraftCvChange={onDraftCvChange}
-            onUseDraft={onUseDraft}
-            onOptimize={onOptimize}
-            isOptimizing={isOptimizing}
+            onContinue={onContinue}
           />
         </div>
       </div>
@@ -237,23 +419,56 @@ export function StepGoals({
             </DialogTitle>
           </DialogHeader>
           {jobOfferText && (
-            <div className="shrink-0 flex items-center gap-2 rounded-md border border-input bg-muted/30 px-2.5 py-1.5">
+            <div className="shrink-0 flex items-center gap-1.5 rounded-md border border-input bg-muted/30 px-2.5 py-1.5">
               <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
                 value={offerSearch}
                 onChange={(e) => setOfferSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); navigateOfferMatch(e.shiftKey ? -1 : 1) }
+                  if (e.key === 'Escape') setOfferSearch('')
+                }}
                 placeholder="Buscar en la oferta…"
-                className="flex-1 bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground/50"
+                className="flex-1 bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground/50 min-w-0"
               />
               {offerSearch && (
-                <button type="button" onClick={() => setOfferSearch('')} className="text-muted-foreground/60 hover:text-foreground">
-                  <X className="h-3 w-3" />
-                </button>
+                <>
+                  {offerMatchTotal > 0 ? (
+                    <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                      {offerMatchIdx + 1}/{offerMatchTotal}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-red-500/70 shrink-0">Sin resultados</span>
+                  )}
+                  <div className="flex items-center shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => navigateOfferMatch(-1)}
+                      disabled={offerMatchTotal === 0}
+                      title="Anterior (Shift+Enter)"
+                      className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigateOfferMatch(1)}
+                      disabled={offerMatchTotal === 0}
+                      title="Siguiente (Enter)"
+                      className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => setOfferSearch('')} className="text-muted-foreground/60 hover:text-foreground shrink-0">
+                    <X className="h-3 w-3" />
+                  </button>
+                </>
               )}
             </div>
           )}
-          <div className="flex-1 overflow-y-auto">
+          <div ref={offerListRef} className="flex-1 overflow-y-auto">
             {jobOfferText ? (
               <HighlightedJobOffer text={jobOfferText} query={offerSearch} />
             ) : (
@@ -263,16 +478,64 @@ export function StepGoals({
         </DialogContent>
       </Dialog>
 
+      {/* Optimize context modal */}
+      <Dialog open={optimizeContextOpen} onOpenChange={setOptimizeContextOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Optimizar CV con IA
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              La IA revisará cada bullet y las habilidades técnicas para hacerlos match con la oferta. Puedes añadir contexto adicional (opcional).
+            </p>
+            <Textarea
+              placeholder="Ej: Enfócate en mi experiencia con microservicios, ignora los proyectos de 2019…"
+              value={optimizeMessage}
+              onChange={(e) => setOptimizeMessage(e.target.value)}
+              className="min-h-[80px] text-xs resize-none"
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {OPTIMIZE_SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setOptimizeMessage(s)}
+                  className={cn(
+                    'rounded-full border px-2.5 py-0.5 text-[10px] transition-colors',
+                    optimizeMessage === s
+                      ? 'border-primary/40 bg-primary/10 text-primary'
+                      : 'border-border/60 bg-muted/40 text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setOptimizeContextOpen(false)}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={handleOptimizeConfirmClick} className="gap-1.5">
+              <Sparkles className="h-3.5 w-3.5" />
+              Optimizar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* CV Preview dialog */}
       <CvPreviewDialog cv={draftCv} open={previewOpen} onOpenChange={setPreviewOpen} />
 
-      {/* AI Optimize dialog */}
+      {/* AI Optimize diff dialog */}
       <CvOptimizeDialog
-        open={optimizedCv !== null || (isOptimizing ?? false)}
+        open={optimizedCv !== null}
         onOpenChange={(o) => { if (!o) onOptimizeCancel() }}
         draftCv={draftCv}
         optimizedCv={optimizedCv}
-        isLoading={isOptimizing ?? false}
         onConfirm={onOptimizeConfirm}
       />
 
@@ -311,6 +574,19 @@ export function StepGoals({
   )
 }
 
+function Tooltip({ children, label }: { children: React.ReactNode; label: string }) {
+  return (
+    <div className="relative group">
+      {children}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 pointer-events-none">
+        <div className="rounded-md border border-border/60 bg-popover px-2.5 py-1.5 text-[10px] text-popover-foreground shadow-md whitespace-nowrap max-w-[200px] text-center leading-snug">
+          {label}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function HighlightedJobOffer({ text, query }: { text: string; query: string }) {
   if (!query.trim()) {
     return <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">{text}</pre>
@@ -323,7 +599,7 @@ function HighlightedJobOffer({ text, query }: { text: string; query: string }) {
     <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} className="bg-yellow-300 dark:bg-yellow-600/60 text-foreground rounded-sm px-0.5">
+          <mark key={i} data-match className="bg-yellow-200 dark:bg-yellow-600/50 text-foreground rounded-sm px-0.5">
             {part}
           </mark>
         ) : (
@@ -340,8 +616,7 @@ function SectionGroup({
   dates,
   bullets,
   selectedCount,
-  jobOfferText,
-  settings,
+  searchQuery,
   onChange,
 }: {
   header: string
@@ -349,16 +624,10 @@ function SectionGroup({
   dates: string
   bullets: BulletState[]
   selectedCount: number
-  jobOfferText: string
-  settings: SettingsDocument | null
+  searchQuery?: string
   onChange: (bullets: BulletState[]) => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
-  const [editingIdx, setEditingIdx] = useState<number | null>(null)
-  const [editText, setEditText] = useState('')
-  const [aiInputIdx, setAiInputIdx] = useState<number | null>(null)
-  const [aiInstruction, setAiInstruction] = useState('')
-  const [aiLoadingIdx, setAiLoadingIdx] = useState<number | null>(null)
 
   function toggle(i: number) {
     const next = [...bullets]
@@ -366,41 +635,10 @@ function SectionGroup({
     onChange(next)
   }
 
-  function startEdit(i: number) {
-    setEditingIdx(i)
-    setEditText(bullets[i].text)
-    setAiInputIdx(null)
-  }
-
-  function saveEdit(i: number) {
-    const next = [...bullets]
-    next[i] = { ...next[i], text: editText }
-    onChange(next)
-    setEditingIdx(null)
-  }
-
-  function openAiInput(i: number) {
-    setAiInputIdx(i)
-    setAiInstruction('')
-    setEditingIdx(null)
-  }
-
-  async function handleAiImprove(i: number) {
-    if (!aiInstruction.trim() || !settings) return
-    setAiLoadingIdx(i)
-    const improved = await improveBullet(bullets[i].text, aiInstruction, jobOfferText, settings)
-    const next = [...bullets]
-    next[i] = { ...next[i], text: improved }
-    onChange(next)
-    setAiInputIdx(null)
-    setAiInstruction('')
-    setAiLoadingIdx(null)
-  }
-
   return (
     <div className="border-b border-border/40 last:border-0">
       <div
-        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors sticky top-0 z-10 bg-card border-b border-border/30"
+        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors sticky top-7 z-10 bg-card border-b border-border/30"
         onClick={() => setCollapsed(!collapsed)}
       >
         <div className="flex-1 min-w-0">
@@ -447,95 +685,33 @@ function SectionGroup({
                   onCheckedChange={() => toggle(i)}
                   className="mt-0.5 shrink-0"
                 />
-
-                {editingIdx === i ? (
-                  <div className="flex-1 space-y-1.5">
-                    <Textarea
-                      value={editText}
-                      onChange={(e) => setEditText(e.target.value)}
-                      className="min-h-[60px] text-xs resize-y"
-                      autoFocus
-                    />
-                    <div className="flex gap-1">
-                      <Button size="sm" className="h-6 text-xs gap-1" onClick={() => saveEdit(i)}>
-                        <Check className="h-3 w-3" /> Guardar
-                      </Button>
-                      <Button variant="ghost" size="sm" className="h-6 text-xs gap-1" onClick={() => setEditingIdx(null)}>
-                        <X className="h-3 w-3" /> Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] leading-relaxed">{bullet.text}</p>
-
-                    {aiInputIdx === i && (
-                      <div className="mt-1.5 flex gap-1">
-                        <input
-                          type="text"
-                          autoFocus
-                          value={aiInstruction}
-                          onChange={(e) => setAiInstruction(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleAiImprove(i)
-                            if (e.key === 'Escape') setAiInputIdx(null)
-                          }}
-                          placeholder='Ej: "hazlo más conciso"'
-                          className="flex-1 rounded border border-input bg-background px-2 py-0.5 text-[10px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
-                        />
-                        <button
-                          type="button"
-                          disabled={!aiInstruction.trim() || aiLoadingIdx === i}
-                          onClick={() => handleAiImprove(i)}
-                          className="flex items-center gap-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors"
-                        >
-                          {aiLoadingIdx === i
-                            ? <span className="h-2.5 w-2.5 animate-spin rounded-full border border-primary-foreground border-t-transparent inline-block" />
-                            : <Sparkles className="h-2.5 w-2.5" />
-                          }
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setAiInputIdx(null)}
-                          className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {editingIdx !== i && (
-                  <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
-                    {settings?.aiApiKey && (
-                      <button
-                        type="button"
-                        onClick={() => aiInputIdx === i ? setAiInputIdx(null) : openAiInput(i)}
-                        className={cn(
-                          'transition-colors p-0.5',
-                          aiInputIdx === i ? 'text-primary' : 'text-muted-foreground/40 hover:text-primary'
-                        )}
-                        title="Mejorar con IA"
-                      >
-                        <Sparkles className="h-3 w-3" />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => startEdit(i)}
-                      className="text-muted-foreground/40 hover:text-foreground transition-colors p-0.5"
-                      title="Editar"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
+                <p className="flex-1 text-[11px] leading-relaxed min-w-0">
+                  <HighlightText text={bullet.text} query={searchQuery ?? ''} />
+                </p>
               </div>
             ))}
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+function HighlightText({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={i} data-match className="bg-yellow-200 dark:bg-yellow-600/50 text-foreground rounded-sm px-0.5">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
   )
 }
