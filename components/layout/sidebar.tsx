@@ -11,6 +11,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  FileOutput,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
@@ -28,6 +29,7 @@ const navItems = [
   { href: '/applications', label: 'Postulaciones', icon: LayoutDashboard },
   { href: '/experience', label: 'Mi Experiencia', icon: FileText },
   { href: '/cv-generator', label: 'Generar CV', icon: Sparkles },
+  { href: '/cvs', label: 'Mis CVs', icon: FileOutput },
   { href: '/settings', label: 'Configuración', icon: Settings },
 ]
 

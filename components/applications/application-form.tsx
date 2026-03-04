@@ -160,7 +160,7 @@ export function ApplicationForm({
       if (usedAI) {
         setParseNotice({ type: 'ai', msg: 'Campos extraídos con IA ✓' })
       } else if (settings?.aiApiKey) {
-        setParseNotice({ type: 'regex', msg: 'Extracción básica (error de IA). Revisa los campos.' })
+        setParseNotice({ type: 'regex', msg: 'Modelo no soportado aún. Extracción básica, revisa los campos.' })
       } else {
         setParseNotice({
           type: 'regex',

@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Heart, MoreHorizontal, Pencil, Trash2, Clock } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Heart, MoreHorizontal, Pencil, Trash2, Eye } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -28,14 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
-import { ApplicationTimeline } from './application-timeline'
 import type { ApplicationDocument } from '@/lib/db/schemas'
 import {
   APPLICATION_STATUS_LABELS,
@@ -68,8 +61,8 @@ export function ApplicationsTable({
   onStatusChange,
   onToggleFavorite,
 }: ApplicationsTableProps) {
+  const router = useRouter()
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [timelineApp, setTimelineApp] = useState<ApplicationDocument | null>(null)
 
   async function handleDelete(id: string) {
     setDeletingId(id)
@@ -232,16 +225,13 @@ export function ApplicationsTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => router.push(`/applications/${app.id}`)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Ver detalle
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onEdit(app)}>
                         <Pencil className="mr-2 h-4 w-4" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => setTimelineApp(app)}
-                        disabled={!app.timeline?.length}
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Ver historial
+                        Edición rápida
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -261,18 +251,6 @@ export function ApplicationsTable({
         </Table>
       </div>
 
-      {/* Timeline Sheet */}
-      <Sheet open={!!timelineApp} onOpenChange={(v) => !v && setTimelineApp(null)}>
-        <SheetContent className="sm:max-w-sm">
-          <SheetHeader className="pb-4">
-            <SheetTitle>Historial de estados</SheetTitle>
-            <SheetDescription>
-              {timelineApp?.company} — {timelineApp?.position}
-            </SheetDescription>
-          </SheetHeader>
-          {timelineApp && <ApplicationTimeline entries={timelineApp.timeline ?? []} />}
-        </SheetContent>
-      </Sheet>
     </>
   )
 }

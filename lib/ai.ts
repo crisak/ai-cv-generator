@@ -73,6 +73,11 @@ function extractWithRegex(text: string): ParsedJobOffer {
 
 // ── AI-powered extraction ─────────────────────────────────────────────────────
 
+const EXTRACTION_PROMPT = (text: string) =>
+  `Extrae la información de esta oferta laboral como JSON con campos: company (string), position (string), salaryOffered (número sin texto), salaryCurrency (COP/USD/EUR), benefits (array de strings).
+
+Oferta: ${text.substring(0, 4000)}`
+
 async function extractWithClaude(text: string, apiKey: string): Promise<ParsedJobOffer> {
   const prompt = `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
 
@@ -113,29 +118,27 @@ JSON:`
   return JSON.parse(jsonMatch[0]) as ParsedJobOffer
 }
 
-async function extractWithGPT(text: string, apiKey: string): Promise<ParsedJobOffer> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+async function extractWithOpenAICompat(
+  baseUrl: string,
+  model: string,
+  apiKey: string,
+  text: string
+): Promise<ParsedJobOffer> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model,
       max_tokens: 600,
       response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'user',
-          content: `Extrae la información de esta oferta laboral como JSON con campos: company, position, salaryOffered (número), salaryCurrency (COP/USD/EUR), benefits (array).
-
-Oferta: ${text.substring(0, 4000)}`,
-        },
-      ],
+      messages: [{ role: 'user', content: EXTRACTION_PROMPT(text) }],
     }),
   })
 
-  if (!res.ok) throw new Error(`OpenAI API error: ${res.status}`)
+  if (!res.ok) throw new Error(`API error ${res.status}`)
   const data = await res.json()
   return JSON.parse(data.choices[0].message.content) as ParsedJobOffer
 }
@@ -157,16 +160,17 @@ export async function parseJobOffer(
     if (model === 'claude') {
       result = await extractWithClaude(text, settings.aiApiKey)
     } else if (model === 'gpt') {
-      result = await extractWithGPT(text, settings.aiApiKey)
+      result = await extractWithOpenAICompat('https://api.openai.com/v1', 'gpt-4o-mini', settings.aiApiKey, text)
+    } else if (model === 'deepseek') {
+      result = await extractWithOpenAICompat('https://api.deepseek.com/v1', 'deepseek-chat', settings.aiApiKey, text)
     } else {
-      // Other models: fallback to regex for now
+      // Gemini, Grok: not yet implemented — fallback to regex
       result = extractWithRegex(text)
       return { result, usedAI: false }
     }
 
     return { result, usedAI: true }
   } catch {
-    // On AI error, fall back to regex
     return { result: extractWithRegex(text), usedAI: false }
   }
 }

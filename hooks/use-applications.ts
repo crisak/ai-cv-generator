@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 import { useDb } from './use-db'
-import type { ApplicationDocument, TimelineEntry } from '@/lib/db/schemas'
+import type { ApplicationDocument, TimelineEntry, TimelineFile } from '@/lib/db/schemas'
 import type { ApplicationStatus } from '@/types/cv'
 
 export type ApplicationInput = Omit<
@@ -12,6 +12,26 @@ export type ApplicationInput = Omit<
 > & {
   cvId?: string
   timeline?: TimelineEntry[]
+}
+
+export type NewTimelineEntry = {
+  title: string
+  status: ApplicationStatus
+  date: string
+  deadline?: string
+  notes: string
+  files: TimelineFile[]
+}
+
+export const STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: 'Postulado',
+  phone_screen: 'Llamada inicial',
+  technical: 'Entrevista técnica',
+  hr_interview: 'Entrevista HR',
+  offer: 'Oferta recibida',
+  rejected: 'Rechazado',
+  accepted: 'Aceptado',
+  withdrawn: 'Retirado',
 }
 
 export function useApplications() {
@@ -38,8 +58,10 @@ export function useApplications() {
         {
           id: uuidv4(),
           status: input.status,
+          title: STATUS_LABELS[input.status] ?? 'Postulación registrada',
           date: now,
           notes: 'Postulación registrada',
+          files: [],
         },
       ]
       const doc = await db.applications.insert({
@@ -64,14 +86,16 @@ export function useApplications() {
       const currentData = doc.toJSON() as ApplicationDocument
       const now = new Date().toISOString()
 
-      // Auto-add timeline entry when status changes
+      // Auto-add timeline entry when status changes (quick inline change from table)
       let timelinePatch: TimelineEntry[] | undefined
       if (patch.status && patch.status !== currentData.status) {
         const newEntry: TimelineEntry = {
           id: uuidv4(),
           status: patch.status as ApplicationStatus,
+          title: STATUS_LABELS[patch.status as ApplicationStatus] ?? '',
           date: now,
           notes: patch.notes ?? '',
+          files: [],
         }
         timelinePatch = [...(currentData.timeline ?? []), newEntry]
       }
@@ -80,6 +104,67 @@ export function useApplications() {
         ...patch,
         ...(timelinePatch ? { timeline: timelinePatch } : {}),
         updatedAt: now,
+      })
+    },
+    [db]
+  )
+
+  const addTimelineEntry = useCallback(
+    async (id: string, entry: NewTimelineEntry) => {
+      if (!db) return
+      const doc = await db.applications.findOne(id).exec()
+      if (!doc) return
+
+      const currentData = doc.toJSON() as ApplicationDocument
+      const newEntry: TimelineEntry = {
+        id: uuidv4(),
+        ...entry,
+      }
+      await doc.patch({
+        timeline: [...(currentData.timeline ?? []), newEntry],
+        status: entry.status,
+        updatedAt: new Date().toISOString(),
+      })
+    },
+    [db]
+  )
+
+  const updateTimelineEntry = useCallback(
+    async (id: string, entryId: string, patch: Partial<Omit<TimelineEntry, 'id'>>) => {
+      if (!db) return
+      const doc = await db.applications.findOne(id).exec()
+      if (!doc) return
+
+      const currentData = doc.toJSON() as ApplicationDocument
+      const updatedTimeline = currentData.timeline.map((e) =>
+        e.id === entryId ? { ...e, ...patch } : e
+      )
+
+      // If status changed in entry, also update application status to match latest entry
+      const latestEntry = updatedTimeline[updatedTimeline.length - 1]
+      await doc.patch({
+        timeline: updatedTimeline,
+        status: latestEntry?.status ?? currentData.status,
+        updatedAt: new Date().toISOString(),
+      })
+    },
+    [db]
+  )
+
+  const deleteTimelineEntry = useCallback(
+    async (id: string, entryId: string) => {
+      if (!db) return
+      const doc = await db.applications.findOne(id).exec()
+      if (!doc) return
+
+      const currentData = doc.toJSON() as ApplicationDocument
+      const updatedTimeline = currentData.timeline.filter((e) => e.id !== entryId)
+      const latestEntry = updatedTimeline[updatedTimeline.length - 1]
+
+      await doc.patch({
+        timeline: updatedTimeline,
+        status: latestEntry?.status ?? currentData.status,
+        updatedAt: new Date().toISOString(),
       })
     },
     [db]
@@ -111,6 +196,9 @@ export function useApplications() {
     isLoading: dbLoading || isLoading,
     createApplication,
     updateApplication,
+    addTimelineEntry,
+    updateTimelineEntry,
+    deleteTimelineEntry,
     deleteApplication,
     toggleFavorite,
   }

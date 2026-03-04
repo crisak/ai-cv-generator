@@ -112,13 +112,6 @@ export const APPLICATION_STATUS_COLORS: Record<ApplicationStatus, string> = {
   withdrawn: 'bg-gray-100 text-gray-600 dark:bg-gray-900/30 dark:text-gray-400',
 }
 
-export interface TimelineEntry {
-  id: string
-  status: ApplicationStatus
-  date: string
-  notes: string
-}
-
 // ── AI / Settings types ────────────────────────────────────────────────────────
 
 export type AIModel = 'claude' | 'gpt' | 'gemini' | 'grok' | 'deepseek'

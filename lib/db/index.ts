@@ -65,6 +65,19 @@ export async function getDatabase(): Promise<AppDatabase> {
             ],
             // ranking field is dropped automatically (not in new schema)
           }),
+          // v1 → v2: add title, deadline, files to each timeline entry
+          2: (oldDoc: Record<string, unknown>) => {
+            const timeline = (oldDoc.timeline as Record<string, unknown>[] | undefined) ?? []
+            return {
+              ...oldDoc,
+              timeline: timeline.map((entry) => ({
+                ...entry,
+                title: entry.title ?? (entry.notes as string) ?? '',
+                deadline: entry.deadline ?? undefined,
+                files: entry.files ?? [],
+              })),
+            }
+          },
         },
       },
       cvs: { schema: cvSchema },

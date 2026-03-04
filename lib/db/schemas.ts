@@ -1,11 +1,21 @@
 import type { RxJsonSchema } from 'rxdb'
 import type { ApplicationStatus, AIModel } from '@/types/cv'
 
+export interface TimelineFile {
+  name: string
+  type: string
+  content: string
+  size: number
+}
+
 export interface TimelineEntry {
   id: string
   status: ApplicationStatus
+  title: string
   date: string
+  deadline?: string
   notes: string
+  files: TimelineFile[]
 }
 
 export interface ApplicationDocument {
@@ -53,7 +63,7 @@ export interface ExperienceDocument {
 }
 
 export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
-  version: 1,
+  version: 2,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -89,8 +99,22 @@ export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
         properties: {
           id: { type: 'string' },
           status: { type: 'string' },
+          title: { type: 'string' },
           date: { type: 'string' },
+          deadline: { type: 'string' },
           notes: { type: 'string' },
+          files: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                name: { type: 'string' },
+                type: { type: 'string' },
+                content: { type: 'string' },
+                size: { type: 'number' },
+              },
+            },
+          },
         },
       },
     },
