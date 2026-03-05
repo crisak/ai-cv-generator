@@ -69,8 +69,8 @@ function extractKeywords(text: string): string[] {
 
 function cvText(cv: CvData): string {
   return [
-    ...cv.experience.flatMap((e) => e.bullets),
-    ...cv.leadership.flatMap((l) => l.bullets),
+    ...cv.experience.flatMap((e) => [e.title, e.organization, ...e.bullets]),
+    ...cv.leadership.flatMap((l) => [l.role, l.organization, ...l.bullets]),
     cv.skills.technical,
     cv.skills.language,
   ].join(' ').toLowerCase()
