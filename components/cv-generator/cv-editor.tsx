@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Pencil, Check, X, Trash2, Plus, Sparkles, ChevronDown, ChevronUp, BookOpen } from 'lucide-react'
+import { Pencil, Check, X, Trash2, Plus, Sparkles, ChevronDown, ChevronUp, BookOpen, Link2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { improveBulletVariants, improveSkills, ATS_VERBS_RE } from '@/lib/ai-cv'
 import type { CvData, ExperienceItem, LeadershipItem, EducationItem } from '@/types/experience'
@@ -13,6 +13,13 @@ interface CvEditorProps {
   settings: SettingsDocument | null
   originalCv?: CvData
   onChange: (cv: CvData) => void
+  onBulletAdded?: (sectionId: string) => void
+  onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
+  onSectionDeleted?: (sectionId: string) => void
+  draftBulletIds?: Record<string, string[]>
+  hoveredBulletId?: string | null
+  onBulletHover?: (id: string) => void
+  onBulletLeave?: () => void
 }
 
 // ── Page length estimate ──────────────────────────────────────────────────────
@@ -467,12 +474,20 @@ function BulletRow({
   settings,
   onUpdate,
   onDelete,
+  bulletId,
+  isLinked,
+  onHover,
+  onLeave,
 }: {
   text: string
   jobOfferText: string
   settings: SettingsDocument | null
   onUpdate: (t: string) => void
   onDelete: () => void
+  bulletId?: string
+  isLinked?: boolean
+  onHover?: () => void
+  onLeave?: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(text)
@@ -506,12 +521,27 @@ function BulletRow({
     )
   }
 
+  // Manual bullets (added by user in col 2) have no col-1 counterpart
+  const isOriginalBullet = !!bulletId && !bulletId.startsWith('manual-')
+
   return (
-    <div className="group relative">
+    <div
+      data-col2-bullet-id={isOriginalBullet ? bulletId : undefined}
+      className={cn(
+        // Layout-stable: ring + rounded always present, only color transitions
+        'group relative rounded-sm ring-1 ring-inset',
+        'transition-[box-shadow] duration-300 ease-out',
+        isLinked ? 'ring-primary/40' : 'ring-transparent'
+      )}
+      onMouseEnter={isOriginalBullet ? onHover : undefined}
+      onMouseLeave={isOriginalBullet ? onLeave : undefined}
+    >
       {/* Background + scan layer — overflow-hidden here so scan line is clipped but popover escapes */}
       <div
         className={cn(
-          'absolute inset-0 overflow-hidden rounded-sm transition-colors duration-200 pointer-events-none',
+          'absolute inset-0 overflow-hidden rounded-sm pointer-events-none',
+          'transition-colors duration-300 ease-out',
+          isLinked && !aiOpen && !aiLoading && 'bg-primary/[0.07]',
           aiOpen && !aiLoading && 'bg-primary/[0.04]',
           aiLoading && 'bg-amber-400/[0.05]'
         )}
@@ -541,6 +571,27 @@ function BulletRow({
         <p className={cn('flex-1 text-xs leading-relaxed transition-opacity duration-200', aiLoading && 'opacity-50')}>
           {text}
         </p>
+        {/* Link2 scroll button — always rendered for layout stability, visible only for original bullets */}
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() =>
+            bulletId &&
+            document
+              .querySelector(`[data-col1-bullet-id="${bulletId}"]`)
+              ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+          }
+          className={cn(
+            'shrink-0 mt-0.5 text-primary/60 hover:text-primary',
+            'transition-[opacity,color] duration-300 ease-out',
+            isOriginalBullet
+              ? cn('opacity-0 group-hover:opacity-100', isLinked && '!opacity-100')
+              : 'opacity-0 pointer-events-none'
+          )}
+          title="Ver bullet original"
+        >
+          <Link2 className="h-3.5 w-3.5" />
+        </button>
         <div className={cn('relative flex items-center gap-1 shrink-0 transition-opacity', aiOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
           {settings?.aiApiKey && (
             <button
@@ -582,12 +633,24 @@ function RoleSection({
   settings,
   onUpdate,
   onDelete,
+  onBulletAdded,
+  onBulletDeleted,
+  bulletIds,
+  hoveredBulletId,
+  onBulletHover,
+  onBulletLeave,
 }: {
   item: ExperienceItem | LeadershipItem
   jobOfferText: string
   settings: SettingsDocument | null
   onUpdate: (updated: ExperienceItem | LeadershipItem) => void
   onDelete?: () => void
+  onBulletAdded?: () => void
+  onBulletDeleted?: (idx: number) => void
+  bulletIds?: string[]
+  hoveredBulletId?: string | null
+  onBulletHover?: (id: string) => void
+  onBulletLeave?: () => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
   const [headerEditing, setHeaderEditing] = useState(false)
@@ -599,10 +662,12 @@ function RoleSection({
     onUpdate({ ...item, bullets: item.bullets.map((b, i) => (i === idx ? text : b)) })
   }
   function deleteBullet(idx: number) {
+    onBulletDeleted?.(idx)
     onUpdate({ ...item, bullets: item.bullets.filter((_, i) => i !== idx) })
   }
   function addBullet() {
     onUpdate({ ...item, bullets: [...item.bullets, ''] })
+    onBulletAdded?.()
   }
 
   return (
@@ -681,16 +746,23 @@ function RoleSection({
 
       {!collapsed && !headerEditing && (
         <div className="px-3 pb-2 border-t border-border/30 divide-y divide-border/20">
-          {item.bullets.map((b, i) => (
-            <BulletRow
-              key={i}
-              text={b}
-              jobOfferText={jobOfferText}
-              settings={settings}
-              onUpdate={(t) => updateBullet(i, t)}
-              onDelete={() => deleteBullet(i)}
-            />
-          ))}
+          {item.bullets.map((b, i) => {
+            const bid = bulletIds?.[i]
+            return (
+              <BulletRow
+                key={i}
+                text={b}
+                jobOfferText={jobOfferText}
+                settings={settings}
+                onUpdate={(t) => updateBullet(i, t)}
+                onDelete={() => deleteBullet(i)}
+                bulletId={bid}
+                isLinked={!!bid && hoveredBulletId === bid}
+                onHover={() => bid && onBulletHover?.(bid)}
+                onLeave={onBulletLeave}
+              />
+            )
+          })}
           <div className="pt-1.5">
             <button
               type="button"
@@ -837,7 +909,7 @@ function CvSection({ title, action, children }: { title: string; action?: React.
 
 // ── CvEditor main ─────────────────────────────────────────────────────────────
 
-export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange }: CvEditorProps) {
+export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange, onBulletAdded, onBulletDeleted, onSectionDeleted, draftBulletIds, hoveredBulletId, onBulletHover, onBulletLeave }: CvEditorProps) {
   const [skillsAiOpen, setSkillsAiOpen] = useState(false)
   const pages = estimatePageLength(draftCv)
   const pageColor = pages > 2 ? 'text-red-500' : pages > 1.5 ? 'text-amber-500' : 'text-green-600 dark:text-green-400'
@@ -846,15 +918,18 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     onChange({ ...draftCv, experience: draftCv.experience.map((e) => (e.id === id ? updated as ExperienceItem : e)) })
   }
   function deleteExperience(id: string) {
+    onSectionDeleted?.(id)
     onChange({ ...draftCv, experience: draftCv.experience.filter((e) => e.id !== id) })
   }
   function updateLeadership(id: string, updated: LeadershipItem) {
     onChange({ ...draftCv, leadership: draftCv.leadership.map((l) => (l.id === id ? updated as LeadershipItem : l)) })
   }
   function deleteLeadershipItem(id: string) {
+    onSectionDeleted?.(id)
     onChange({ ...draftCv, leadership: draftCv.leadership.filter((l) => l.id !== id) })
   }
   function clearLeadership() {
+    draftCv.leadership.forEach((l) => onSectionDeleted?.(l.id))
     onChange({ ...draftCv, leadership: [] })
   }
   function updateEducation(id: string, updated: EducationItem) {
@@ -923,6 +998,12 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
               settings={settings}
               onUpdate={(u) => updateExperience(exp.id, u as ExperienceItem)}
               onDelete={() => deleteExperience(exp.id)}
+              onBulletAdded={() => onBulletAdded?.(exp.id)}
+              onBulletDeleted={(idx) => onBulletDeleted?.(exp.id, idx)}
+              bulletIds={draftBulletIds?.[exp.id]}
+              hoveredBulletId={hoveredBulletId}
+              onBulletHover={onBulletHover}
+              onBulletLeave={onBulletLeave}
             />
           ))}
         </CvSection>
@@ -951,6 +1032,12 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
               settings={settings}
               onUpdate={(u) => updateLeadership(lead.id, u as LeadershipItem)}
               onDelete={() => deleteLeadershipItem(lead.id)}
+              onBulletAdded={() => onBulletAdded?.(lead.id)}
+              onBulletDeleted={(idx) => onBulletDeleted?.(lead.id, idx)}
+              bulletIds={draftBulletIds?.[lead.id]}
+              hoveredBulletId={hoveredBulletId}
+              onBulletHover={onBulletHover}
+              onBulletLeave={onBulletLeave}
             />
           ))}
         </CvSection>

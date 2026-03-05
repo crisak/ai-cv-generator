@@ -15,18 +15,27 @@ import type { CvData } from '@/types/experience'
 
 type Step = 1 | 2 | 3
 
-function assembleDraftCv(base: CvData, sels: BulletsBySection, existing?: CvData | null): CvData {
-  return {
-    ...(existing ?? base),
-    experience: base.experience.map((exp) => ({
-      ...exp,
-      bullets: (sels[exp.id] ?? []).filter((b) => b.selected).map((b) => b.text),
-    })),
-    leadership: base.leadership.map((lead) => ({
-      ...lead,
-      bullets: (sels[lead.id] ?? []).filter((b) => b.selected).map((b) => b.text),
-    })),
+// Builds both the draft CV and the parallel bullet-ID tracking map from scratch.
+// Used only on init and after AI suggest/optimize (full rebuild cases).
+function buildDraftAndIds(
+  base: CvData,
+  sels: BulletsBySection
+): { cv: CvData; ids: Record<string, string[]> } {
+  const ids: Record<string, string[]> = {}
+  const cv: CvData = {
+    ...base,
+    experience: base.experience.map((exp) => {
+      const selected = (sels[exp.id] ?? []).filter((b) => b.selected)
+      ids[exp.id] = selected.map((b) => b.id)
+      return { ...exp, bullets: selected.map((b) => b.text) }
+    }),
+    leadership: base.leadership.map((lead) => {
+      const selected = (sels[lead.id] ?? []).filter((b) => b.selected)
+      ids[lead.id] = selected.map((b) => b.id)
+      return { ...lead, bullets: selected.map((b) => b.text) }
+    }),
   }
+  return { cv, ids }
 }
 
 export default function CvGeneratorPage() {
@@ -40,6 +49,8 @@ export default function CvGeneratorPage() {
   const [applicationId, setApplicationId] = useState('')
   const [selections, setSelections] = useState<BulletsBySection>({})
   const [draftCv, setDraftCv] = useState<CvData | null>(null)
+  // Tracks stable bullet IDs parallel to draftCv.experience/leadership[].bullets
+  const [draftBulletIds, setDraftBulletIds] = useState<Record<string, string[]>>({})
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [generatedCv, setGeneratedCv] = useState<CvData | null>(null)
   const [usedAI, setUsedAI] = useState(false)
@@ -53,7 +64,9 @@ export default function CvGeneratorPage() {
     if (cvData && Object.keys(selections).length === 0) {
       const init = initSelections(cvData)
       setSelections(init)
-      setDraftCv(assembleDraftCv(cvData, init))
+      const { cv, ids } = buildDraftAndIds(cvData, init)
+      setDraftCv(cv)
+      setDraftBulletIds(ids)
     }
   }, [cvData, selections])
 
@@ -63,20 +76,96 @@ export default function CvGeneratorPage() {
     setStep(2)
     const result = await suggestBullets(jobOfferText, cvData, settings)
     setSelections(result.selections)
-    const draft = assembleDraftCv(cvData, result.selections)
-    // Apply suggested skills if AI returned them
-    const finalDraft = result.suggestedSkills
-      ? { ...draft, skills: { ...draft.skills, technical: result.suggestedSkills } }
-      : draft
-    setDraftCv(finalDraft)
+    const { cv, ids } = buildDraftAndIds(cvData, result.selections)
+    const finalCv = result.suggestedSkills
+      ? { ...cv, skills: { ...cv.skills, technical: result.suggestedSkills } }
+      : cv
+    setDraftCv(finalCv)
+    setDraftBulletIds(ids)
     setIsAnalyzing(false)
   }
 
+  // Diff-based: only adds newly selected bullets and removes newly deselected ones.
+  // All existing edits in draftCv are preserved.
   function handleSelectionsChange(newSelections: BulletsBySection) {
     setSelections(newSelections)
-    if (cvData) {
-      setDraftCv((prev) => assembleDraftCv(cvData, newSelections, prev))
+    if (!cvData || !draftCv) return
+
+    const nextIds = { ...draftBulletIds }
+
+    function diffSection(sectionId: string, currentBullets: string[]): string[] {
+      const oldSel = selections[sectionId] ?? []
+      const newSel = newSelections[sectionId] ?? []
+      const currentIds = nextIds[sectionId] ?? []
+
+      const newlySelected = newSel.filter((nb) => {
+        const prev = oldSel.find((ob) => ob.id === nb.id)
+        return nb.selected && !(prev?.selected ?? false)
+      })
+      const newlyDeselectedIds = new Set(
+        newSel
+          .filter((nb) => {
+            const prev = oldSel.find((ob) => ob.id === nb.id)
+            return !nb.selected && (prev?.selected ?? false)
+          })
+          .map((b) => b.id)
+      )
+
+      if (newlySelected.length === 0 && newlyDeselectedIds.size === 0) return currentBullets
+
+      const filteredBullets: string[] = []
+      const filteredIds: string[] = []
+      currentBullets.forEach((bullet, i) => {
+        const id = currentIds[i]
+        if (!id || !newlyDeselectedIds.has(id)) {
+          filteredBullets.push(bullet)
+          filteredIds.push(id ?? `unknown-${i}`)
+        }
+      })
+
+      const finalBullets = [...filteredBullets, ...newlySelected.map((b) => b.text)]
+      const finalIds = [...filteredIds, ...newlySelected.map((b) => b.id)]
+      nextIds[sectionId] = finalIds
+      return finalBullets
     }
+
+    const nextExp = draftCv.experience.map((exp) => ({
+      ...exp,
+      bullets: diffSection(exp.id, exp.bullets),
+    }))
+    const nextLead = draftCv.leadership.map((lead) => ({
+      ...lead,
+      bullets: diffSection(lead.id, lead.bullets),
+    }))
+
+    setDraftBulletIds(nextIds)
+    setDraftCv({ ...draftCv, experience: nextExp, leadership: nextLead })
+  }
+
+  function handleBulletAdded(sectionId: string) {
+    setDraftBulletIds((prev) => ({
+      ...prev,
+      [sectionId]: [...(prev[sectionId] ?? []), `manual-${Date.now()}`],
+    }))
+  }
+
+  function handleBulletDeleted(sectionId: string, bulletIndex: number) {
+    setDraftBulletIds((prev) => ({
+      ...prev,
+      [sectionId]: (prev[sectionId] ?? []).filter((_, i) => i !== bulletIndex),
+    }))
+  }
+
+  function handleSectionDeleted(sectionId: string) {
+    setSelections((prev) => {
+      if (!prev[sectionId]) return prev
+      return { ...prev, [sectionId]: prev[sectionId].map((b) => ({ ...b, selected: false })) }
+    })
+    setDraftBulletIds((prev) => {
+      const next = { ...prev }
+      delete next[sectionId]
+      return next
+    })
   }
 
   function handleUseDraft() {
@@ -105,6 +194,17 @@ export default function CvGeneratorPage() {
   function handleOptimizeConfirm(cv: CvData) {
     setOptimizedCv(null)
     setDraftCv(cv)
+    // Rebuild IDs based on current selections (positional mapping)
+    if (cvData) {
+      const nextIds: Record<string, string[]> = {}
+      for (const exp of cvData.experience) {
+        nextIds[exp.id] = (selections[exp.id] ?? []).filter((b) => b.selected).map((b) => b.id)
+      }
+      for (const lead of cvData.leadership) {
+        nextIds[lead.id] = (selections[lead.id] ?? []).filter((b) => b.selected).map((b) => b.id)
+      }
+      setDraftBulletIds(nextIds)
+    }
   }
 
   function handleOptimizeCancel() {
@@ -223,8 +323,12 @@ export default function CvGeneratorPage() {
             settings={settings}
             isOptimizing={isOptimizing}
             optimizedCv={optimizedCv}
+            draftBulletIds={draftBulletIds}
             onSelectionsChange={handleSelectionsChange}
             onDraftCvChange={setDraftCv}
+            onBulletAdded={handleBulletAdded}
+            onBulletDeleted={handleBulletDeleted}
+            onSectionDeleted={handleSectionDeleted}
             onContinue={handleUseDraft}
             onOptimize={handleOptimize}
             onOptimizeConfirm={handleOptimizeConfirm}

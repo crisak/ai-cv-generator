@@ -2,6 +2,7 @@ import type { SettingsDocument } from './db/schemas'
 import type { CvData, ExperienceItem, LeadershipItem } from '@/types/experience'
 
 export interface BulletState {
+  id: string       // stable: "${sectionId}-b${originalIndex}", never changes
   selected: boolean
   text: string
 }
@@ -338,6 +339,7 @@ export function initSelections(cvData: CvData): BulletsBySection {
   cvData.experience.forEach((exp, expIdx) => {
     const maxBullets = expIdx === 0 ? 5 : 3
     result[exp.id] = exp.bullets.map((text, i) => ({
+      id: `${exp.id}-b${i}`,
       selected: i < maxBullets,
       text,
     }))
@@ -345,6 +347,7 @@ export function initSelections(cvData: CvData): BulletsBySection {
 
   cvData.leadership.forEach((lead) => {
     result[lead.id] = lead.bullets.map((text, i) => ({
+      id: `${lead.id}-b${i}`,
       selected: i < 3,
       text,
     }))
@@ -499,6 +502,7 @@ export async function suggestBullets(
     cvData.experience.forEach((exp) => {
       const selectedIndices = new Set(result.selections[exp.id] ?? [])
       suggested[exp.id] = exp.bullets.map((text, i) => ({
+        id: `${exp.id}-b${i}`,
         selected: selectedIndices.has(i),
         text,
       }))
@@ -507,6 +511,7 @@ export async function suggestBullets(
     cvData.leadership.forEach((lead) => {
       const selectedIndices = new Set(result.selections[lead.id] ?? [])
       suggested[lead.id] = lead.bullets.map((text, i) => ({
+        id: `${lead.id}-b${i}`,
         selected: selectedIndices.has(i),
         text,
       }))

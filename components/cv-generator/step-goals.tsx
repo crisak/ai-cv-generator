@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search, Briefcase, Users } from 'lucide-react'
+import { X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search, Briefcase, Users, Link2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -29,6 +29,7 @@ interface StepGoalsProps {
   cvData: CvData
   selections: BulletsBySection
   draftCv: CvData
+  draftBulletIds: Record<string, string[]>
   isAnalyzing: boolean
   jobOfferText: string
   settings: SettingsDocument | null
@@ -36,6 +37,9 @@ interface StepGoalsProps {
   optimizedCv: CvData | null
   onSelectionsChange: (selections: BulletsBySection) => void
   onDraftCvChange: (cv: CvData) => void
+  onBulletAdded?: (sectionId: string) => void
+  onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
+  onSectionDeleted?: (sectionId: string) => void
   onContinue: () => void
   onOptimize: (msg: string) => void
   onOptimizeConfirm: (cv: CvData) => void
@@ -47,6 +51,7 @@ export function StepGoals({
   cvData,
   selections,
   draftCv,
+  draftBulletIds,
   isAnalyzing,
   jobOfferText,
   settings,
@@ -54,6 +59,9 @@ export function StepGoals({
   optimizedCv,
   onSelectionsChange,
   onDraftCvChange,
+  onBulletAdded,
+  onBulletDeleted,
+  onSectionDeleted,
   onContinue,
   onOptimize,
   onOptimizeConfirm,
@@ -77,6 +85,7 @@ export function StepGoals({
   const listRef = useRef<HTMLDivElement>(null)
   const [optimizeContextOpen, setOptimizeContextOpen] = useState(false)
   const [optimizeMessage, setOptimizeMessage] = useState('')
+  const [hoveredBulletId, setHoveredBulletId] = useState<string | null>(null)
 
   const totalSelected = Object.values(selections).reduce(
     (sum, bullets) => sum + bullets.filter((b) => b.selected).length,
@@ -351,6 +360,9 @@ export function StepGoals({
                   selectedCount={selectedCount}
                   searchQuery={bulletSearch}
                   onChange={(updated) => setItemBullets(section.id, updated)}
+                  activeBulletId={hoveredBulletId}
+                  onBulletHover={setHoveredBulletId}
+                  onBulletLeave={() => setHoveredBulletId(null)}
                 />
               )
             })}
@@ -376,6 +388,9 @@ export function StepGoals({
                   selectedCount={selectedCount}
                   searchQuery={bulletSearch}
                   onChange={(updated) => setItemBullets(section.id, updated)}
+                  activeBulletId={hoveredBulletId}
+                  onBulletHover={setHoveredBulletId}
+                  onBulletLeave={() => setHoveredBulletId(null)}
                 />
               )
             })}
@@ -394,6 +409,13 @@ export function StepGoals({
             settings={settings}
             originalCv={cvData}
             onChange={onDraftCvChange}
+            onBulletAdded={onBulletAdded}
+            onBulletDeleted={onBulletDeleted}
+            onSectionDeleted={onSectionDeleted}
+            draftBulletIds={draftBulletIds}
+            hoveredBulletId={hoveredBulletId}
+            onBulletHover={setHoveredBulletId}
+            onBulletLeave={() => setHoveredBulletId(null)}
           />
         </div>
 
@@ -618,6 +640,9 @@ function SectionGroup({
   selectedCount,
   searchQuery,
   onChange,
+  activeBulletId,
+  onBulletHover,
+  onBulletLeave,
 }: {
   header: string
   subheader: string
@@ -626,6 +651,9 @@ function SectionGroup({
   selectedCount: number
   searchQuery?: string
   onChange: (bullets: BulletState[]) => void
+  activeBulletId?: string | null
+  onBulletHover?: (id: string) => void
+  onBulletLeave?: () => void
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
@@ -672,24 +700,56 @@ function SectionGroup({
           </div>
 
           <div className="divide-y divide-border/30">
-            {bullets.map((bullet, i) => (
-              <div
-                key={i}
-                className={cn(
-                  'flex gap-2 px-3 py-2 items-start transition-colors',
-                  bullet.selected ? 'bg-background' : 'bg-muted/20 opacity-60'
-                )}
-              >
-                <Checkbox
-                  checked={bullet.selected}
-                  onCheckedChange={() => toggle(i)}
-                  className="mt-0.5 shrink-0"
-                />
-                <p className="flex-1 text-[11px] leading-relaxed min-w-0">
-                  <HighlightText text={bullet.text} query={searchQuery ?? ''} />
-                </p>
-              </div>
-            ))}
+            {bullets.map((bullet, i) => {
+              // Only link when bullet is selected (unchecked have no col-2 counterpart)
+              const isLinked = bullet.selected && activeBulletId === bullet.id
+              return (
+                <div
+                  key={i}
+                  data-col1-bullet-id={bullet.id}
+                  className={cn(
+                    // Layout-stable base: ring + rounded always present, only color transitions
+                    'flex gap-2 px-3 py-2 items-start rounded-sm',
+                    'ring-1 ring-inset',
+                    'transition-[background-color,box-shadow,opacity] duration-300 ease-out',
+                    bullet.selected ? 'bg-background' : 'bg-muted/20 opacity-60',
+                    isLinked
+                      ? 'ring-primary/40 !bg-primary/[0.07] !opacity-100'
+                      : 'ring-transparent'
+                  )}
+                  onMouseEnter={() => bullet.selected && onBulletHover?.(bullet.id)}
+                  onMouseLeave={onBulletLeave}
+                >
+                  <Checkbox
+                    checked={bullet.selected}
+                    onCheckedChange={() => toggle(i)}
+                    className="mt-0.5 shrink-0"
+                  />
+                  <p className="flex-1 text-[11px] leading-relaxed min-w-0">
+                    <HighlightText text={bullet.text} query={searchQuery ?? ''} />
+                  </p>
+                  {/* Always reserve icon space — opacity-only transition, no layout shift */}
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() =>
+                      document
+                        .querySelector(`[data-col2-bullet-id="${bullet.id}"]`)
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                    }
+                    className={cn(
+                      'shrink-0 mt-0.5 text-primary/60 hover:text-primary',
+                      'transition-[opacity,color] duration-300 ease-out',
+                      bullet.selected && isLinked
+                        ? 'opacity-100 cursor-pointer'
+                        : 'opacity-0 pointer-events-none'
+                    )}
+                  >
+                    <Link2 className="h-3 w-3" />
+                  </button>
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
