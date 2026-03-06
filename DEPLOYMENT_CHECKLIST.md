@@ -114,8 +114,8 @@ vercel --prod  # Deploy a producción
 ssh user@server.com
 
 # Clonar repo (ASEGÚRATE que changaste credenciales)
-git clone https://github.com/tu-usuario/cv-generator.git
-cd cv-generator
+git clone https://github.com/crisak/ai-cv-generator.git
+cd ai-cv-generator
 
 # Setup
 npm install
@@ -124,7 +124,7 @@ npm run build
 
 # PM2 para mantenerlo activo
 npm install -g pm2
-pm2 start "npm start" --name cv-generator
+pm2 start "npm start" --name ai-cv-generator
 pm2 startup
 pm2 save
 

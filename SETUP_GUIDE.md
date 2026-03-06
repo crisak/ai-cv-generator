@@ -25,8 +25,8 @@ Guía paso a paso para configurar y ejecutar el proyecto de desarrollo a producc
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tu-usuario/cv-generator.git
-cd cv-generator
+git clone https://github.com/crisak/ai-cv-generator.git
+cd ai-cv-generator
 ```
 
 ### 2. Instalar dependencias
@@ -398,8 +398,8 @@ curl -sL https://deb.nodesource.com/setup_18.x | sudo bash -
 sudo apt install nodejs
 
 # 3. Clonar y setup
-git clone https://github.com/tu-usuario/cv-generator.git
-cd cv-generator
+git clone https://github.com/crisak/ai-cv-generator.git
+cd ai-cv-generator
 npm install
 
 # 4. Crear .env

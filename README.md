@@ -1,6 +1,24 @@
-# CV Generator 📄
+# AI CV Generator 🤖
+
+**AI-powered CV generator that creates ATS-optimized resumes by analyzing job postings in real-time**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![RxDB](https://img.shields.io/badge/RxDB-Local%20First-brightgreen)](https://rxdb.info/)
 
 Una plataforma web moderna para generar, editar y administrar CVs optimizados para ATS (Applicant Tracking Systems) mediante inteligencia artificial. Simplifica el proceso de candidatura a empleos centralizando ofertas laborales, generando CVs contextualizados y rastreando el estado de tus aplicaciones.
+
+## ✨ ¿Por qué AI CV Generator?
+
+- **⚡ Generación instantánea de CV** — Pega una oferta laboral, obtén un CV optimizado en segundos
+- **🤖 Análisis con IA** — Claude/GPT analizan automáticamente los requisitos
+- **📊 Score de coincidencia** — Ve el porcentaje de match antes de aplicar
+- **💾 Sin backend** — Todos tus datos se guardan en tu navegador (privacidad total)
+- **🎨 Optimizado para ATS** — Una página, formato limpio para sistemas de selección
+- **🔐 Privacidad primero** — Cero tracking, cero APIs de terceros (excepto tu clave de IA)
+- **🌙 Modo oscuro/claro** — Interfaz moderna y adaptable
 
 ## 🎯 Características Principales
 
@@ -10,7 +28,6 @@ Una plataforma web moderna para generar, editar y administrar CVs optimizados pa
 - **🤖 Generador de CV con IA** - Análisis automático de ofertas y generación optimizada en 3 pasos
 - **🎨 Matching análisis** - Comparación visual entre oferta y CV con score de coincidencia
 - **⚙️ Optimización con IA** - Revisión de cambios antes de aplicar (diff view)
-- **🌓 Modo oscuro/claro** - Interfaz adaptable a tus preferencias
 - **💾 Almacenamiento local** - Todo se guarda en tu navegador (RxDB/IndexedDB)
 
 ## 🚀 Quick Start
@@ -25,8 +42,8 @@ Una plataforma web moderna para generar, editar y administrar CVs optimizados pa
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/cv-generator.git
-cd cv-generator
+git clone https://github.com/crisak/ai-cv-generator.git
+cd ai-cv-generator
 
 # 2. Instalar dependencias
 npm install
