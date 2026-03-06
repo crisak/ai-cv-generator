@@ -42,14 +42,16 @@ npm run dev
 # http://localhost:3000
 ```
 
-### Login por defecto
+### Login por defecto (Ejemplo)
 
 ```
-Email: cristian.c.romero.p@gmail.com
-Contraseña: Ajudfn23#
+Email: user@example.com
+Contraseña: password123
 ```
 
-⚠️ **Nota para contribuidores**: Ver [SECURITY.md](./SECURITY.md) antes de cambiar credenciales.
+⚠️ **IMPORTANTE**: Estas son credenciales de ejemplo genéricas (no datos reales).
+- Para cambiar, ver [SETUP_GUIDE.md](./SETUP_GUIDE.md) → "Cambiar credenciales"
+- Para entender seguridad, ver [SECURITY.md](./SECURITY.md)
 
 ## 📋 Guía de Uso
 

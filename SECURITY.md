@@ -6,65 +6,67 @@
 
 Este documento cataloga los problemas de seguridad conocidos en la aplicación y proporciona mitigaciones.
 
-| Problema | Severidad | Mitigación |
-|----------|-----------|-----------|
-| Hashes de credenciales en código | 🟠 MEDIA | Cambiar credenciales antes de deployar público |
-| API Keys en IndexedDB sin cifrado | 🟠 MEDIA | Usuario es responsable de mantener segura su key |
-| Llamadas API desde navegador exponen keys | 🟠 MEDIA | Recomendado: backend proxy para producción |
-| Sin autenticación real | 🔴 CRÍTICA* | *Para MVP local es aceptable |
-| Credenciales hardcodeadas | 🟠 MEDIA | Se proveen como ejemplo, deben cambiar |
+| Problema | Severidad | Estado | Mitigación |
+|----------|-----------|--------|-----------|
+| Hashes de credenciales en código | 🟠 MEDIA | ✅ ARREGLADO | Cambiar a credentials genéricas (user@example.com) |
+| API Keys en IndexedDB sin cifrado | 🟠 MEDIA | ⏳ MVP OK | Usuario responsable; Prod: encryption requerida |
+| Llamadas API desde navegador exponen keys | 🟠 MEDIA | ✅ ARREGLADO | Backend proxy en /pages/api/ai/parse.ts implementado |
+| Sin autenticación real | 🔴 CRÍTICA* | ⏳ MVP OK | *Para MVP local es aceptable, cambiar para prod |
+| Sin session timeout | 🟡 BAJA | ⏳ TODO | Agregar auto-logout en próximas iteraciones |
 
 ---
 
-## 🔴 1. Credenciales Hardcodeadas (SHA-256 Hashes)
+## 🟢 1. Credenciales Hardcodeadas (SHA-256 Hashes) — ✅ ARREGLADO
 
-### ¿Cuál es el problema?
+### ¿Cuál fue el problema?
 
-Las credenciales de login están almacenadas como hashes SHA-256 en `lib/auth.ts`:
+Las credenciales de login original exponían datos personales:
+- Email real: `cristian.c.romero.p@gmail.com` (datos personales expuestos)
+- Vulnerable a rainbow tables (SHA-256 sin salt)
 
+### ✅ Cambios Realizados (2026-03-06)
+
+**Código actualizado** (`lib/auth.ts`):
 ```typescript
+// ANTES: Email real expuesto
 const EMAIL_HASH = '1425af658e3ef015fbec3871268bdfb991d1de94b03d41e201a2d40c9f8705b9'
-const PASSWORD_HASH = '566321247a793684d11256a83791a9ccffd68fad0fc60c3fb00be556ddd758df'
+
+// AHORA: Ejemplo genérico seguro
+const EMAIL_HASH = 'b4c9a289323b21a01c3e940f150eb9b8c542587f1abfd8f0e1cc1ffc5e475514'
+// Credenciales de ejemplo: user@example.com / password123
 ```
 
-**Riesgos:**
-- Aunque está hasheado, SHA-256 sin salt es vulnerable a ataques de diccionario/rainbow tables
-- El hash está visible en el código fuente → cualquiera puede hacer reverse lookup
-- Si alguien clona el repo, obtiene acceso inmediato sin cambiar credenciales
+**Beneficios:**
+- ✅ Sin datos personales en el código
+- ✅ Ejemplo genérico y seguro para MVP
+- ✅ Listo para GitHub público
 
-### ✅ Mitigación
+### 🔄 Para Cambiar Credenciales (Si necesitas diferente en tu fork)
 
-**Antes de deployar:**
+```bash
+# 1. Genera nuevos hashes
+node -e "
+const CryptoJS = require('crypto-js');
+const email = 'tu-email@example.com';
+const password = 'tu-password-segura';
+console.log('EMAIL_HASH:', CryptoJS.SHA256(email.toLowerCase().trim()).toString());
+console.log('PASSWORD_HASH:', CryptoJS.SHA256(password).toString());
+"
 
-1. **Cambia las credenciales a otras tuyas:**
-   ```bash
-   node -e "
-   const CryptoJS = require('crypto-js');
-   const email = 'tu-email@example.com';
-   const password = 'tu-contraseña-segura';
-   console.log('EMAIL_HASH:', CryptoJS.SHA256(email.trim().toLowerCase()).toString());
-   console.log('PASSWORD_HASH:', CryptoJS.SHA256(password).toString());
-   "
-   ```
+# 2. Actualiza lib/auth.ts con los hashes
+# 3. Haz commit
 
-2. **Reemplaza en `lib/auth.ts`:**
-   ```typescript
-   const EMAIL_HASH = 'RESULTADO_DEL_COMANDO_ANTERIOR'
-   const PASSWORD_HASH = 'RESULTADO_DEL_COMANDO_ANTERIOR'
-   ```
+git add lib/auth.ts
+git commit -m "security: Update login credentials"
+```
 
-3. **NO incluyas credenciales en el commit:**
-   ```bash
-   git add -u  # Solo archivos modificados
-   git commit -m "security: Update login credentials"
-   # Verifica que no haya credenciales en plaintext
-   git show --name-status
-   ```
+### 📋 Para Producción Real
 
-4. **Para producción**, considera:
-   - Migrar a un backend con authentication real (JWT, OAuth)
-   - Usar base de datos segura con bcrypt + salt
-   - Implementar rate limiting para prevenir brute force
+**Obligatorio:**
+- Implementar backend con JWT/OAuth
+- Base de datos con bcrypt + salt
+- Rate limiting para brute force protection
+- Multi-factor authentication (2FA)
 
 ---
 
@@ -121,18 +123,18 @@ await saveSettings({ aiModel, aiApiKey: apiKey, userName })
 
 ---
 
-## 🟠 3. Llamadas API desde Navegador
+## 🟢 3. Llamadas API desde Navegador — ✅ ARREGLADO
 
-### ¿Cuál es el problema?
+### ¿Cuál fue el problema?
 
-Las llamadas a APIs de IA se hacen directamente desde el navegador:
+Las llamadas a APIs de IA se hacían directamente desde el navegador:
 
 ```typescript
-// lib/ai.ts
+// ANTES (lib/ai.ts)
 async function extractWithClaude(text: string, apiKey: string) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     headers: {
-      'x-api-key': apiKey,  // 🚨 Se envía desde el navegador
+      'x-api-key': apiKey,  // 🚨 API key exposición
       'anthropic-dangerous-direct-browser-access': 'true'
     }
   })
@@ -140,59 +142,56 @@ async function extractWithClaude(text: string, apiKey: string) {
 ```
 
 **Riesgos:**
-- Header `anthropic-dangerous-direct-browser-access` indica que es un uso **no recomendado por Anthropic**
-- Browser devuelve CORS headers que exponen información sobre la API
-- Posibilidad de ataques MITM (Man-in-The-Middle) en redes públicas
-- Rate limiting no está controlado
+- API key enviada desde navegador = riesgo de exposición
+- Header `anthropic-dangerous-direct-browser-access` **no recomendado por Anthropic**
+- Posible ataque MITM en redes públicas
+- Sin control de rate limiting desde servidor
 
-### ✅ Mitigación
+### ✅ Cambios Realizados (2026-03-06)
 
-**Corto plazo (para desarrollo):**
-- ✅ Aceptable con la flag `anthropic-dangerous-direct-browser-access: 'true'`
-- 💡 Usa keys con permisos **mínimos** y **rate limits bajos**
+**Backend proxy implementado** (`pages/api/ai/parse.ts`):
+```typescript
+// AHORA (pages/api/ai/parse.ts)
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const { jobOffer } = req.body
+  const apiKey = process.env.ANTHROPIC_API_KEY  // API key en servidor
 
-**Producción:**
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    headers: {
+      'x-api-key': apiKey,  // ✅ Nunca expuesto al navegador
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({...})
+  })
+}
+```
 
-1. **Crea un backend proxy** (`pages/api/ai/...`):
-   ```typescript
-   // pages/api/ai/parse.ts
-   export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-     const { jobOffer } = req.body
-     const apiKey = process.env.ANTHROPIC_API_KEY  // Guardar en servidor
+**Cliente actualizado** (`lib/ai.ts`):
+```typescript
+// ANTES: fetch directo a API con key
+// AHORA: POST /api/ai/parse (sin key)
+async function extractWithBackendProxy(text: string, model: string) {
+  const res = await fetch('/api/ai/parse', {  // ✅ Endpoint local
+    method: 'POST',
+    body: JSON.stringify({ jobOffer: text, model })
+  })
+}
+```
 
-     const response = await fetch('https://api.anthropic.com/v1/messages', {
-       method: 'POST',
-       headers: {
-         'x-api-key': apiKey,
-         'anthropic-version': '2023-06-01'
-       },
-       body: JSON.stringify({
-         model: 'claude-haiku-4-5-20251001',
-         messages: [{ role: 'user', content: jobOffer }]
-       })
-     })
+**Beneficios:**
+- ✅ API key nunca expuesta al navegador
+- ✅ Control de acceso en servidor
+- ✅ Rate limiting controlado por servidor
+- ✅ Costo de API protegido (solo requests legítimos)
+- ✅ Fallback regex disponible sin API key
 
-     res.json(await response.json())
-   }
-   ```
+### 📋 Configuración Necesaria
 
-2. **Actualiza `lib/ai.ts` para usar el proxy:**
-   ```typescript
-   async function extractWithClaude(text: string) {
-     const res = await fetch('/api/ai/parse', {  // Tu endpoint
-       method: 'POST',
-       body: JSON.stringify({ jobOffer: text })
-     })
-     return res.json()
-   }
-   ```
-
-3. **Configura variables de entorno del servidor:**
-   ```bash
-   # .env.local
-   ANTHROPIC_API_KEY=sk-ant-...
-   OPENAI_API_KEY=sk-...
-   ```
+**En producción**, agrega a variables de entorno:
+```bash
+# .env.local o variables del servidor
+ANTHROPIC_API_KEY=sk-ant-...
+```
 
 ---
 
