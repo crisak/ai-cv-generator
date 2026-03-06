@@ -11,6 +11,10 @@ import {
   Plus,
   ExternalLink,
   Sparkles,
+  Building2,
+  CalendarDays,
+  DollarSign,
+  LayoutList,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useApplications } from '@/hooks/use-applications'
@@ -20,7 +24,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import {
   Select,
   SelectContent,
@@ -49,8 +52,27 @@ import { cn } from '@/lib/utils'
 const SOURCES = ['LinkedIn', 'Computrabajo', 'GetOnBoard', 'Indeed', 'Referido', 'Otro']
 const CURRENCIES = ['COP', 'USD', 'EUR']
 
+// Pipeline stages in order — the signature element of this page
+const PIPELINE_STAGES: { key: ApplicationStatus; label: string }[] = [
+  { key: 'pending', label: 'Aplicado' },
+  { key: 'phone_screen', label: 'Llamada' },
+  { key: 'technical', label: 'Técnica' },
+  { key: 'hr_interview', label: 'RRHH' },
+  { key: 'offer', label: 'Oferta' },
+  { key: 'accepted', label: 'Aceptado' },
+]
+
+const STAGE_INDEX: Partial<Record<ApplicationStatus, number>> = {
+  pending: 0,
+  phone_screen: 1,
+  technical: 2,
+  hr_interview: 3,
+  offer: 4,
+  accepted: 5,
+}
+
 function formatSalary(amount: number, currency: string) {
-  if (!amount) return '—'
+  if (!amount) return null
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
     currency: currency || 'COP',
@@ -58,11 +80,97 @@ function formatSalary(amount: number, currency: string) {
   }).format(amount)
 }
 
+function daysSince(isoDate: string) {
+  if (!isoDate) return null
+  const days = Math.floor((Date.now() - new Date(isoDate).getTime()) / 86400000)
+  if (days === 0) return 'Hoy'
+  if (days === 1) return '1 día'
+  return `${days} días`
+}
+
+function PipelineIndicator({ status }: { status: ApplicationStatus }) {
+  const isTerminal = status === 'rejected' || status === 'withdrawn'
+  const currentIdx = STAGE_INDEX[status] ?? -1
+
+  return (
+    <div className="flex items-start">
+      {PIPELINE_STAGES.map((stage, idx) => {
+        const isPast = !isTerminal && idx < currentIdx
+        const isCurrent = !isTerminal && idx === currentIdx
+
+        return (
+          <div key={stage.key} className="flex items-start">
+            {idx > 0 && (
+              <div
+                className={cn(
+                  'h-px w-5 mt-[5px] mx-0.5 shrink-0',
+                  isPast || (isCurrent && idx > 0 && !isTerminal && idx <= currentIdx)
+                    ? 'bg-primary/50'
+                    : 'bg-border/60',
+                )}
+              />
+            )}
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <div
+                className={cn(
+                  'h-2.5 w-2.5 rounded-full transition-all',
+                  isPast && 'bg-primary',
+                  isCurrent && 'bg-primary ring-[3px] ring-primary/20 ring-offset-1 ring-offset-card',
+                  !isPast && !isCurrent && 'bg-border',
+                )}
+              />
+              <span
+                className={cn(
+                  'text-[9px] font-medium whitespace-nowrap leading-none',
+                  isCurrent && 'text-primary font-semibold',
+                  isPast && 'text-muted-foreground',
+                  !isPast && !isCurrent && 'text-muted-foreground/40',
+                )}
+              >
+                {stage.label}
+              </span>
+            </div>
+          </div>
+        )
+      })}
+
+      {isTerminal && (
+        <div className="flex items-start">
+          <div className="h-px w-5 mt-[5px] mx-0.5 bg-border/60 shrink-0" />
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            <div
+              className={cn(
+                'h-2.5 w-2.5 rounded-full',
+                status === 'rejected' ? 'bg-red-500' : 'bg-gray-400',
+              )}
+            />
+            <span
+              className={cn(
+                'text-[9px] font-medium leading-none',
+                status === 'rejected' ? 'text-red-500' : 'text-gray-400',
+              )}
+            >
+              {status === 'rejected' ? 'Rechazado' : 'Retirado'}
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { applications, isLoading, updateApplication, addTimelineEntry, updateTimelineEntry, deleteTimelineEntry, toggleFavorite } =
-    useApplications()
+  const {
+    applications,
+    isLoading,
+    updateApplication,
+    addTimelineEntry,
+    updateTimelineEntry,
+    deleteTimelineEntry,
+    toggleFavorite,
+  } = useApplications()
   const { cvs } = useCvs()
 
   const [isEditing, setIsEditing] = useState(false)
@@ -71,7 +179,6 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [editingEntry, setEditingEntry] = useState<TimelineEntry | null>(null)
   const [showCvPreview, setShowCvPreview] = useState(false)
 
-  // Editable form state
   const [company, setCompany] = useState('')
   const [position, setPosition] = useState('')
   const [source, setSource] = useState('')
@@ -86,7 +193,9 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
 
   const app = applications.find((a) => a.id === id) as ApplicationDocument | undefined
   const linkedCv = cvs.find((c) => c.id === app?.cvId)
-  const cvData = linkedCv ? (() => { try { return JSON.parse(linkedCv.cvData) as CvData } catch { return null } })() : null
+  const cvData = linkedCv
+    ? (() => { try { return JSON.parse(linkedCv.cvData) as CvData } catch { return null } })()
+    : null
 
   useEffect(() => {
     if (app) {
@@ -162,306 +271,407 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   }
 
   const currentStatus = isEditing ? status : app.status
+  const salary = formatSalary(app.salaryOffered, app.salaryCurrency || 'COP')
+  const daysAgo = daysSince(app.appliedAt)
 
   return (
-    <div className="p-6 max-w-5xl space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => router.back()} className="gap-1.5 h-8">
+    <div className="p-6 pb-10">
+      <div className="max-w-5xl mx-auto space-y-5">
+
+        {/* Top nav */}
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="gap-1.5 h-8 -ml-2 text-muted-foreground hover:text-foreground"
+          >
             <ArrowLeft className="h-4 w-4" />
             Postulaciones
           </Button>
-          <Separator orientation="vertical" className="h-5" />
-          <button
-            type="button"
-            onClick={() => toggleFavorite(app.id)}
-            className="transition-transform hover:scale-110"
-          >
-            <Heart
-              className={cn(
-                'h-5 w-5 transition-colors',
-                app.isFavorite ? 'fill-red-500 text-red-500' : 'text-muted-foreground/40 hover:text-muted-foreground'
-              )}
-            />
-          </button>
-        </div>
-
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="outline" size="sm" onClick={cancelEdit} className="gap-1.5 h-8">
-                <X className="h-4 w-4" /> Cancelar
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={cancelEdit} className="gap-1.5 h-8">
+                  <X className="h-4 w-4" /> Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 h-8">
+                  <Save className="h-4 w-4" />
+                  {isSaving ? 'Guardando…' : 'Guardar cambios'}
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="gap-1.5 h-8">
+                <Pencil className="h-4 w-4" /> Editar
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={isSaving} className="gap-1.5 h-8">
-                <Save className="h-4 w-4" />
-                {isSaving ? 'Guardando…' : 'Guardar cambios'}
-              </Button>
-            </>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => setIsEditing(true)} className="gap-1.5 h-8">
-              <Pencil className="h-4 w-4" /> Editar
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Title section */}
-      <div className="space-y-1">
-        {isEditing ? (
-          <div className="flex gap-3">
-            <Input
-              value={position}
-              onChange={(e) => setPosition(e.target.value)}
-              className="text-xl font-bold h-auto py-1 text-foreground"
-              placeholder="Cargo"
-            />
-            <Input
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              className="h-auto py-1"
-              placeholder="Empresa"
-            />
+            )}
           </div>
-        ) : (
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{app.position}</h1>
-            <p className="text-muted-foreground">{app.company}</p>
-          </div>
-        )}
-        <div className="flex items-center gap-2 mt-2">
-          {isEditing ? (
-            <Select value={status} onValueChange={(v) => setStatus(v as ApplicationStatus)}>
-              <SelectTrigger className="w-48 h-7">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(APPLICATION_STATUS_LABELS).map(([val, label]) => (
-                  <SelectItem key={val} value={val}>{label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Badge
-              variant="secondary"
-              className={cn('text-xs font-medium', APPLICATION_STATUS_COLORS[app.status])}
-            >
-              {APPLICATION_STATUS_LABELS[app.status]}
-            </Badge>
-          )}
         </div>
-      </div>
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
-        {/* LEFT: Details + Economy + Notes */}
-        <div className="space-y-6">
-          {/* Detalles */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Detalles</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Fuente" isEditing={isEditing}>
-                {isEditing ? (
-                  <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Seleccionar fuente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <span>{app.source || '—'}</span>
-                )}
-              </Field>
+        {/* ── Company identity card (signature element: pipeline indicator) ── */}
+        <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
+          {/* Header row: company + favorite */}
+          <div className="px-6 pt-5 pb-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                {/* Company line */}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  {isEditing ? (
+                    <Input
+                      value={company}
+                      onChange={(e) => setCompany(e.target.value)}
+                      className="h-6 text-sm py-0 px-1.5 w-52"
+                      placeholder="Empresa"
+                    />
+                  ) : (
+                    <span className="text-sm font-medium text-muted-foreground">{app.company}</span>
+                  )}
+                  {!isEditing && app.source && (
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground font-medium">
+                      {app.source}
+                    </span>
+                  )}
+                </div>
 
-              <Field label="Fecha de aplicación" isEditing={isEditing}>
-                {isEditing ? (
-                  <Input type="date" value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} className="h-8" />
-                ) : (
-                  <span>
-                    {app.appliedAt
-                      ? new Date(app.appliedAt).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
-                      : '—'}
-                  </span>
-                )}
-              </Field>
-
-              <Field label="Fecha de respuesta" isEditing={isEditing}>
-                {isEditing ? (
-                  <Input type="date" value={responseDate} onChange={(e) => setResponseDate(e.target.value)} className="h-8" />
-                ) : (
-                  <span>
-                    {app.responseDate
-                      ? new Date(app.responseDate).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' })
-                      : '—'}
-                  </span>
-                )}
-              </Field>
-
-              <Field label="Próximos pasos" isEditing={isEditing}>
-                {isEditing ? (
-                  <Input value={nextSteps} onChange={(e) => setNextSteps(e.target.value)} className="h-8" placeholder="Siguiente acción" />
-                ) : (
-                  <span>{app.nextSteps || '—'}</span>
-                )}
-              </Field>
-            </div>
-          </section>
-
-          <Separator />
-
-          {/* Economía */}
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-foreground">Compensación</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Salario ofrecido" isEditing={isEditing}>
+                {/* Position */}
                 {isEditing ? (
                   <Input
-                    type="number"
-                    value={salaryOffered}
-                    onChange={(e) => setSalaryOffered(e.target.value)}
-                    className="h-8"
-                    placeholder="0"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    className="text-xl font-bold h-auto py-1 mb-3 max-w-sm"
+                    placeholder="Cargo"
                   />
                 ) : (
-                  <span className="font-medium">{formatSalary(app.salaryOffered, app.salaryCurrency || 'COP')}</span>
+                  <h1 className="text-[22px] font-bold tracking-tight text-foreground leading-tight mb-3">
+                    {app.position}
+                  </h1>
                 )}
-              </Field>
 
-              <Field label="Moneda" isEditing={isEditing}>
+                {/* Status badge + edit */}
                 {isEditing ? (
-                  <Select value={salaryCurrency} onValueChange={setSalaryCurrency}>
-                    <SelectTrigger className="h-8">
+                  <Select value={status} onValueChange={(v) => setStatus(v as ApplicationStatus)}>
+                    <SelectTrigger className="w-52 h-7 text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      {Object.entries(APPLICATION_STATUS_LABELS).map(([val, label]) => (
+                        <SelectItem key={val} value={val}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 ) : (
-                  <span>{app.salaryCurrency || 'COP'}</span>
+                  <Badge
+                    variant="secondary"
+                    className={cn('text-xs font-medium', APPLICATION_STATUS_COLORS[app.status])}
+                  >
+                    {APPLICATION_STATUS_LABELS[app.status]}
+                  </Badge>
                 )}
-              </Field>
-            </div>
+              </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Beneficios</Label>
-              {isEditing ? (
-                <Input
-                  value={benefits}
-                  onChange={(e) => setBenefits(e.target.value)}
-                  placeholder="Separados por coma: remoto, seguro médico, bonos"
-                  className="h-8 text-sm"
+              {/* Favorite */}
+              <button
+                type="button"
+                onClick={() => toggleFavorite(app.id)}
+                className="transition-transform hover:scale-110 mt-0.5 shrink-0"
+                aria-label={app.isFavorite ? 'Quitar de favoritos' : 'Marcar favorito'}
+              >
+                <Heart
+                  className={cn(
+                    'h-5 w-5 transition-colors',
+                    app.isFavorite
+                      ? 'fill-red-500 text-red-500'
+                      : 'text-muted-foreground/40 hover:text-muted-foreground',
+                  )}
                 />
-              ) : (
-                <div className="flex flex-wrap gap-1">
-                  {app.benefits?.length > 0
-                    ? app.benefits.map((b) => (
-                        <span key={b} className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">{b}</span>
-                      ))
-                    : <span className="text-xs text-muted-foreground">—</span>}
+              </button>
+            </div>
+          </div>
+
+          {/* Pipeline indicator — the signature element */}
+          {!isEditing && (
+            <div className="px-6 py-4 border-t border-border/40 bg-muted/20">
+              <PipelineIndicator status={app.status} />
+            </div>
+          )}
+
+          {/* Quick stats bar */}
+          {!isEditing && (salary || daysAgo || app.appliedAt) && (
+            <div className="px-6 py-3 border-t border-border/40 flex flex-wrap items-center gap-x-6 gap-y-2">
+              {salary && (
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-sm font-semibold text-foreground">{salary}</span>
+                  <span className="text-xs text-muted-foreground">{app.salaryCurrency || 'COP'}</span>
                 </div>
               )}
+              {daysAgo && (
+                <div className="flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Aplicado</span>
+                  <span className="text-xs font-medium text-foreground">{daysAgo} atrás</span>
+                </div>
+              )}
+              {app.appliedAt && (
+                <span className="text-xs text-muted-foreground">
+                  {new Date(app.appliedAt).toLocaleDateString('es-CO', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              )}
             </div>
-          </section>
-
-          <Separator />
-
-          {/* Notas */}
-          <section className="space-y-1.5">
-            <h2 className="text-sm font-semibold text-foreground">Notas</h2>
-            {isEditing ? (
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Observaciones sobre la empresa, cultura, etc."
-                className="min-h-[80px] resize-y text-sm"
-              />
-            ) : (
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {app.notes || 'Sin notas.'}
-              </p>
-            )}
-          </section>
+          )}
         </div>
 
-        {/* RIGHT: Timeline + CV */}
-        <div className="space-y-6">
-          {/* Timeline */}
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-foreground">Proceso de selección</h2>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 gap-1.5 text-xs"
-                onClick={() => { setEditingEntry(null); setShowTimelineForm(true) }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Registrar paso
-              </Button>
+        {/* ── Main content grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-5">
+
+          {/* LEFT: Details, Compensation, Notes */}
+          <div className="space-y-4">
+
+            {/* Detalles */}
+            <div className="rounded-xl border border-border/60 bg-card p-5 space-y-4">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Detalles</h2>
+              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
+                <Field label="Fuente" isEditing={isEditing}>
+                  {isEditing ? (
+                    <Select value={source} onValueChange={setSource}>
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOURCES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span>{app.source || '—'}</span>
+                  )}
+                </Field>
+
+                <Field label="Fecha de aplicación" isEditing={isEditing}>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={appliedAt}
+                      onChange={(e) => setAppliedAt(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  ) : (
+                    <span>
+                      {app.appliedAt
+                        ? new Date(app.appliedAt).toLocaleDateString('es-CO', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : '—'}
+                    </span>
+                  )}
+                </Field>
+
+                <Field label="Fecha de respuesta" isEditing={isEditing}>
+                  {isEditing ? (
+                    <Input
+                      type="date"
+                      value={responseDate}
+                      onChange={(e) => setResponseDate(e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  ) : (
+                    <span>
+                      {app.responseDate
+                        ? new Date(app.responseDate).toLocaleDateString('es-CO', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          })
+                        : '—'}
+                    </span>
+                  )}
+                </Field>
+
+                <Field label="Próximos pasos" isEditing={isEditing}>
+                  {isEditing ? (
+                    <Input
+                      value={nextSteps}
+                      onChange={(e) => setNextSteps(e.target.value)}
+                      className="h-8 text-sm"
+                      placeholder="Siguiente acción"
+                    />
+                  ) : (
+                    <span>{app.nextSteps || '—'}</span>
+                  )}
+                </Field>
+              </div>
             </div>
 
-            <div className="rounded-lg border border-border/60 p-3">
+            {/* Compensación */}
+            <div className="rounded-xl border border-border/60 bg-card p-5 space-y-4">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Compensación</h2>
+
+              {isEditing ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Salario ofrecido" isEditing>
+                    <Input
+                      type="number"
+                      value={salaryOffered}
+                      onChange={(e) => setSalaryOffered(e.target.value)}
+                      className="h-8 text-sm"
+                      placeholder="0"
+                    />
+                  </Field>
+                  <Field label="Moneda" isEditing>
+                    <Select value={salaryCurrency} onValueChange={setSalaryCurrency}>
+                      <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </div>
+              ) : salary ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold tracking-tight text-foreground tabular-nums">{salary}</span>
+                  <span className="text-sm text-muted-foreground">{app.salaryCurrency || 'COP'} / año</span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Sin salario registrado</p>
+              )}
+
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground font-medium">Beneficios</Label>
+                {isEditing ? (
+                  <Input
+                    value={benefits}
+                    onChange={(e) => setBenefits(e.target.value)}
+                    placeholder="Separados por coma: remoto, seguro médico, bonos"
+                    className="h-8 text-sm"
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {app.benefits?.length > 0
+                      ? app.benefits.map((b) => (
+                          <span
+                            key={b}
+                            className="rounded-full bg-primary/10 text-primary px-2.5 py-0.5 text-xs font-medium"
+                          >
+                            {b}
+                          </span>
+                        ))
+                      : <span className="text-sm text-muted-foreground italic">Sin beneficios registrados</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Notas */}
+            <div className="rounded-xl border border-border/60 bg-card p-5 space-y-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Notas</h2>
+              {isEditing ? (
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Observaciones sobre la empresa, cultura, entrevistadores, etc."
+                  className="min-h-[100px] resize-y text-sm"
+                />
+              ) : app.notes ? (
+                <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{app.notes}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Sin notas.</p>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Timeline + CV */}
+          <div className="space-y-4">
+
+            {/* Proceso de selección */}
+            <div className="rounded-xl border border-border/60 bg-card p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Proceso de selección
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => { setEditingEntry(null); setShowTimelineForm(true) }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Registrar paso
+                </Button>
+              </div>
+
               <TimelineView
                 entries={[...(app.timeline ?? [])].sort(
-                  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+                  (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
                 )}
                 onEdit={(entry) => { setEditingEntry(entry); setShowTimelineForm(true) }}
                 onDelete={(entryId) => deleteTimelineEntry(app.id, entryId)}
               />
             </div>
-          </section>
 
-          {/* CV generado */}
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-foreground">CV generado</h2>
-            {linkedCv && cvData ? (
-              <div className="rounded-lg border border-border/60 p-3 space-y-2">
-                <div>
-                  <p className="text-sm font-medium">{linkedCv.jobTitle}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Generado el{' '}
-                    {new Date(linkedCv.createdAt).toLocaleDateString('es-CO', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </p>
+            {/* CV generado */}
+            <div className="rounded-xl border border-border/60 bg-card p-5 space-y-3">
+              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">CV generado</h2>
+
+              {linkedCv && cvData ? (
+                <div className="space-y-3">
+                  <div className="rounded-lg bg-muted/30 border border-border/40 p-3 flex items-start gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <LayoutList className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{linkedCv.jobTitle}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Generado el{' '}
+                        {new Date(linkedCv.createdAt).toLocaleDateString('es-CO', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={() => setShowCvPreview(true)}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Ver CV
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
+                      <Link href="/cvs">Todos los CVs</Link>
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 gap-1.5 text-xs"
-                    onClick={() => setShowCvPreview(true)}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    Ver CV
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1.5 text-xs"
-                    asChild
-                  >
-                    <Link href="/cvs">Ver todos los CVs</Link>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border/60 p-6 flex flex-col items-center text-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                    <Sparkles className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium text-foreground">Sin CV generado</p>
+                    <p className="text-xs text-muted-foreground">
+                      Genera un CV optimizado para esta postulación
+                    </p>
+                  </div>
+                  <Button asChild size="sm" className="gap-1.5 h-8 text-xs">
+                    <Link href={`/cv-generator?appId=${app.id}`}>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      Generar CV con IA
+                    </Link>
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-dashed border-border/60 p-4 text-center space-y-2">
-                <p className="text-xs text-muted-foreground">Sin CV generado para esta postulación</p>
-                <Button asChild size="sm" variant="outline" className="gap-1.5 h-7 text-xs">
-                  <Link href={`/cv-generator?appId=${app.id}`}>
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Generar CV
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </section>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -510,9 +720,9 @@ function Field({
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-1">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <div className={cn('text-sm', !isEditing && 'text-foreground')}>
+    <div className="space-y-1.5">
+      <Label className="text-xs text-muted-foreground font-medium">{label}</Label>
+      <div className={cn('text-sm', !isEditing && 'text-foreground font-medium')}>
         {children}
       </div>
     </div>
