@@ -71,76 +71,52 @@ function extractWithRegex(text: string): ParsedJobOffer {
   return { company, position, salaryOffered, benefits: benefits.length > 0 ? benefits : undefined }
 }
 
-// ── AI-powered extraction ─────────────────────────────────────────────────────
+// ── AI-powered extraction via backend proxy ──────────────────────────────────
+//
+// SECURITY: API calls are made through a backend proxy (/pages/api/ai/parse.ts)
+// to avoid exposing API keys to the browser.
+//
 
-const EXTRACTION_PROMPT = (text: string) =>
-  `Extrae la información de esta oferta laboral como JSON con campos: company (string), position (string), salaryOffered (número sin texto), salaryCurrency (COP/USD/EUR), benefits (array de strings).
-
-Oferta: ${text.substring(0, 4000)}`
-
-async function extractWithClaude(text: string, apiKey: string): Promise<ParsedJobOffer> {
-  const prompt = `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
-
-Campos a extraer:
-- company: nombre de la empresa (string)
-- position: título del cargo (string)
-- salaryOffered: salario numérico si se menciona (number, sin texto)
-- salaryCurrency: moneda del salario si se menciona: COP, USD o EUR (string)
-- benefits: lista de beneficios mencionados (array de strings cortos)
-
-Oferta laboral:
-${text.substring(0, 4000)}
-
-JSON:`
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+async function extractWithBackendProxy(
+  text: string,
+  model: string
+): Promise<ParsedJobOffer> {
+  const res = await fetch('/api/ai/parse', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
-      messages: [{ role: 'user', content: prompt }],
+      jobOffer: text.substring(0, 4000),
+      model,
     }),
   })
 
-  if (!res.ok) throw new Error(`Claude API error: ${res.status}`)
+  if (!res.ok) {
+    const error = await res.json()
+    // If service not configured, fallback will be handled by caller
+    throw new Error(error.code === 'NO_API_KEY' ? 'NO_API_KEY' : `API error ${res.status}`)
+  }
 
   const data = await res.json()
-  const content = data.content?.[0]?.text ?? ''
-  const jsonMatch = content.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) throw new Error('No JSON in response')
-
-  return JSON.parse(jsonMatch[0]) as ParsedJobOffer
+  if (!data.success) throw new Error('API failed')
+  return data.data as ParsedJobOffer
 }
 
-async function extractWithOpenAICompat(
-  baseUrl: string,
-  model: string,
-  apiKey: string,
+// Placeholder for future OpenAI/GPT support (would use proxy)
+async function extractWithOpenAIProxy(
   text: string
 ): Promise<ParsedJobOffer> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 600,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: EXTRACTION_PROMPT(text) }],
-    }),
-  })
+  // TODO: Implement /pages/api/ai/openai.ts
+  throw new Error('OpenAI proxy not yet implemented')
+}
 
-  if (!res.ok) throw new Error(`API error ${res.status}`)
-  const data = await res.json()
-  return JSON.parse(data.choices[0].message.content) as ParsedJobOffer
+// Placeholder for future DeepSeek support (would use proxy)
+async function extractWithDeepSeekProxy(
+  text: string
+): Promise<ParsedJobOffer> {
+  // TODO: Implement /pages/api/ai/deepseek.ts
+  throw new Error('DeepSeek proxy not yet implemented')
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -149,7 +125,13 @@ export async function parseJobOffer(
   text: string,
   settings: SettingsDocument | null
 ): Promise<{ result: ParsedJobOffer; usedAI: boolean }> {
-  if (!settings?.aiApiKey || !text.trim()) {
+  // Always fallback to regex if no settings or empty text
+  if (!text.trim()) {
+    return { result: extractWithRegex(text), usedAI: false }
+  }
+
+  // If no API key configured, use regex only (safe, no API exposure)
+  if (!settings?.aiApiKey) {
     return { result: extractWithRegex(text), usedAI: false }
   }
 
@@ -157,20 +139,22 @@ export async function parseJobOffer(
     const model = settings.aiModel ?? 'claude'
     let result: ParsedJobOffer
 
+    // Try backend proxy (safe - API key stays on server)
     if (model === 'claude') {
-      result = await extractWithClaude(text, settings.aiApiKey)
+      result = await extractWithBackendProxy(text, 'claude')
     } else if (model === 'gpt') {
-      result = await extractWithOpenAICompat('https://api.openai.com/v1', 'gpt-4o-mini', settings.aiApiKey, text)
+      result = await extractWithOpenAIProxy(text)
     } else if (model === 'deepseek') {
-      result = await extractWithOpenAICompat('https://api.deepseek.com/v1', 'deepseek-chat', settings.aiApiKey, text)
+      result = await extractWithDeepSeekProxy(text)
     } else {
       // Gemini, Grok: not yet implemented — fallback to regex
-      result = extractWithRegex(text)
-      return { result, usedAI: false }
+      return { result: extractWithRegex(text), usedAI: false }
     }
 
     return { result, usedAI: true }
-  } catch {
+  } catch (error) {
+    // Any AI error falls back to regex extraction
+    // This is safe and doesn't expose API keys
     return { result: extractWithRegex(text), usedAI: false }
   }
 }
