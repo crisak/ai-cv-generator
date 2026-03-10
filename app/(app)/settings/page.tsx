@@ -1,10 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Save, Sun, Moon, Monitor } from 'lucide-react'
+import { Eye, EyeOff, Save } from 'lucide-react'
 import { useSettings } from '@/hooks/use-settings'
-import { useThemeStore } from '@/store/theme-store'
-import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,7 +14,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
 import type { AIModel } from '@/types/cv'
 
 const AI_MODELS: { value: AIModel; label: string; keyLabel: string }[] = [
@@ -29,12 +26,9 @@ const AI_MODELS: { value: AIModel; label: string; keyLabel: string }[] = [
 
 export default function SettingsPage() {
   const { settings, isSaving, saveSettings } = useSettings()
-  const { theme: storeTheme, setTheme: setStoreTheme } = useThemeStore()
-  const { setTheme: setNextTheme } = useTheme()
 
   const [aiModel, setAiModel] = useState<AIModel>('claude')
   const [apiKey, setApiKey] = useState('')
-  const [userName, setUserName] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
@@ -43,7 +37,6 @@ export default function SettingsPage() {
     if (settings) {
       setAiModel(settings.aiModel ?? 'claude')
       setApiKey(settings.aiApiKey ?? '')
-      setUserName(settings.userName ?? '')
     }
   }, [settings])
 
@@ -53,15 +46,10 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
-    await saveSettings({ aiModel, aiApiKey: apiKey, userName })
+    await saveSettings({ aiModel, aiApiKey: apiKey })
     setIsDirty(false)
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
-  }
-
-  function handleThemeChange(t: 'dark' | 'light' | 'system') {
-    setStoreTheme(t)
-    setNextTheme(t)
   }
 
   const selectedModel = AI_MODELS.find((m) => m.value === aiModel) ?? AI_MODELS[0]
@@ -69,30 +57,19 @@ export default function SettingsPage() {
   return (
     <div className="p-6 max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Configuración</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Modelo de IA</h1>
         <p className="text-sm text-muted-foreground">
-          Modelo de IA, API key y preferencias de la aplicación
+          Proveedor y API key para analizar ofertas y generar CVs
         </p>
       </div>
 
-      {/* ── AI Config ── */}
       <section className="space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold">Inteligencia Artificial</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Usado para analizar ofertas laborales y generar CVs optimizados
-          </p>
-        </div>
-
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Modelo</Label>
             <Select
               value={aiModel}
-              onValueChange={(v) => {
-                setAiModel(v as AIModel)
-                markDirty()
-              }}
+              onValueChange={(v) => { setAiModel(v as AIModel); markDirty() }}
             >
               <SelectTrigger className="max-w-xs">
                 <SelectValue />
@@ -113,10 +90,7 @@ export default function SettingsPage() {
               <Input
                 type={showKey ? 'text' : 'password'}
                 value={apiKey}
-                onChange={(e) => {
-                  setApiKey(e.target.value)
-                  markDirty()
-                }}
+                onChange={(e) => { setApiKey(e.target.value); markDirty() }}
                 placeholder="sk-..."
                 className="pr-10 font-mono text-sm"
               />
@@ -141,75 +115,8 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      <Separator />
-
-      {/* ── Profile ── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold">Perfil</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Nombre visible en la aplicación
-          </p>
-        </div>
-
-        <div className="space-y-1.5 max-w-sm">
-          <Label>Nombre</Label>
-          <Input
-            value={userName}
-            onChange={(e) => {
-              setUserName(e.target.value)
-              markDirty()
-            }}
-            placeholder="Tu nombre"
-          />
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* ── Theme ── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-sm font-semibold">Apariencia</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Modo oscuro o claro
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          {(
-            [
-              { value: 'dark', label: 'Oscuro', icon: Moon },
-              { value: 'light', label: 'Claro', icon: Sun },
-              { value: 'system', label: 'Sistema', icon: Monitor },
-            ] as const
-          ).map(({ value, label, icon: Icon }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => handleThemeChange(value)}
-              className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
-                storeTheme === value
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <Separator />
-
-      {/* ── Save button ── */}
       <div className="flex items-center gap-3">
-        <Button
-          onClick={handleSave}
-          disabled={!isDirty || isSaving}
-          className="gap-2"
-        >
+        <Button onClick={handleSave} disabled={!isDirty || isSaving} className="gap-2">
           <Save className="h-4 w-4" />
           {isSaving ? 'Guardando…' : 'Guardar cambios'}
         </Button>

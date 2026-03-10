@@ -22,10 +22,9 @@ A web platform that streamlines the CV generation process for job applications. 
 ## Key Features (MVP)
 
 ### 1. Authentication
-- Hardcoded login with mocked credentials
-- Email: `xxxxxxxx@xxxxx.com`
-- Password: `xxxxxx`
-- Use crypto-js for hashing (prevent plaintext exposure)
+- Clerk v7+ with Google OAuth, GitHub OAuth, and Email/Password
+- Multi-user open registration, data isolated per user via RxDB per userId
+- See full spec: `docs/auth-spec.md`
 
 ### 2. Dashboard - Applications Tracking
 - Centralized view of all job applications sorted by submission date
@@ -170,13 +169,27 @@ A web platform that streamlines the CV generation process for job applications. 
 - **Flow**: Diff confirm → applies to `draftCv` → stays in Step 2 (NOT auto-advance)
 - User can review live in column 2, run optimize again, or manually edit
 
+### Auth Module (Clerk v7+) — Complete
+- Full spec: `docs/auth-spec.md`
+- `middleware.ts` — `clerkMiddleware` protects all non-public routes at Edge
+- Catch-all routes: `login/[[...sign-in]]`, `sign-up/[[...sign-up]]` (required by Clerk)
+- RxDB isolated per user: `cvgeneratordb-{userId}` — zero schema changes needed
+- Sidebar: avatar + name from `useUser()`, dropdown with theme submenu / settings / profile / logout
+- `/profile` page: edit first/last name via `user.update()` + theme switcher
+- `/settings` page: AI model + API key only (profile data moved to /profile)
+- `POST /api/ai/parse` protected with `auth()` server-side guard
+- **Security pending**: rate limiting on `/api/ai/parse`, move aiApiKey to Clerk privateMetadata
+- **Clerk Dashboard**: enable Bot detection, Brute-force protection, password policies
+
 ### Bug Fixes
 - Fixed `computeCvDiffs` crash: guard `optimizedItem.bullets` with `?? []` fallback
 - Fixed Dialog accessibility warnings: added DialogDescription/aria-describedby (shadcn/ui requirement)
+- Fixed OAuth redirect loop: `proxy.ts` → `middleware.ts`, `/` redirects to `/applications`
+- Fixed hydration mismatch in sidebar theme icon/label: `mounted` guard before reading `theme`
 
 ## Important Notes
 - No backend API required (RxDB handles local persistence)
-- Hardcoded credentials must be hashed to prevent exposure
+- Auth via Clerk v7+ — do NOT reintroduce hardcoded credentials
 - CV JSON schema must be strictly followed
 - All content in Spanish
 - No tests to implement (Vitest config only)

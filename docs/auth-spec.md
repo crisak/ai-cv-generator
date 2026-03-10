@@ -1,24 +1,24 @@
 # Auth Module Spec — Clerk v7+
 
-**Versión**: 1.0
+**Versión**: 2.0
 **Fecha**: 2026-03-10
-**Estado**: Planeado
+**Estado**: Implementado ✅
 
 ---
 
 ## Resumen
 
-Reemplazar el sistema de credenciales hardcodeadas por Clerk v7+ con soporte para Google OAuth, GitHub OAuth y Email/Password. Registro abierto multi-usuario con aislamiento de datos por usuario en RxDB.
+Autenticación con Clerk v7+ con soporte para Google OAuth, GitHub OAuth y Email/Password. Registro abierto multi-usuario con aislamiento de datos por usuario en RxDB (base de datos independiente por `userId`).
 
 ---
 
 ## Métodos de autenticación
 
-| Método | Provider | Configuración |
-|--------|----------|---------------|
-| Google (Gmail) | OAuth 2.0 | Google Cloud Console → OAuth App |
-| GitHub | OAuth 2.0 | GitHub → Developer Settings → OAuth App |
-| Email + Password | Clerk nativo | Habilitado por defecto en Clerk Dashboard |
+| Método | Provider | Estado |
+|--------|----------|--------|
+| Google (Gmail) | OAuth 2.0 | ✅ Activo |
+| GitHub | OAuth 2.0 | ✅ Activo |
+| Email + Password | Clerk nativo | ✅ Activo |
 
 ---
 
@@ -26,14 +26,14 @@ Reemplazar el sistema de credenciales hardcodeadas por Clerk v7+ con soporte par
 
 ```
 Usuario no autenticado
-  → accede a cualquier ruta de /applications, /experience, etc.
-  → middleware.ts intercepta (server-side, antes del render)
+  → accede a cualquier ruta protegida (/applications, /experience, etc.)
+  → middleware.ts intercepta (edge, server-side, antes del render)
   → redirige a /login
 
 Usuario en /login
   → elige método: Google / GitHub / Email+Password
   → Clerk maneja el flujo OAuth / credenciales
-  → al completar → redirige a /applications
+  → al completar → redirige a /applications (NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL)
 
 Usuario autenticado
   → middleware.ts permite el paso
@@ -47,9 +47,8 @@ Usuario autenticado
 ## Protección de rutas
 
 ### Rutas públicas
-- `/login` — página de inicio de sesión
-- `/sign-up` — página de registro
-- `/api/ai/parse` — ❌ NO pública (ver sección API)
+- `/login` y `/login/[[...sign-in]]/*` — página de inicio de sesión
+- `/sign-up` y `/sign-up/[[...sign-up]]/*` — página de registro
 
 ### Rutas protegidas (todas las demás)
 - `/applications`, `/applications/[id]`
@@ -57,8 +56,12 @@ Usuario autenticado
 - `/cv-generator`
 - `/cvs`
 - `/settings`
+- `/profile`
+- `POST /api/ai/parse` — requiere `auth()` server-side
 
-La protección ocurre en `middleware.ts` con `clerkMiddleware()` + `auth.protect()`. Es server-side (edge), no client-side.
+La protección ocurre en `middleware.ts` en el Edge Runtime — server-side, sin flash de contenido al cliente.
+
+**Nota crítica sobre catch-all routes**: Clerk requiere rutas catch-all (`[[...sign-in]]`, `[[...sign-up]]`) para manejar sub-rutas internas del componente. Sin ellas, Clerk genera peticiones a `/login/SignIn_clerk_catchall_check_*` que devuelven 404.
 
 ---
 
@@ -74,7 +77,7 @@ Usuario B (userId: user_xyz) → IndexedDB: cvgeneratordb-user_xyz
 - Cero cambios en schemas de RxDB
 - Cero cambios en hooks (`use-applications`, `use-cvs`, `use-settings`, `use-experience`)
 - Aislamiento total: cada usuario solo ve y modifica sus propios datos
-- La DB se inicializa en `hooks/use-db.ts` cuando Clerk resuelve el `userId`
+- `clearDbInstance(userId)` se llama al hacer logout para limpiar la instancia en memoria
 
 ---
 
@@ -94,73 +97,91 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/applications
 
 ---
 
-## Cambios por archivo
+## Seguridad — estado actual
 
-### Crear
-- `middleware.ts` — clerkMiddleware con rutas públicas
-- `app/(auth)/sign-up/page.tsx` — página de registro con `<SignUp>`
+### ✅ Implementado
 
-### Modificar
-- `app/layout.tsx` — agregar `<ClerkProvider>`
-- `app/(app)/layout.tsx` — convertir a Server Component, eliminar Zustand auth
-- `app/(auth)/login/page.tsx` — reemplazar formulario con `<SignIn>`
-- `lib/db/index.ts` — `getDatabase(userId)` dinámico
-- `hooks/use-db.ts` — integrar `useAuth()` de Clerk
-- `components/layout/sidebar.tsx` — `useClerk().signOut()`
-- `app/api/ai/parse/route.ts` — agregar `auth()` guard
+| Punto | Detalle |
+|-------|---------|
+| Protección de rutas server-side | `clerkMiddleware` + `auth.protect()` en Edge |
+| API route protegida | `POST /api/ai/parse` valida `userId` antes de procesar |
+| API keys del usuario nunca en `.env` | El servidor solo usa `clientApiKey` recibido del cliente autenticado |
+| Aislamiento de datos por usuario | DB separada por `userId` en IndexedDB |
+| Credenciales hardcodeadas eliminadas | `lib/auth.ts` y `store/auth-store.ts` borrados |
+| Hydration segura | `mounted` guard en sidebar evita mismatch SSR/cliente con tema |
 
-### Eliminar
-- `lib/auth.ts`
-- `store/auth-store.ts`
+### ⚠️ Pendientes / Recomendaciones
 
-### Dependencias
-```bash
-# Agregar
-npm install @clerk/nextjs
-
-# Remover (ya no necesario con Clerk)
-npm uninstall crypto-js @types/crypto-js
-```
+| Prioridad | Punto | Descripción |
+|-----------|-------|-------------|
+| Alta | **API key en tránsito** | La `aiApiKey` viaja del cliente al servidor en cada request a `/api/ai/parse`. Esto es aceptable en HTTPS pero el API key está expuesta en el body de la request. Alternativa: moverla a `Clerk privateMetadata` y leerla server-side con `clerkClient.users.getUser(userId)`. |
+| Alta | **Rate limiting en `/api/ai/parse`** | Un usuario autenticado puede hacer requests ilimitadas. Sin rate limit, puede agotar su propio API key rápidamente o generar costos. Recomendado: Upstash Redis + `@upstash/ratelimit` o Vercel Edge middleware. |
+| Media | **Input sanitization en jobOffer** | El campo `jobOffer` se trunca a 4000 chars pero no se sanitiza HTML/scripts antes de enviarse al prompt de IA. Agregar strip de HTML tags antes del envío. |
+| Media | **Clerk Brute-force protection** | Habilitar en Clerk Dashboard: _Attack Protection_ → _Bot detection_ y _Brute-force protection_ para Email/Password. |
+| Baja | **CSP headers** | Sin Content Security Policy configurado en `next.config`. Agregar headers para mitigar XSS. |
+| Baja | **Clerk privateMetadata para aiApiKey** | Mover el API key de IA de IndexedDB a `user.privateMetadata` de Clerk. Nunca viaja al cliente, solo se lee server-side. |
 
 ---
 
-## Protección del API route
+## Reglas de usuario recomendadas en Clerk Dashboard
 
-`POST /api/ai/parse` debe validar sesión activa:
+Configurar en **Clerk Dashboard → User & Authentication**:
 
-```ts
-import { auth } from '@clerk/nextjs/server'
+### Restricciones de registro
+- **Allowlist** (si la app es privada): limitar registro solo a emails de dominios específicos, ej. `@empresa.com`.
+- **Blocklist**: bloquear dominios de emails temporales (Mailinator, guerrillamail, etc.).
 
-export async function POST(request: NextRequest) {
-  const { userId } = await auth()
-  if (!userId) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  // procesamiento normal...
-}
-```
+### Políticas de contraseña (Email/Password)
+- Longitud mínima: **8 caracteres**
+- Complejidad: habilitar requerimiento de mayúsculas + números + símbolos
+- `Have I Been Pwned` check: Clerk puede bloquear contraseñas comprometidas en breaches conocidos.
 
-Sin esto, el endpoint es público y cualquiera puede consumir las API keys de IA del usuario.
+### Verificación de email
+- Requerir verificación de email antes de acceder a la app (`emailVerification: required`).
+- Actualmente Clerk lo habilita por defecto para Email/Password; verificar que esté activo para OAuth también.
+
+### Sesiones
+- **Session lifetime**: configurar expiración de sesión a 7 días inactivos (default de Clerk es 7 días, verificar).
+- **Multi-session**: decidir si permitir que el mismo usuario tenga sesiones en múltiples dispositivos simultáneamente.
+- **Revocar sesiones al cambiar contraseña**: habilitar en Clerk Dashboard.
+
+### Attack Protection
+- **Bot detection**: habilitar para el formulario de login/registro.
+- **Brute-force protection**: bloquear IPs tras N intentos fallidos.
+- **Account lockout**: bloquear cuenta tras intentos fallidos repetidos.
 
 ---
 
-## v2 — Consideraciones futuras
+## Bugs resueltos durante implementación
 
-- **`aiApiKey` en Clerk privateMetadata**: Mover el API key de IA de IndexedDB a `privateMetadata` del usuario en Clerk. Nunca expuesto al cliente.
-- **`<UserButton>` de Clerk**: Reemplazar el nombre/avatar en el sidebar con el componente `<UserButton>` que incluye gestión de cuenta.
-- **Migración de datos**: Ofrecer "Importar datos anteriores" para copiar el IndexedDB viejo (`cvgeneratordb`) al nuevo (`cvgeneratordb-{userId}`).
-- **Webhook `user.created`**: Para aprovisionar recursos si se agrega un backend en el futuro.
+| Bug | Causa | Fix |
+|-----|-------|-----|
+| Loop infinito post-OAuth | `proxy.ts` ignorado por Next.js (nombre incorrecto) + `/` redirigía a `/login` | Renombrar a `middleware.ts`; `/` redirige a `/applications` |
+| 404 en sub-rutas de Clerk | Faltaban catch-all routes `[[...sign-in]]` | Mover pages a `login/[[...sign-in]]/page.tsx` |
+| Hydration mismatch (icono tema) | SSR renderiza `Monitor`, cliente tiene `Moon` desde localStorage | Guard `mounted` antes de leer `theme` |
+| Hydration mismatch (texto tema) | Mismo origen, en el `<span>` del label del tema | Mismo guard `mounted` |
 
 ---
 
-## Criterios de aceptación
+## v3 — Consideraciones futuras
 
-- [ ] Login con Google → redirige a `/applications`
-- [ ] Login con GitHub → redirige a `/applications`
-- [ ] Login con Email/Password → redirige a `/applications`
-- [ ] Acceso directo a `/applications` sin sesión → redirige a `/login` (server-side, sin flash de contenido)
-- [ ] Datos de usuario A no visibles para usuario B
-- [ ] IndexedDB muestra `cvgeneratordb-{userId}` en DevTools
-- [ ] `POST /api/ai/parse` sin sesión → 401
-- [ ] Logout redirige a `/login`
-- [ ] Dark/light mode funciona igual que antes
+- **`aiApiKey` en Clerk privateMetadata**: Mover el API key de IA de IndexedDB a `privateMetadata`. Nunca expuesto al cliente, leído server-side en `/api/ai/parse`.
+- **Rate limiting**: Upstash Redis + `@upstash/ratelimit` en `/api/ai/parse`.
+- **Webhook `user.deleted`**: Limpiar datos del usuario si se elimina la cuenta en Clerk.
+- **Migración de datos**: Ofrecer "Importar datos anteriores" para copiar IndexedDB viejo (`cvgeneratordb`) al nuevo (`cvgeneratordb-{userId}`).
+- **Organizations**: Si se agrega modo equipo, Clerk Organizations permite aislar datos por organización.
+
+---
+
+## Criterios de aceptación — Verificados ✅
+
+- [x] Login con Google → redirige a `/applications`
+- [x] Login con GitHub → redirige a `/applications`
+- [x] Login con Email/Password → redirige a `/applications`
+- [x] Acceso directo a `/applications` sin sesión → redirige a `/login` (server-side, sin flash)
+- [x] Datos de usuario A no visibles para usuario B (DB separada por userId)
+- [x] IndexedDB muestra `cvgeneratordb-{userId}` en DevTools
+- [x] `POST /api/ai/parse` sin sesión → 401
+- [x] Logout redirige a `/login`
+- [x] Dark/light mode funciona igual que antes
+- [x] Avatar y nombre del usuario visibles en sidebar (desde Clerk `useUser()`)
