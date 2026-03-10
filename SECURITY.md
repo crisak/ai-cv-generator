@@ -21,7 +21,7 @@ Este documento cataloga los problemas de seguridad conocidos en la aplicación y
 ### ¿Cuál fue el problema?
 
 Las credenciales de login original exponían datos personales:
-- Email real: `cristian.c.romero.p@gmail.com` (datos personales expuestos)
+- Email real: `xxxxxxxx@xxxx.com` (datos personales expuestos)
 - Vulnerable a rainbow tables (SHA-256 sin salt)
 
 ### ✅ Cambios Realizados (2026-03-06)
@@ -263,7 +263,7 @@ Se almacena información personal sensible:
 Si encuentras un problema de seguridad:
 
 1. **NO** lo publiques en GitHub issues (público)
-2. **SÍ** envía email privado a: `cristian.c.romero.p@gmail.com`
+2. **SÍ** envía email privado a: `xxxxxxxx@xxxx.com`
 3. Incluye: descripción, pasos para reproducir, impacto
 4. Espera respuesta dentro de 7 días
 

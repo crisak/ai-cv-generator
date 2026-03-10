@@ -325,6 +325,6 @@ MIT License - Ver [LICENSE](./LICENSE) para detalles.
 ---
 
 **Creado por Cristian Camilo Romero**
-- 📧 Email: cristian.c.romero.p@gmail.com
+- 📧 Email: xxxxxxxx@xxxx.com
 - 💼 LinkedIn: [tu-profile]
 - 🐙 GitHub: [tu-usuario]

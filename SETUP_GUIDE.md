@@ -69,8 +69,8 @@ Abre [http://localhost:3000](http://localhost:3000)
 **Debe aparecer:** Pantalla de login
 
 ```
-Email: cristian.c.romero.p@gmail.com
-Contraseña: Ajudfn23#
+Email: xxxx
+Contraseña: xxxxx
 ```
 
 ✅ Si entras correctamente → **Setup básico completado**
@@ -589,7 +589,7 @@ Si algo no funciona:
    - DevTools → Application → IndexedDB (datos)
 
 4. **Reporta bug:**
-   - Email: cristian.c.romero.p@gmail.com
+   - Email: xxxxxxxx@xxxx.com
    - O: GitHub Issues (no secretos)
 
 ---

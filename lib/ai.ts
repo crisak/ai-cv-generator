@@ -72,29 +72,24 @@ function extractWithRegex(text: string): ParsedJobOffer {
 }
 
 // ── AI-powered extraction via backend proxy ──────────────────────────────────
-//
-// SECURITY: API calls are made through a backend proxy (/pages/api/ai/parse.ts)
-// to avoid exposing API keys to the browser.
-//
 
 async function extractWithBackendProxy(
   text: string,
-  model: string
+  model: string,
+  apiKey: string
 ): Promise<ParsedJobOffer> {
   const res = await fetch('/api/ai/parse', {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-    },
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       jobOffer: text.substring(0, 4000),
       model,
+      apiKey,
     }),
   })
 
   if (!res.ok) {
     const error = await res.json()
-    // If service not configured, fallback will be handled by caller
     throw new Error(error.code === 'NO_API_KEY' ? 'NO_API_KEY' : `API error ${res.status}`)
   }
 
@@ -103,58 +98,32 @@ async function extractWithBackendProxy(
   return data.data as ParsedJobOffer
 }
 
-// Placeholder for future OpenAI/GPT support (would use proxy)
-async function extractWithOpenAIProxy(
-  text: string
-): Promise<ParsedJobOffer> {
-  // TODO: Implement /pages/api/ai/openai.ts
-  throw new Error('OpenAI proxy not yet implemented')
-}
-
-// Placeholder for future DeepSeek support (would use proxy)
-async function extractWithDeepSeekProxy(
-  text: string
-): Promise<ParsedJobOffer> {
-  // TODO: Implement /pages/api/ai/deepseek.ts
-  throw new Error('DeepSeek proxy not yet implemented')
-}
-
 // ── Public API ────────────────────────────────────────────────────────────────
+
+const SUPPORTED_MODELS = ['claude', 'gpt', 'deepseek']
 
 export async function parseJobOffer(
   text: string,
   settings: SettingsDocument | null
 ): Promise<{ result: ParsedJobOffer; usedAI: boolean }> {
-  // Always fallback to regex if no settings or empty text
   if (!text.trim()) {
     return { result: extractWithRegex(text), usedAI: false }
   }
 
-  // If no API key configured, use regex only (safe, no API exposure)
   if (!settings?.aiApiKey) {
     return { result: extractWithRegex(text), usedAI: false }
   }
 
+  const model = settings.aiModel ?? 'claude'
+
+  if (!SUPPORTED_MODELS.includes(model)) {
+    return { result: extractWithRegex(text), usedAI: false }
+  }
+
   try {
-    const model = settings.aiModel ?? 'claude'
-    let result: ParsedJobOffer
-
-    // Try backend proxy (safe - API key stays on server)
-    if (model === 'claude') {
-      result = await extractWithBackendProxy(text, 'claude')
-    } else if (model === 'gpt') {
-      result = await extractWithOpenAIProxy(text)
-    } else if (model === 'deepseek') {
-      result = await extractWithDeepSeekProxy(text)
-    } else {
-      // Gemini, Grok: not yet implemented — fallback to regex
-      return { result: extractWithRegex(text), usedAI: false }
-    }
-
+    const result = await extractWithBackendProxy(text, model, settings.aiApiKey)
     return { result, usedAI: true }
-  } catch (error) {
-    // Any AI error falls back to regex extraction
-    // This is safe and doesn't expose API keys
+  } catch {
     return { result: extractWithRegex(text), usedAI: false }
   }
 }

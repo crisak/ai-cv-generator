@@ -88,7 +88,7 @@ La app debe debe tener una pagina para postularme a una nueva oferta, esta pagin
 
 ## Feature adicionales
 - Debe tener una pagina de settings para configurar que modelo de IA quiere usar, usa los siguientes para el mvp(claude, gpt, gimini, grok, deepseek). Actualizar informacion del perfil(correo, nombre) entre otras cosas.
-- La web debe tener un sitema de login con credenciales moqueadas esto importante para publicar el mvp en la web, las credenciales hardcodeadas usando un hash en el correo y en el password usa la libreria crypto-js o similares, esto para que el atacante no puede saber las credenciales hardcodeadas, el correo mio es "cristian.c.romero.p@gmail.com" y el pass "Ajudfn23#"
+- La web debe tener un sitema de login con credenciales moqueadas esto importante para publicar el mvp en la web, las credenciales hardcodeadas usando un hash en el correo y en el password usa la libreria crypto-js o similares, esto para que el atacante no puede saber las credenciales hardcodeadas, el correo mio es "xxxxx.com" y el pass "xxxxx"
 
 
 ## Requerimientos no funcionales

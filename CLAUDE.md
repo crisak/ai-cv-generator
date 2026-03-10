@@ -23,8 +23,8 @@ A web platform that streamlines the CV generation process for job applications. 
 
 ### 1. Authentication
 - Hardcoded login with mocked credentials
-- Email: `cristian.c.romero.p@gmail.com`
-- Password: `Ajudfn23#`
+- Email: `xxxxxxxx@xxxxx.com`
+- Password: `xxxxxx`
 - Use crypto-js for hashing (prevent plaintext exposure)
 
 ### 2. Dashboard - Applications Tracking

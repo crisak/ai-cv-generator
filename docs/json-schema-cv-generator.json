@@ -63,13 +63,13 @@
               ],
               "default": "",
               "description": "Email profesional. Evitar correos informales con apodos. Preferir formato nombre.apellido@dominio.com.",
-              "examples": ["cristian.c.romero.p@gmail.com"]
+              "examples": ["ejemplo@provider.com"]
             },
             "phone": {
               "type": "string",
               "default": "",
               "description": "Número telefónico con código de país para aplicaciones internacionales. Formato: +XX XXXXXXXXXX.",
-              "examples": ["+57 3148554726"]
+              "examples": ["+57 3141111224"]
             }
           },
           "required": ["address", "city", "state", "zip", "email", "phone"],
