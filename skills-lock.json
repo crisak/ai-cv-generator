@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "clerk": {
+      "source": "clerk/skills",
+      "sourceType": "github",
+      "computedHash": "c572ed569adffe980406a99754c5614a867126f12bb96c66fedf3e7478e10daf"
+    },
     "interface-design": {
       "source": "dammyjay93/interface-design",
       "sourceType": "github",

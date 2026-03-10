@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   FileText,
@@ -14,8 +15,10 @@ import {
   FileOutput,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useClerk } from '@clerk/nextjs'
+import { clearDbInstance } from '@/lib/db'
+import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/store/auth-store'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -35,16 +38,19 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
-  const logout = useAuthStore((s) => s.logout)
+  const { signOut } = useClerk()
+  const { userId } = useAuth()
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   function handleLogout() {
-    logout()
-    router.push('/login')
+    if (userId) clearDbInstance(userId)
+    signOut({ redirectUrl: '/login' })
   }
 
-  const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
+  const ThemeIcon = !mounted ? Monitor : theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
 
   return (
     <aside className="flex h-full w-60 flex-col border-r border-border bg-background">
@@ -93,7 +99,7 @@ export function Sidebar() {
               className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
             >
               <ThemeIcon className="h-4 w-4" />
-              <span className="text-sm font-medium capitalize">{theme ?? 'sistema'}</span>
+              <span className="text-sm font-medium capitalize">{mounted ? (theme ?? 'sistema') : 'sistema'}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="right" align="end">

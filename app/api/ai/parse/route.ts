@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@clerk/nextjs/server'
 
 interface ParseRequest {
   jobOffer: string
@@ -31,6 +32,11 @@ function parseAIJson(text: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const { userId } = await auth()
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   try {
     const body = (await request.json()) as ParseRequest
     const { jobOffer, model = 'claude', apiKey } = body

@@ -29,16 +29,18 @@ export type DatabaseCollections = {
 
 export type AppDatabase = RxDatabase<DatabaseCollections>
 
-let dbInstance: AppDatabase | null = null
-let initPromise: Promise<AppDatabase> | null = null
+const dbInstances = new Map<string, AppDatabase>()
+const initPromises = new Map<string, Promise<AppDatabase>>()
 
-export async function getDatabase(): Promise<AppDatabase> {
-  if (dbInstance) return dbInstance
-  if (initPromise) return initPromise
+export async function getDatabase(userId: string): Promise<AppDatabase> {
+  const dbName = `cvgeneratordb-${userId}`
 
-  initPromise = (async () => {
+  if (dbInstances.has(dbName)) return dbInstances.get(dbName)!
+  if (initPromises.has(dbName)) return initPromises.get(dbName)!
+
+  const promise = (async () => {
     const db = await createRxDatabase<DatabaseCollections>({
-      name: 'cvgeneratordb',
+      name: dbName,
       storage: getRxStorageDexie(),
       ignoreDuplicate: true,
     })
@@ -63,7 +65,6 @@ export async function getDatabase(): Promise<AppDatabase> {
                 notes: 'Estado inicial',
               },
             ],
-            // ranking field is dropped automatically (not in new schema)
           }),
           // v1 → v2: add title, deadline, files to each timeline entry
           2: (oldDoc: Record<string, unknown>) => {
@@ -85,9 +86,15 @@ export async function getDatabase(): Promise<AppDatabase> {
       experiences: { schema: experienceSchema },
     })
 
-    dbInstance = db
+    dbInstances.set(dbName, db)
+    initPromises.delete(dbName)
     return db
   })()
 
-  return initPromise
+  initPromises.set(dbName, promise)
+  return promise
+}
+
+export function clearDbInstance(userId: string) {
+  dbInstances.delete(`cvgeneratordb-${userId}`)
 }
