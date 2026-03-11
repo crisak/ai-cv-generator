@@ -27,8 +27,8 @@
   - Scope: Agregar componente de upload de avatar en `/profile` page usando `user.setProfileImage()`. Preview antes de upload. Validación de tamaño. Manejo de errores.
   - Depende de: nada
 
-- [x] Task 17: Edición expandida de nombre y email en perfil
-  - Scope: Expandir formulario en `/profile` para permitir editar firstName, lastName y gestionar email addresses via Clerk API (`user.createEmailAddress()`, verificación). Validar email antes de agregar.
+- [x] Task 17: Edición expandida de nombre en perfil
+  - Scope: Expandir formulario en `/profile` para permitir editar firstName y lastName via `user.update()`. Gestión de emails descartada — `user.createEmailAddress()` requiere configuración de instancia no disponible en el plan actual de Clerk (403).
   - Depende de: nada
 
 - [x] Task 18: Vincular/desvincular cuentas externas (Google, GitHub) en perfil

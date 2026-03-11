@@ -1,7 +1,7 @@
 'use client'
 
 import { useUser } from '@clerk/nextjs'
-import { Sun, Moon, Monitor, Save, Upload, Plus, X, Loader2, Mail, Github } from 'lucide-react'
+import { Sun, Moon, Monitor, Save, Upload, Plus, X, Loader2, Github } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
@@ -44,15 +44,6 @@ export default function ProfilePage() {
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [avatarSavedOk, setAvatarSavedOk] = useState(false)
-
-  // Email
-  const [newEmail, setNewEmail] = useState('')
-  const [emailError, setEmailError] = useState<string | null>(null)
-  const [isAddingEmail, setIsAddingEmail] = useState(false)
-  const [pendingVerification, setPendingVerification] = useState<{ id: string; email: string } | null>(null)
-  const [verificationCode, setVerificationCode] = useState('')
-  const [isVerifying, setIsVerifying] = useState(false)
-  const [verificationError, setVerificationError] = useState<string | null>(null)
 
   // Cuentas externas
   const [externalError, setExternalError] = useState<string | null>(null)
@@ -124,55 +115,6 @@ export default function ProfilePage() {
       setTimeout(() => setNameSavedOk(false), 3000)
     } finally {
       setIsSavingName(false)
-    }
-  }
-
-  // --- Email ---
-  async function handleAddEmail() {
-    if (!user || !newEmail.trim()) return
-    setEmailError(null)
-    setIsAddingEmail(true)
-    try {
-      const emailAddr = await user.createEmailAddress({ email: newEmail.trim() })
-      await emailAddr.prepareVerification({ strategy: 'email_code' })
-      setPendingVerification({ id: emailAddr.id, email: newEmail.trim() })
-      setNewEmail('')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Error al agregar el email'
-      setEmailError(msg)
-    } finally {
-      setIsAddingEmail(false)
-    }
-  }
-
-  async function handleVerifyEmail() {
-    if (!user || !pendingVerification || !verificationCode.trim()) return
-    setVerificationError(null)
-    setIsVerifying(true)
-    try {
-      const emailAddr = user.emailAddresses.find((e) => e.id === pendingVerification.id)
-      if (!emailAddr) throw new Error('Email no encontrado')
-      await emailAddr.attemptVerification({ code: verificationCode.trim() })
-      await user.reload()
-      setPendingVerification(null)
-      setVerificationCode('')
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Código incorrecto'
-      setVerificationError(msg)
-    } finally {
-      setIsVerifying(false)
-    }
-  }
-
-  async function handleRemoveEmail(emailId: string) {
-    if (!user) return
-    const emailAddr = user.emailAddresses.find((e) => e.id === emailId)
-    if (!emailAddr) return
-    try {
-      await emailAddr.destroy()
-      await user.reload()
-    } catch {
-      // silently ignore — Clerk will block if it's the only email
     }
   }
 
@@ -307,86 +249,6 @@ export default function ProfilePage() {
             </Badge>
           )}
         </div>
-      </section>
-
-      <Separator />
-
-      {/* Emails */}
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold">Correos electrónicos</h2>
-
-        <ul className="space-y-2">
-          {user?.emailAddresses.map((emailAddr) => (
-            <li key={emailAddr.id} className="flex items-center justify-between gap-2 max-w-sm">
-              <div className="flex items-center gap-2 min-w-0">
-                <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                <span className="text-sm truncate">{emailAddr.emailAddress}</span>
-                {emailAddr.id === user.primaryEmailAddressId && (
-                  <Badge variant="secondary" className="text-xs shrink-0">Principal</Badge>
-                )}
-                {emailAddr.verification.status !== 'verified' && (
-                  <Badge variant="outline" className="text-xs shrink-0 text-yellow-600 border-yellow-500/50">Sin verificar</Badge>
-                )}
-              </div>
-              {emailAddr.id !== user.primaryEmailAddressId && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 shrink-0"
-                  onClick={() => handleRemoveEmail(emailAddr.id)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-
-        {pendingVerification ? (
-          <div className="space-y-2 max-w-sm p-3 rounded-md border bg-muted/30">
-            <p className="text-sm">
-              Ingresa el código enviado a <strong>{pendingVerification.email}</strong>
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value)}
-                placeholder="Código de 6 dígitos"
-                maxLength={6}
-                className="h-8 text-sm"
-              />
-              <Button size="sm" onClick={handleVerifyEmail} disabled={isVerifying || !verificationCode.trim()}>
-                {isVerifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Verificar'}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => { setPendingVerification(null); setVerificationCode('') }}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            {verificationError && <p className="text-xs text-destructive">{verificationError}</p>}
-          </div>
-        ) : (
-          <div className="flex gap-2 max-w-sm">
-            <Input
-              value={newEmail}
-              onChange={(e) => { setNewEmail(e.target.value); setEmailError(null) }}
-              placeholder="nuevo@email.com"
-              type="email"
-              className="h-8 text-sm"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 shrink-0"
-              onClick={handleAddEmail}
-              disabled={isAddingEmail || !newEmail.trim()}
-            >
-              {isAddingEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-              Agregar
-            </Button>
-          </div>
-        )}
-        {emailError && <p className="text-xs text-destructive">{emailError}</p>}
       </section>
 
       <Separator />

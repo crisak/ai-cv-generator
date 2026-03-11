@@ -52,10 +52,8 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/applications
      → Preview antes de upload
   → Nombre/Apellido edit (existente)
      → Clerk user.update({ firstName, lastName })
-  → Email management
-     → Listar emails: user.emailAddresses
-     → Agregar email: user.createEmailAddress({ email })
-     → Verificar email: emailAddress.prepareVerification() + emailAddress.attemptVerification()
+  → Email (solo lectura — gestión de múltiples emails requiere plan Clerk no disponible)
+     → Mostrar email principal: user.primaryEmailAddress
   → Cuentas externas
      → Listar: user.externalAccounts
      → Vincular: user.createExternalAccount({ strategy: 'oauth_google' | 'oauth_github' })
