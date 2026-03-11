@@ -242,62 +242,62 @@ export default function CvGeneratorPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header + step indicator: always max-w-3xl to prevent CLS */}
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="space-y-6 p-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Generar CV</h1>
           <p className="text-sm text-muted-foreground">
             Genera un CV optimizado para ATS basado en tu experiencia real
           </p>
         </div>
+      </div>
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-0">
-          {([1, 2, 3] as Step[]).map((s, idx) => {
-            const canNavigate =
-              s === 1 ||
-              (s === 2 && Object.keys(selections).length > 0) ||
-              (s === 3 && generatedCv !== null)
-            const isClickable = canNavigate && s !== step
+      {/* Step indicator */}
+      <div className="flex items-center gap-0">
+        {([1, 2, 3] as Step[]).map((s, idx) => {
+          const canNavigate =
+            s === 1 ||
+            (s === 2 && Object.keys(selections).length > 0) ||
+            (s === 3 && generatedCv !== null)
+          const isClickable = canNavigate && s !== step
 
-            return (
-              <div key={s} className="flex items-center gap-0">
-                <button
-                  type="button"
-                  disabled={!isClickable}
-                  onClick={() => isClickable && setStep(s)}
-                  className="flex items-center gap-2 disabled:cursor-default"
+          return (
+            <div key={s} className="flex items-center gap-0">
+              <button
+                type="button"
+                disabled={!isClickable}
+                onClick={() => isClickable && setStep(s)}
+                className="flex items-center gap-2 disabled:cursor-default"
+              >
+                <div
+                  className={cn(
+                    'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-colors',
+                    step === s
+                      ? 'bg-primary text-primary-foreground'
+                      : step > s
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-muted text-muted-foreground',
+                    isClickable && 'cursor-pointer hover:opacity-80'
+                  )}
                 >
-                  <div
-                    className={cn(
-                      'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-colors',
-                      step === s
-                        ? 'bg-primary text-primary-foreground'
-                        : step > s
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground',
-                      isClickable && 'cursor-pointer hover:opacity-80'
-                    )}
-                  >
-                    {s}
-                  </div>
-                  {/* Always font-medium to prevent width CLS on active change */}
-                  <span
-                    className={cn(
-                      'text-xs font-medium transition-colors',
-                      step === s ? 'text-foreground' : 'text-muted-foreground',
-                      isClickable && 'cursor-pointer hover:text-foreground'
-                    )}
-                  >
-                    {stepLabels[s]}
-                  </span>
-                </button>
-                {idx < 2 && <div className="w-8 mx-2 h-px bg-border/60" />}
-              </div>
-            )
-          })}
-        </div>
+                  {s}
+                </div>
+                {/* Always font-medium to prevent width CLS on active change */}
+                <span
+                  className={cn(
+                    'text-xs font-medium transition-colors',
+                    step === s ? 'text-foreground' : 'text-muted-foreground',
+                    isClickable && 'cursor-pointer hover:text-foreground'
+                  )}
+                >
+                  {stepLabels[s]}
+                </span>
+              </button>
+              {idx < 2 && <div className="w-8 mx-2 h-px bg-border/60" />}
+            </div>
+          )
+        })}
       </div>
 
       {/* Step content: expands to full width on step 2 */}
