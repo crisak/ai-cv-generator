@@ -19,12 +19,9 @@
 - [x] Task 15: Viewer — Visualización con CvViewer
 - [x] Task 16: Fix `computeCvDiffs` crash (guard `?? []`)
 - [x] Task 17: Fix Dialog accessibility (DialogDescription)
+- [x] Task 18: Unificar diseño de cv-generator con otras páginas
 
 ## Tareas pendientes (v2)
-
-- [ ] Task 18: Unificar diseño de cv-generator con otras páginas
-  - Scope: Alinear título de página, ancho de contenido, padding y estilos de cards en `cv-generator/page.tsx` con los patrones de layout de `applications/page.tsx` y `experience/page.tsx`. Solo cambios visuales de consistencia, sin cambios de lógica.
-  - Depende de: nada
 
 - [ ] Task 19: Shimmer loading animation durante generación IA
   - Scope: Agregar componente Shimmer de ai-elements durante `suggestBullets()`, `generateCv()`, `optimizeCv()`. Efecto shimmer en borde de cv-editor durante generación. Reemplazar estados de loading existentes (spinner/skeleton) con Shimmer.
