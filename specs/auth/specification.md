@@ -76,7 +76,7 @@ Los usuarios necesitan autenticarse para acceder a la plataforma. Cada usuario d
 |----|--------------|--------|
 | FR10 | Actualizar nombre y apellido via Clerk `user.update()` | ✅ Implementado |
 | FR11 | Actualizar imagen de perfil via Clerk `user.setProfileImage()` | ✅ Implementado |
-| FR12 | Vincular/desvincular cuentas externas (Google, GitHub) via Clerk | ✅ Implementado |
+| ~~FR12~~ | ~~Vincular/desvincular cuentas externas (Google, GitHub) via Clerk~~ | ❌ Descartado — requiere plan Clerk no disponible |
 | FR13 | Habilitar Account Linking por email en Clerk Dashboard | ⬜ Pendiente (configuración manual) |
 | ~~FR14~~ | ~~Gestión de múltiples emails~~ | ❌ Descartado — requiere plan Clerk no disponible |
 

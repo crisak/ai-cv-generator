@@ -54,10 +54,7 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/applications
      → Clerk user.update({ firstName, lastName })
   → Email (solo lectura — gestión de múltiples emails requiere plan Clerk no disponible)
      → Mostrar email principal: user.primaryEmailAddress
-  → Cuentas externas
-     → Listar: user.externalAccounts
-     → Vincular: user.createExternalAccount({ strategy: 'oauth_google' | 'oauth_github' })
-     → Desvincular: externalAccount.destroy()
+  → Cuentas externas (descartado — user.createExternalAccount() devuelve 403 en plan actual)
 ```
 
 ### Clerk Dashboard — Account Linking
