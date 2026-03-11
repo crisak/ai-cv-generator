@@ -18,7 +18,7 @@ Este proyecto usa **Spec-Driven Development (SDD)**. Antes de implementar, lee:
 | cv-generator | `specs/cv-generator/` | ✅ Completo |
 | ai-provider | `specs/ai-provider/` | 🔶 MVP hecho, evolución pendiente |
 | settings | `specs/settings/` | ✅ Completo |
-| cross-cutting | `specs/cross-cutting/` | ⬜ Pendiente |
+| cross-cutting | `specs/cross-cutting/` | ✅ Completo |
 
 ## Tech Stack (no negociable)
 
