@@ -46,6 +46,7 @@ Usuario selecciona modelo
 ### Futuras
 - Como usuario, después de ingresar una api key en Settings, puedo hacer clic en "Probar conexión" para validar que la key es válida antes de guardar
 - Como usuario, veo feedback inmediato (válida / inválida / error de red) al probar la key
+- Como usuario, veo un selector de modelo avanzado con búsqueda y agrupación por proveedor (command palette style) en lugar de un Select básico
 - Como usuario, puedo usar modelos gratuitos sin configurar API key
 - Como usuario, veo cuántos tokens he consumido este mes
 - Como usuario, cuando agoto el free-tier veo un prompt para suscribirme
@@ -62,6 +63,7 @@ Usuario selecciona modelo
 | FR4 | Fallback a regex sin API key | ✅ |
 | FR5 | Modelos soportados: claude, gpt, deepseek (server-side) | ✅ |
 | FR5b | Validador de API key en Settings (botón "Probar conexión") | ✅ |
+| FR5c | ModelSelector component (ai-elements) reemplaza Select básico en Settings | ⬜ Pendiente |
 | FR6 | LiteLLM como gateway unificado | ⬜ Pendiente |
 | FR7 | Free-tier con modelos gratuitos | ⬜ Pendiente |
 | FR8 | Billing por tokens (tracking de consumo) | ⬜ Pendiente |

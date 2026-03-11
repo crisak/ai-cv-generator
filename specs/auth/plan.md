@@ -39,6 +39,41 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/applications
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/applications
 ```
 
+---
+
+## Enhanced Profile (v2)
+
+### Arquitectura
+
+```
+/profile page (expandido)
+  → Avatar upload
+     → Clerk user.setProfileImage(file)
+     → Preview antes de upload
+  → Nombre/Apellido edit (existente)
+     → Clerk user.update({ firstName, lastName })
+  → Email management
+     → Listar emails: user.emailAddresses
+     → Agregar email: user.createEmailAddress({ email })
+     → Verificar email: emailAddress.prepareVerification() + emailAddress.attemptVerification()
+  → Cuentas externas
+     → Listar: user.externalAccounts
+     → Vincular: user.createExternalAccount({ strategy: 'oauth_google' | 'oauth_github' })
+     → Desvincular: externalAccount.destroy()
+```
+
+### Clerk Dashboard — Account Linking
+
+Habilitar "Account Linking" por email en Clerk Dashboard para que cuando un usuario se registra con email y luego intenta vincular Google/GitHub con el mismo email, las cuentas se fusionen automáticamente en lugar de crear duplicados.
+
+### Archivos a modificar (v2)
+
+| Archivo | Cambio |
+|---------|--------|
+| `app/(app)/profile/page.tsx` | Agregar avatar upload, email management, sección de cuentas externas |
+
+---
+
 ## Dependencias
 
 - `@clerk/nextjs` (v7+)

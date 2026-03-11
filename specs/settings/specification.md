@@ -32,6 +32,14 @@ El usuario necesita configurar preferencias de la app (modelo de IA, API key) y 
 | FR4 | Switcher de tema (Oscuro/Claro/Sistema) | ✅ |
 | FR5 | Dropdown en sidebar con links a Settings/Profile | ✅ |
 
+---
+
+## Cross-references (v2)
+
+- **FR6**: ModelSelector de ai-elements reemplaza Select básico para selección de modelo IA → ver `specs/ai-provider/` Task 9-3
+
+---
+
 ## Archivos principales
 
 ```

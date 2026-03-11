@@ -52,3 +52,25 @@ types/experience.ts
 docs/json-schema-cv-generator.json
 docs/cv-experiencia-real.json
 ```
+
+---
+
+## Post-MVP (v2)
+
+### Requerimientos funcionales (v2)
+
+| ID | Requerimiento | Estado |
+|----|--------------|--------|
+| FR9 | Anonimizar datos personales en archivos de documentación | ⬜ Pendiente |
+
+### Detalle FR9
+
+Reemplazar información personal real en `docs/cv-experiencia-real.json` y `docs/json-schema-cv-generator.json` con placeholders genéricos. Estos archivos se usan como referencia/ejemplo y no deben contener datos identificables.
+
+Datos a anonimizar:
+- Nombres → "Nombre Ejemplo", "Apellido Ejemplo"
+- Empresas → "Empresa A", "Empresa B", etc.
+- Emails → "nombre@ejemplo.com"
+- Teléfonos → "+XX XXXXXXXXXX"
+- URLs de LinkedIn/GitHub → placeholders genéricos
+- Mantener estructura, formato de bullets y métricas coherentes

@@ -18,6 +18,7 @@ Este proyecto usa **Spec-Driven Development (SDD)**. Antes de implementar, lee:
 | cv-generator | `specs/cv-generator/` | ✅ Completo |
 | ai-provider | `specs/ai-provider/` | 🔶 MVP hecho, evolución pendiente |
 | settings | `specs/settings/` | ✅ Completo |
+| cross-cutting | `specs/cross-cutting/` | ⬜ Pendiente |
 
 ## Tech Stack (no negociable)
 
@@ -28,8 +29,10 @@ Este proyecto usa **Spec-Driven Development (SDD)**. Antes de implementar, lee:
 - **DB**: RxDB v15 (IndexedDB, local-first, sin backend)
 - **Auth**: Clerk v7+ (Google OAuth, GitHub OAuth, Email/Password)
 - **Validation**: Zod | **Code Quality**: Prettier, ESLint
+- **Animations**: framer-motion (solo cambios nuevos, no retroactivo)
+- **AI UI Components**: ai-elements (ModelSelector, Shimmer — convención shadcn)
 - **Testing**: Vitest (config only, sin implementación)
-- **Skills**: interface-design, vercel-react-best-practices, shadcn-ui, clerk
+- **Skills**: interface-design, vercel-react-best-practices, shadcn-ui, ai-elements, clerk
 
 ## Reglas de desarrollo
 

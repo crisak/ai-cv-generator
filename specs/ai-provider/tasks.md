@@ -18,6 +18,12 @@
 - [x] Task 9-1: Fix — Al configurar el api key de deekseek desde los settings, este no esta funcionando, en todas las partes del sistema donde se usa la API de la IA no esta respondiendo la IA, al principio de pensaba que la api key era invalida pero esto no es asi, se hizo la prueba con curl y funciona.
 - [x] Task 9-2: Implementa run validador de api key en la misma pantalla de settings para validar el api key
 
+### Mejoras de UX (pre-Fase 2)
+
+- [ ] Task 9-3: Reemplazar selector de modelo con ModelSelector de ai-elements
+  - Scope: Reemplazar el `<Select>` actual en `app/(app)/settings/page.tsx` con el componente `<ModelSelector>` de ai-elements. Mapear providers agrupados a los modelos soportados por la Factory. Mantener compatibilidad con RxDB settings (`aiModel`, `aiApiKey`). Deshabilitar modelos de providers no implementados.
+  - Depende de: cross-cutting Task 2 (instalación de ai-elements)
+
 ### Fase 2: LiteLLM Gateway
 - [ ] Task 10: Evaluar opciones de deployment de LiteLLM (self-hosted vs managed)
 - [ ] Task 11: Configurar LiteLLM con providers actuales (Claude, GPT, DeepSeek)

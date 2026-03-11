@@ -12,6 +12,8 @@
 - [x] Task 8: Import/Export JSON
 - [x] Task 9: Componente reutilizable `BulletList`
 
-## Tareas pendientes
+## Tareas pendientes (v2)
 
-_(Sin tareas pendientes para MVP)_
+- [ ] Task 10: Anonimizar datos personales en archivos de documentación
+  - Scope: Reemplazar información personal real en `docs/cv-experiencia-real.json` y `docs/json-schema-cv-generator.json` con placeholders genéricos. Mantener estructura JSON, formato de bullets y coherencia de métricas. Nombres → "Nombre Ejemplo", empresas → "Empresa A/B/C", emails/teléfonos → placeholders.
+  - Depende de: nada

@@ -337,6 +337,34 @@ Diseño del endpoint:
 - Soporta: claude, gpt, deepseek
 - No guarda nada, solo valida
 
+---
+
+## ModelSelector Migration (v2)
+
+### Estado actual
+
+Settings page (`app/(app)/settings/page.tsx`) usa un componente `<Select>` básico para seleccionar el modelo de IA.
+
+### Estado objetivo
+
+Reemplazar con `<ModelSelector>` de ai-elements — un command palette con búsqueda, modelos agrupados por proveedor (Anthropic, OpenAI, DeepSeek, etc.).
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `app/(app)/settings/page.tsx` | Reemplazar `<Select>` con `<ModelSelector>` de ai-elements |
+| `components/ui/model-selector.tsx` | Instalado por ai-elements CLI (cross-cutting Task 2) |
+
+### Notas de integración
+
+- ModelSelector debe mapear a los valores existentes de `aiModel` en RxDB settings
+- La lista de proveedores agrupados debe coincidir con los soportados por la Factory (`lib/ai-providers/factory.ts`)
+- Si un usuario selecciona un modelo de un provider no implementado en la Factory, deshabilitar esa opción o mostrar estado "próximamente"
+- Mantener compatibilidad con el hook `use-settings.ts`
+
+---
+
 ## Dependencias actuales
 
 - `lib/ai.ts` → lógica de parsing con IA

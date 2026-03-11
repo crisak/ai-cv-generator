@@ -17,6 +17,8 @@ Plataforma web que automatiza la generación de CVs optimizados para ATS a parti
 | Validation | Zod |
 | Code Quality | Prettier, ESLint |
 | Testing | Vitest (config only, sin implementación) |
+| Animations | framer-motion (solo cambios nuevos, no retroactivo) |
+| AI UI Components | ai-elements (ModelSelector, Shimmer — convención shadcn) |
 | AI | Multi-provider via configuración del usuario (Claude, GPT, Gemini, Grok, DeepSeek). Futuro: LiteLLM como gateway unificado |
 
 ## Principios de arquitectura
@@ -53,6 +55,7 @@ experience      → Editor de experiencia real
 cv-generator    → Workflow de generación de CV (3 pasos) + viewer de CVs guardados
 ai-provider     → Sistema multi-provider de IA (configuración, gateway, billing futuro)
 settings        → Configuración de usuario (perfil, tema)
+cross-cutting   → Infraestructura transversal (framer-motion, ai-elements)
 ```
 
 ## Estructura del proyecto

@@ -79,6 +79,24 @@ Click "Optimizar con IA"
   → Aplicar → actualiza draftCv en Step 2 (NO avanza a Step 3)
 ```
 
+---
+
+## Post-MVP (v2)
+
+### User Stories
+
+- Como usuario, la página de cv-generator tiene el mismo estilo visual (ancho de contenido, títulos, espaciado) que Postulaciones y Mi Experiencia
+- Como usuario, veo una animación shimmer elegante mientras la IA genera o optimiza mi CV
+
+### Requerimientos funcionales (v2)
+
+| ID | Requerimiento | Estado |
+|----|--------------|--------|
+| FR14 | Unificar diseño de página con otros dominios (content width, títulos, spacing) | ⬜ Pendiente |
+| FR15 | Shimmer loading animation durante generación IA usando ai-elements Shimmer | ⬜ Pendiente |
+
+---
+
 ## Archivos principales
 
 ```

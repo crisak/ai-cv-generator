@@ -74,3 +74,32 @@ app/api/ai/parse/  → POST route (server-side, auth protected)
 | `lib/ai-cv.ts` | Lógica de generación |
 | `lib/ai.ts` | Llamadas a providers |
 | `hooks/use-cvs.ts` | Hook CRUD |
+
+---
+
+## Mejoras v2
+
+### Unificación de diseño
+
+Alinear `cv-generator/page.tsx` con los patrones de layout de `applications/page.tsx` y `experience/page.tsx`:
+- Ancho máximo del contenido
+- Tamaño y estilo de títulos de página
+- Padding y espaciado entre secciones
+- Estilos de cards
+
+### Shimmer loading durante generación IA
+
+Reemplazar estados de loading actuales (spinner/skeleton) con Shimmer de ai-elements:
+- `suggestBullets()` → shimmer en columna de bullets (Step 2)
+- `generateCv()` → shimmer en CV editor (Step 2)
+- `optimizeCv()` → shimmer en CV editor (Step 2)
+- Efecto shimmer en el borde del contenedor del CV editor durante generación
+
+### Archivos a modificar (v2)
+
+| Archivo | Cambio |
+|---------|--------|
+| `app/(app)/cv-generator/page.tsx` | Unificar layout wrapper, título, spacing |
+| `components/cv-generator/cv-editor.tsx` | Shimmer border durante generación IA |
+| `components/cv-generator/step-goals.tsx` | Shimmer en columnas durante llamadas IA |
+| `components/cv-generator/step-job-offer.tsx` | Shimmer durante parsing |

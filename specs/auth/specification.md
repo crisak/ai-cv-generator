@@ -60,6 +60,33 @@ Los usuarios necesitan autenticarse para acceder a la plataforma. Cada usuario d
 | Media | Bot detection + Brute-force en Clerk Dashboard |
 | Baja | CSP headers en `next.config` |
 
+---
+
+## Enhanced Profile Management (v2)
+
+### User Stories
+
+- Como usuario, puedo actualizar mi nombre, apellido, email e imagen de perfil desde la página de perfil
+- Como usuario, puedo vincular o desvincular cuentas externas (Google, GitHub) desde mi perfil
+- Como usuario, si me registro con email y luego vinculo Google con el mismo email, las cuentas se fusionan automáticamente (Account Linking)
+
+### Requerimientos funcionales (v2)
+
+| ID | Requerimiento | Estado |
+|----|--------------|--------|
+| FR10 | Actualizar nombre, apellido y email via Clerk `user.update()` | ⬜ Pendiente |
+| FR11 | Actualizar imagen de perfil via Clerk `user.setProfileImage()` | ⬜ Pendiente |
+| FR12 | Vincular/desvincular cuentas externas (Google, GitHub) via Clerk | ⬜ Pendiente |
+| FR13 | Habilitar Account Linking por email en Clerk Dashboard | ⬜ Pendiente |
+
+### Edge Cases (v2)
+
+- Usuario intenta desvincular su único método de auth → Clerk bloquea la acción
+- Email ya vinculado a otra cuenta → Clerk Dashboard config determina si fusionar o rechazar
+- Imagen de perfil demasiado grande → validar tamaño antes de upload
+
+---
+
 ## Criterios de aceptación — Verificados ✅
 
 - [x] Login con Google → redirige a `/applications`

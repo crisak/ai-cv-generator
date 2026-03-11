@@ -49,3 +49,27 @@ Sigue el schema definido en `docs/json-schema-cv-generator.json`:
 | `components/experience/leadership-section.tsx` | Liderazgo |
 | `components/experience/bullet-list.tsx` | Editor de bullets reutilizable |
 | `hooks/use-experience.ts` | Hook CRUD |
+
+---
+
+## Plan v2 — Anonimización de datos
+
+### Reglas de anonimización
+
+- Nombres reales → "Nombre Ejemplo", "Apellido Ejemplo"
+- Empresas → "Empresa A", "Empresa B", "Empresa C", etc.
+- Emails → "nombre@ejemplo.com"
+- Teléfonos → "+XX XXXXXXXXXX"
+- URLs de LinkedIn/GitHub → "https://linkedin.com/in/nombre-ejemplo", "https://github.com/nombre-ejemplo"
+- Ciudades → "Ciudad Ejemplo"
+- Instituciones educativas → "Universidad Ejemplo", "Instituto Ejemplo"
+- Mantener la estructura del JSON intacta
+- Mantener los patrones de bullets (verbos en pasado + qué + cómo + resultado cuantificable)
+- Mantener métricas coherentes pero ficticias
+
+### Archivos a modificar
+
+| Archivo | Cambio |
+|---------|--------|
+| `docs/cv-experiencia-real.json` | Reemplazar todos los datos personales con placeholders genéricos |
+| `docs/json-schema-cv-generator.json` | Reemplazar valores de ejemplo que contengan datos personales |
