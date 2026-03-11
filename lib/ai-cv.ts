@@ -1,5 +1,6 @@
 import type { SettingsDocument } from './db/schemas'
 import type { CvData, ExperienceItem, LeadershipItem } from '@/types/experience'
+import { callProxy } from './ai-proxy-client'
 
 export interface BulletState {
   id: string       // stable: "${sectionId}-b${originalIndex}", never changes
@@ -12,51 +13,6 @@ export type BulletsBySection = Record<string, BulletState[]>
 
 export const ATS_VERBS_RE =
   /^(Diseñé|Implementé|Optimicé|Reduje|Migré|Lideré|Establecí|Mejoré|Desarrollé|Construí|Automaticé|Coordiné|Gestioné|Incrementé|Logré|Administré|Configuré|Integré|Entregué|Supervisé|Creé|Impulsé|Colaboré|Definí|Ejecuté|Refactoricé|Analicé|Propuse|Manejé|Dirigí)/i
-
-// ── Shared low-level AI caller ────────────────────────────────────────────────
-
-async function callAI(
-  prompt: string,
-  settings: SettingsDocument,
-  maxTokens = 400
-): Promise<string> {
-  const model = settings.aiModel ?? 'claude'
-
-  if (model === 'claude') {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': settings.aiApiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: maxTokens,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    })
-    if (!res.ok) throw new Error(`Claude API error: ${res.status}`)
-    const data = await res.json()
-    return data.content?.[0]?.text ?? ''
-  }
-
-  const baseUrl = model === 'gpt' ? 'https://api.openai.com/v1' : 'https://api.deepseek.com/v1'
-  const modelName = model === 'gpt' ? 'gpt-4o-mini' : 'deepseek-chat'
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${settings.aiApiKey}` },
-    body: JSON.stringify({
-      model: modelName,
-      max_tokens: maxTokens,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-  if (!res.ok) throw new Error(`API error ${res.status}`)
-  const data = await res.json()
-  return data.choices[0].message.content ?? ''
-}
 
 // ── Improve a single bullet ───────────────────────────────────────────────────
 
@@ -78,7 +34,11 @@ CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
 Responde ÚNICAMENTE con el texto del bullet mejorado, sin comillas ni prefijos.`
 
   try {
-    const result = await callAI(prompt, settings, 300)
+    const result = await callProxy(
+      [{ role: 'user', content: prompt }],
+      settings,
+      300
+    )
     return result.trim().replace(/^["']|["']$/g, '') || bulletText
   } catch {
     return bulletText
@@ -112,7 +72,12 @@ CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
 Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}`
 
   try {
-    const result = await callAI(prompt, settings, 700)
+    const result = await callProxy(
+      [{ role: 'user', content: prompt }],
+      settings,
+      700,
+      'json_object'
+    )
     const match = result.match(/\{[\s\S]*\}/)
     if (!match) return []
     const parsed = JSON.parse(match[0]) as { variants?: unknown }
@@ -155,7 +120,12 @@ REGLAS:
 Responde SOLO con JSON: {"skills": "skill1, skill2, skill3, ..."}`
 
   try {
-    const result = await callAI(prompt, settings, 600)
+    const result = await callProxy(
+      [{ role: 'user', content: prompt }],
+      settings,
+      600,
+      'json_object'
+    )
     const match = result.match(/\{[\s\S]*\}/)
     if (!match) return null
     const parsed = JSON.parse(match[0]) as { skills?: unknown }
@@ -202,7 +172,12 @@ ${bulletsList}
 Responde SOLO con JSON: {"bullets": ["bullet mejorado 1", "bullet mejorado 2", ...]}`
 
   try {
-    const raw = await callAI(prompt, settings, 1500)
+    const raw = await callProxy(
+      [{ role: 'user', content: prompt }],
+      settings,
+      1500,
+      'json_object'
+    )
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return draftCv
     const parsed = JSON.parse(jsonMatch[0]) as { bullets: string[] }
@@ -262,7 +237,7 @@ export async function chatWithCv(
 
   const maxTokens = style === 'concise' ? 300 : style === 'extended' ? 1500 : 800
 
-  const systemCtx = `Eres un experto en CVs ATS y reclutamiento. Ayuda al candidato a optimizar su CV para la oferta.
+  const systemContent = `Eres un experto en CVs ATS y reclutamiento. Ayuda al candidato a optimizar su CV para la oferta.
 
 CV ACTUAL:
 ${cvSummary}
@@ -273,42 +248,15 @@ ${jobOffer.substring(0, 2000)}
 Responde en español. ${STYLE_INSTRUCTIONS[style]}`
 
   try {
-    const model = settings.aiModel ?? 'claude'
-    if (model === 'claude') {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': settings.aiApiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: maxTokens,
-          system: systemCtx,
-          messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        }),
-      })
-      if (!res.ok) throw new Error(`Claude error: ${res.status}`)
-      const data = await res.json()
-      return data.content?.[0]?.text ?? ''
-    }
-
-    const baseUrl = model === 'gpt' ? 'https://api.openai.com/v1' : 'https://api.deepseek.com/v1'
-    const modelName = model === 'gpt' ? 'gpt-4o-mini' : 'deepseek-chat'
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${settings.aiApiKey}` },
-      body: JSON.stringify({
-        model: modelName,
-        max_tokens: maxTokens,
-        messages: [{ role: 'system', content: systemCtx }, ...messages.map((m) => ({ role: m.role, content: m.content }))],
-      }),
-    })
-    if (!res.ok) throw new Error(`API error ${res.status}`)
-    const data = await res.json()
-    return data.choices[0].message.content ?? ''
+    const result = await callProxy(
+      [
+        { role: 'system', content: systemContent },
+        ...messages.map((m) => ({ role: m.role, content: m.content })),
+      ],
+      settings,
+      maxTokens
+    )
+    return result
   } catch {
     return 'Error al conectar con la IA. Verifica tu API key en Configuración.'
   }
@@ -356,15 +304,24 @@ export function initSelections(cvData: CvData): BulletsBySection {
   return result
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+// ── AI bullet suggestion ──────────────────────────────────────────────────────
 
-interface SuggestionResult {
-  selections: Record<string, number[]>
-  skills?: string
+export interface SuggestBulletsResult {
+  selections: BulletsBySection
+  suggestedSkills: string | null
 }
 
-function buildBulletsSummary(cvData: CvData) {
-  return [
+export async function suggestBullets(
+  jobOffer: string,
+  cvData: CvData,
+  settings: SettingsDocument | null,
+  customMessage?: string
+): Promise<SuggestBulletsResult> {
+  const fallbackSelections = initSelections(cvData)
+  const fallback: SuggestBulletsResult = { selections: fallbackSelections, suggestedSkills: null }
+  if (!settings?.aiApiKey || !jobOffer.trim()) return fallback
+
+  const bulletsSummary = [
     ...cvData.experience.map((exp) => ({
       id: exp.id,
       label: `${exp.organization} — ${exp.title}`,
@@ -376,18 +333,8 @@ function buildBulletsSummary(cvData: CvData) {
       bullets: lead.bullets.map((b, i) => ({ index: i, text: b.substring(0, 120) })),
     })),
   ]
-}
 
-// ── AI bullet suggestion ──────────────────────────────────────────────────────
-
-async function suggestWithClaude(
-  jobOffer: string,
-  cvData: CvData,
-  apiKey: string,
-  customMessage?: string
-): Promise<SuggestionResult> {
-  const bulletsJson = JSON.stringify(buildBulletsSummary(cvData))
-
+  const extra = customMessage ? `\n\nContexto adicional del candidato: ${customMessage}` : ''
   const prompt = `Eres un experto en ATS y selección de personal. Analiza la oferta laboral y selecciona los bullets del candidato MÁS relevantes para esa oferta.
 
 REGLAS DE SELECCIÓN:
@@ -407,100 +354,23 @@ OFERTA LABORAL:
 ${jobOffer.substring(0, 3000)}
 
 BULLETS DEL CANDIDATO:
-${bulletsJson}${customMessage ? `\n\nCONTEXTO ADICIONAL DEL CANDIDATO:\n${customMessage}` : ''}`
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 800,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!res.ok) throw new Error(`Claude API error: ${res.status}`)
-  const data = await res.json()
-  const content = data.content?.[0]?.text ?? ''
-  const match = content.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('No JSON in response')
-  return JSON.parse(match[0]) as SuggestionResult
-}
-
-async function suggestWithOpenAICompat(
-  baseUrl: string,
-  model: string,
-  apiKey: string,
-  jobOffer: string,
-  cvData: CvData,
-  customMessage?: string
-): Promise<SuggestionResult> {
-  const bulletsSummary = buildBulletsSummary(cvData)
-  const extra = customMessage ? `\n\nContexto adicional del candidato: ${customMessage}` : ''
-
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 900,
-      response_format: { type: 'json_object' },
-      messages: [
-        {
-          role: 'user',
-          content: `Selecciona los bullets más relevantes del candidato para esta oferta y sugiere skills. Responde JSON: {"selections": {"<id>": [índices], ...}, "skills": "<habilidades sugeridas separadas por coma>"}. Máx 5 bullets para el rol más reciente, 3 para los demás. Skills actuales: ${cvData.skills.technical}\n\nOferta: ${jobOffer.substring(0, 2000)}\n\nBullets: ${JSON.stringify(bulletsSummary)}${extra}`,
-        },
-      ],
-    }),
-  })
-
-  if (!res.ok) throw new Error(`API error ${res.status}`)
-  const data = await res.json()
-  return JSON.parse(data.choices[0].message.content) as SuggestionResult
-}
-
-export interface SuggestBulletsResult {
-  selections: BulletsBySection
-  suggestedSkills: string | null
-}
-
-export async function suggestBullets(
-  jobOffer: string,
-  cvData: CvData,
-  settings: SettingsDocument | null,
-  customMessage?: string
-): Promise<SuggestBulletsResult> {
-  const fallbackSelections = initSelections(cvData)
-  const fallback: SuggestBulletsResult = { selections: fallbackSelections, suggestedSkills: null }
-  if (!settings?.aiApiKey || !jobOffer.trim()) return fallback
+${JSON.stringify(bulletsSummary)}${extra}`
 
   try {
-    const model = settings.aiModel ?? 'claude'
-    let result: SuggestionResult
+    const raw = await callProxy(
+      [{ role: 'user', content: prompt }],
+      settings,
+      900,
+      'json_object'
+    )
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) return fallback
+    const result = JSON.parse(match[0]) as { selections?: Record<string, number[]>; skills?: string }
 
-    if (model === 'claude') {
-      result = await suggestWithClaude(jobOffer, cvData, settings.aiApiKey, customMessage)
-    } else if (model === 'gpt') {
-      result = await suggestWithOpenAICompat('https://api.openai.com/v1', 'gpt-4o-mini', settings.aiApiKey, jobOffer, cvData, customMessage)
-    } else if (model === 'deepseek') {
-      result = await suggestWithOpenAICompat('https://api.deepseek.com/v1', 'deepseek-chat', settings.aiApiKey, jobOffer, cvData, customMessage)
-    } else {
-      return fallback
-    }
-
-    // Apply AI suggestions to the selection state
     const suggested: BulletsBySection = {}
 
     cvData.experience.forEach((exp) => {
-      const selectedIndices = new Set(result.selections[exp.id] ?? [])
+      const selectedIndices = new Set(result.selections?.[exp.id] ?? [])
       suggested[exp.id] = exp.bullets.map((text, i) => ({
         id: `${exp.id}-b${i}`,
         selected: selectedIndices.has(i),
@@ -509,7 +379,7 @@ export async function suggestBullets(
     })
 
     cvData.leadership.forEach((lead) => {
-      const selectedIndices = new Set(result.selections[lead.id] ?? [])
+      const selectedIndices = new Set(result.selections?.[lead.id] ?? [])
       suggested[lead.id] = lead.bullets.map((text, i) => ({
         id: `${lead.id}-b${i}`,
         selected: selectedIndices.has(i),
@@ -537,120 +407,6 @@ REGLAS:
 - No inventar logros que no estén en el original
 - Max 4-5 bullets para el rol más reciente, 3 para los demás`
 
-function buildCvGenPrompt(jobOffer: string, draft: CvData, customMessage?: string): string {
-  const extra = customMessage ? `\n\nCONTEXTO ADICIONAL DEL CANDIDATO:\n${customMessage}` : ''
-  return `${CV_GEN_SYSTEM}
-También optimiza el campo "skills.technical" para hacer match con la oferta.
-
-OFERTA LABORAL:
-${jobOffer.substring(0, 2000)}
-
-BORRADOR CV (JSON):
-${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
-
-Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title", "bullets"}. Por cada item de leadership incluye solo: {"id", "role", "bullets"}.
-{"experience": [{"id":"...","title":"...","bullets":[...]}], "leadership": [{"id":"...","role":"...","bullets":[...]}], "skills": {"technical":"...","language":"...","laboratory":"...","interests":"..."}}`
-}
-
-async function generateWithClaude(
-  jobOffer: string,
-  draft: CvData,
-  apiKey: string,
-  customMessage?: string
-): Promise<CvData> {
-  const extra = customMessage ? `\n\nCONTEXTO ADICIONAL DEL CANDIDATO:\n${customMessage}` : ''
-  const prompt = `${CV_GEN_SYSTEM}
-También optimiza el campo "skills.technical": reordena o ajusta las habilidades técnicas para hacer match con la oferta, usando las que ya tiene el candidato.
-
-OFERTA LABORAL:
-${jobOffer.substring(0, 2000)}
-
-BORRADOR CV (JSON):
-${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
-
-Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title", "bullets"}. Por cada item de leadership incluye solo: {"id", "role", "bullets"}.
-{"experience": [{"id":"...","title":"...","bullets":[...]}], "leadership": [{"id":"...","role":"...","bullets":[...]}], "skills": {"technical":"...","language":"...","laboratory":"...","interests":"..."}}
-JSON:`
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  })
-
-  if (!res.ok) throw new Error(`Claude API error: ${res.status}`)
-  const data = await res.json()
-  const content = data.content?.[0]?.text ?? ''
-  const match = content.match(/\{[\s\S]*\}/)
-  if (!match) throw new Error('No JSON in response')
-
-  const parsed = JSON.parse(match[0]) as { experience?: Array<{ id?: string; title?: string; bullets?: string[] }>; leadership?: Array<{ id?: string; role?: string; bullets?: string[] }>; skills?: Partial<CvData['skills']> }
-  return {
-    ...draft,
-    experience: draft.experience.map((exp, idx) => {
-      const opt = (parsed.experience ?? [])[idx]
-      if (!opt) return exp
-      return { ...exp, ...(opt.title ? { title: opt.title } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
-    }),
-    leadership: draft.leadership.map((lead, idx) => {
-      const opt = (parsed.leadership ?? [])[idx]
-      if (!opt) return lead
-      return { ...lead, ...(opt.role ? { role: opt.role } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
-    }),
-    skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
-  }
-}
-
-async function generateWithOpenAICompat(
-  baseUrl: string,
-  model: string,
-  apiKey: string,
-  jobOffer: string,
-  draft: CvData,
-  customMessage?: string
-): Promise<CvData> {
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4000,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: buildCvGenPrompt(jobOffer, draft, customMessage) }],
-    }),
-  })
-
-  if (!res.ok) throw new Error(`API error ${res.status}`)
-  const data = await res.json()
-  const parsed = JSON.parse(data.choices[0].message.content) as { experience?: Array<{ id?: string; title?: string; bullets?: string[] }>; leadership?: Array<{ id?: string; role?: string; bullets?: string[] }>; skills?: Partial<CvData['skills']> }
-  return {
-    ...draft,
-    experience: draft.experience.map((exp, idx) => {
-      const opt = (parsed.experience ?? [])[idx]
-      if (!opt) return exp
-      return { ...exp, ...(opt.title ? { title: opt.title } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
-    }),
-    leadership: draft.leadership.map((lead, idx) => {
-      const opt = (parsed.leadership ?? [])[idx]
-      if (!opt) return lead
-      return { ...lead, ...(opt.role ? { role: opt.role } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
-    }),
-    skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
-  }
-}
-
 export async function generateCv(
   jobOffer: string,
   cvData: CvData,
@@ -665,21 +421,52 @@ export async function generateCv(
     return { cv: draft, usedAI: false }
   }
 
-  try {
-    const model = settings.aiModel ?? 'claude'
+  const extra = customMessage ? `\n\nCONTEXTO ADICIONAL DEL CANDIDATO:\n${customMessage}` : ''
+  const prompt = `${CV_GEN_SYSTEM}
+También optimiza el campo "skills.technical": reordena o ajusta las habilidades técnicas para hacer match con la oferta, usando las que ya tiene el candidato.
 
-    if (model === 'claude') {
-      const optimized = await generateWithClaude(jobOffer, draft, settings.aiApiKey, customMessage)
-      return { cv: optimized, usedAI: true }
-    } else if (model === 'gpt') {
-      const optimized = await generateWithOpenAICompat('https://api.openai.com/v1', 'gpt-4o-mini', settings.aiApiKey, jobOffer, draft, customMessage)
-      return { cv: optimized, usedAI: true }
-    } else if (model === 'deepseek') {
-      const optimized = await generateWithOpenAICompat('https://api.deepseek.com/v1', 'deepseek-chat', settings.aiApiKey, jobOffer, draft, customMessage)
-      return { cv: optimized, usedAI: true }
+OFERTA LABORAL:
+${jobOffer.substring(0, 2000)}
+
+BORRADOR CV (JSON):
+${JSON.stringify({ experience: draft.experience, leadership: draft.leadership, skills: draft.skills }, null, 2).substring(0, 4000)}${extra}
+
+Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title", "bullets"}. Por cada item de leadership incluye solo: {"id", "role", "bullets"}.
+{"experience": [{"id":"...","title":"...","bullets":[...]}], "leadership": [{"id":"...","role":"...","bullets":[...]}], "skills": {"technical":"...","language":"...","laboratory":"...","interests":"..."}}
+JSON:`
+
+  try {
+    const raw = await callProxy(
+      [{ role: 'user', content: prompt }],
+      settings,
+      4000,
+      'json_object'
+    )
+    const match = raw.match(/\{[\s\S]*\}/)
+    if (!match) return { cv: draft, usedAI: false }
+
+    const parsed = JSON.parse(match[0]) as {
+      experience?: Array<{ id?: string; title?: string; bullets?: string[] }>
+      leadership?: Array<{ id?: string; role?: string; bullets?: string[] }>
+      skills?: Partial<CvData['skills']>
     }
 
-    return { cv: draft, usedAI: false }
+    const optimized: CvData = {
+      ...draft,
+      experience: draft.experience.map((exp, idx) => {
+        const opt = (parsed.experience ?? [])[idx]
+        if (!opt) return exp
+        return { ...exp, ...(opt.title ? { title: opt.title } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+      }),
+      leadership: draft.leadership.map((lead, idx) => {
+        const opt = (parsed.leadership ?? [])[idx]
+        if (!opt) return lead
+        return { ...lead, ...(opt.role ? { role: opt.role } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+      }),
+      skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
+    }
+
+    return { cv: optimized, usedAI: true }
   } catch {
     return { cv: draft, usedAI: false }
   }
@@ -735,7 +522,6 @@ export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
       const optimizedItem = optimizedItems[sectionIdx]
       if (!optimizedItem) return
 
-      // Detect title/role change
       const draftTitle = (draftItem[titleField] ?? '').trim()
       const optimizedTitle = (optimizedItem[titleField] ?? '').trim()
       if (optimizedTitle && draftTitle !== optimizedTitle) {
@@ -773,20 +559,8 @@ export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
     })
   }
 
-  processSection(
-    draft.experience,
-    optimized.experience,
-    'experience',
-    (item) => item.organization,
-    'title'
-  )
-  processSection(
-    draft.leadership,
-    optimized.leadership,
-    'leadership',
-    (item) => item.organization,
-    'role'
-  )
+  processSection(draft.experience, optimized.experience, 'experience', (item) => item.organization, 'title')
+  processSection(draft.leadership, optimized.leadership, 'leadership', (item) => item.organization, 'role')
 
   const origSkills = draft.skills.technical.trim()
   const propSkills = optimized.skills.technical.trim()
@@ -843,7 +617,6 @@ export function applyDiffs(draft: CvData, diffs: CvDiffItem[]): CvData {
     if (bd.proposed) {
       item.bullets[bd.bulletIdx] = bd.proposed
     } else {
-      // AI removed this bullet — remove from result if user accepted
       item.bullets.splice(bd.bulletIdx, 1)
     }
   }

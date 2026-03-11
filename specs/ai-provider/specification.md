@@ -88,9 +88,17 @@ Usuario selecciona modelo
 ## Archivos actuales
 
 ```
-lib/ai.ts                  → parseJobOffer(), extractWithRegex(), callBackendProxy()
-lib/ai-cv.ts               → generateCv(), optimizeCv()
-app/api/ai/parse/route.ts  → POST route, server-side AI call
-app/(app)/settings/page.tsx → Selector de modelo + API key
-hooks/use-settings.ts       → Hook para leer/guardar settings (incl. aiModel, aiApiKey)
+lib/ai-providers/types.ts      → AIProvider interface + tipos comunes
+lib/ai-providers/claude.ts     → ClaudeProvider (Strategy)
+lib/ai-providers/gpt.ts        → GPTProvider (Strategy)
+lib/ai-providers/deepseek.ts   → DeepSeekProvider (Strategy)
+lib/ai-providers/factory.ts    → AIProviderFactory (Factory)
+lib/ai-proxy-client.ts         → callProxy() — cliente del proxy genérico
+lib/ai.ts                      → parseJobOffer(), extractWithRegex()
+lib/ai-cv.ts                   → generateCv(), optimizeCv(), chatWithCv(), etc.
+app/api/ai/proxy/route.ts      → POST gateway genérico (Factory+Strategy)
+app/api/ai/parse/route.ts      → POST route para parseo de ofertas
+app/api/ai/validate/route.ts   → POST validador de API key
+app/(app)/settings/page.tsx    → Selector de modelo + API key + botón "Probar conexión"
+hooks/use-settings.ts          → Hook para leer/guardar settings (incl. aiModel, aiApiKey)
 ```
