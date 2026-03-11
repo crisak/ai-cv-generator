@@ -217,7 +217,7 @@ export default function ProfilePage() {
 
       <Separator />
 
-      {/* Nombre */}
+      {/* Nombre y email */}
       <section className="space-y-4">
         <h2 className="text-sm font-semibold">Nombre</h2>
         <div className="grid grid-cols-2 gap-3 max-w-sm">
@@ -248,6 +248,15 @@ export default function ProfilePage() {
               Guardado correctamente
             </Badge>
           )}
+        </div>
+
+        <div className="space-y-1.5 max-w-sm">
+          <Label className="text-muted-foreground">Correo electrónico</Label>
+          <Input
+            value={user?.primaryEmailAddress?.emailAddress ?? ''}
+            readOnly
+            className="bg-muted/40 cursor-default text-muted-foreground"
+          />
         </div>
       </section>
 
