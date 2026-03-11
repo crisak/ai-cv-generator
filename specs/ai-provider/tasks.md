@@ -14,20 +14,24 @@
 
 ## Tareas pendientes (evolución)
 
-### Fase 1: LiteLLM Gateway
+### Fase 1: Implementar un MVP o POC
+- [ ] Task 9-1: Fix — Al configurar el api key de deekseek desde los settings, este no esta funcionando, en todas las partes del sistema donde se usa la API de la IA no esta respondiendo la IA, al principio de pensaba que la api key era invalida pero esto no es asi, se hizo la prueba con curl y funciona.
+- [ ] Task 9-2: Implementa run validador de api key en la misma pantalla de settings para validar el api key
+
+### Fase 2: LiteLLM Gateway
 - [ ] Task 10: Evaluar opciones de deployment de LiteLLM (self-hosted vs managed)
 - [ ] Task 11: Configurar LiteLLM con providers actuales (Claude, GPT, DeepSeek)
 - [ ] Task 12: Agregar providers adicionales (Gemini, Grok, Mistral)
 - [ ] Task 13: Migrar `lib/ai.ts` para rutear via LiteLLM
 - [ ] Task 14: Migrar `app/api/ai/parse/route.ts` al nuevo gateway
 
-### Fase 2: Free-tier
+### Fase 3: Free-tier
 - [ ] Task 15: Definir qué modelos son free-tier
 - [ ] Task 16: Implementar verificación de plan en API routes
 - [ ] Task 17: UI para mostrar modelos disponibles según plan
 - [ ] Task 18: Límites de uso en free-tier (requests/día o tokens/mes)
 
-### Fase 3: Billing + Premium
+### Fase 4: Billing + Premium
 - [ ] Task 19: Setup DB server-side para tracking de tokens
 - [ ] Task 20: Implementar tracking de tokens por request
 - [ ] Task 21: Integrar Stripe para suscripción mensual
