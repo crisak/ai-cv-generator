@@ -1,6 +1,6 @@
 # Feature: Cross-Cutting Infrastructure
 
-**Estado**: ⬜ Pendiente
+**Estado**: ✅ Completo
 
 ---
 
@@ -23,11 +23,11 @@ Múltiples dominios necesitan animaciones de transición (framer-motion) y compo
 
 | ID | Requerimiento | Estado |
 |----|--------------|--------|
-| FR1 | framer-motion instalado como dependencia del proyecto | ⬜ Pendiente |
-| FR2 | ai-elements instalado y configurado con theme del proyecto | ⬜ Pendiente |
-| FR3 | Componente Shimmer disponible para import | ⬜ Pendiente |
-| FR4 | Componente ModelSelector disponible para import | ⬜ Pendiente |
-| FR5 | Documentación técnica actualizada (CLAUDE.md, constitution.md) | ⬜ Pendiente |
+| FR1 | framer-motion instalado como dependencia del proyecto | ✅ Completo |
+| FR2 | ai-elements instalado y configurado con theme del proyecto | ✅ Completo |
+| FR3 | Componente Shimmer disponible para import | ✅ Completo |
+| FR4 | Componente ModelSelector disponible para import | ✅ Completo |
+| FR5 | Documentación técnica actualizada (CLAUDE.md, constitution.md) | ✅ Completo |
 
 ## Requerimientos no funcionales
 
