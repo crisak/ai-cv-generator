@@ -35,3 +35,6 @@ docs/.draft
 # Internal development notes
 memory/
 .claude/worktrees
+
+# TypeScript incremental build
+*.tsbuildinfo
