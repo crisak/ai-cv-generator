@@ -23,15 +23,15 @@
 
 ## Tareas pendientes (enhanced profile v2)
 
-- [ ] Task 16: Imagen de perfil via Clerk
+- [x] Task 16: Imagen de perfil via Clerk
   - Scope: Agregar componente de upload de avatar en `/profile` page usando `user.setProfileImage()`. Preview antes de upload. Validación de tamaño. Manejo de errores.
   - Depende de: nada
 
-- [ ] Task 17: Edición expandida de nombre y email en perfil
+- [x] Task 17: Edición expandida de nombre y email en perfil
   - Scope: Expandir formulario en `/profile` para permitir editar firstName, lastName y gestionar email addresses via Clerk API (`user.createEmailAddress()`, verificación). Validar email antes de agregar.
   - Depende de: nada
 
-- [ ] Task 18: Vincular/desvincular cuentas externas (Google, GitHub) en perfil
+- [x] Task 18: Vincular/desvincular cuentas externas (Google, GitHub) en perfil
   - Scope: Mostrar lista de cuentas conectadas (`user.externalAccounts`). Botones "Vincular" para providers no conectados, "Desvincular" para los conectados. Usar `user.createExternalAccount()` y `externalAccount.destroy()`. Prevenir desvincular último método de auth.
   - Depende de: nada
 
