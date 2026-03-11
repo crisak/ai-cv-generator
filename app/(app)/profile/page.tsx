@@ -267,10 +267,10 @@ export default function ProfilePage() {
                   label: account.provider.charAt(0).toUpperCase() + account.provider.slice(1),
                   icon: null,
                 }
+                // Bloquear desvincular si es la única cuenta externa Y el usuario no tiene password
+                // Un email verificado sin password no es suficiente para iniciar sesión
                 const isOnlyAuthMethod =
-                  user.externalAccounts.length === 1 &&
-                  (user.emailAddresses.length === 0 ||
-                    user.emailAddresses.every((e) => e.verification.status !== 'verified'))
+                  user.externalAccounts.length === 1 && !user.passwordEnabled
 
                 return (
                   <li key={account.id} className="flex items-center justify-between gap-4 max-w-sm">
