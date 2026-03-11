@@ -44,7 +44,8 @@ Usuario selecciona modelo
 - Como usuario, si no tengo API key la app usa extracción por regex como fallback
 
 ### Futuras
-- Como usuario, despues de configurar una api key de cualquier provedor en la misma pantalla de settings debe estar habilitado un mini chat con el objetivo de probar la api key recien configurada
+- Como usuario, después de ingresar una api key en Settings, puedo hacer clic en "Probar conexión" para validar que la key es válida antes de guardar
+- Como usuario, veo feedback inmediato (válida / inválida / error de red) al probar la key
 - Como usuario, puedo usar modelos gratuitos sin configurar API key
 - Como usuario, veo cuántos tokens he consumido este mes
 - Como usuario, cuando agoto el free-tier veo un prompt para suscribirme
@@ -60,6 +61,7 @@ Usuario selecciona modelo
 | FR3 | Llamada a `/api/ai/parse` con model + apiKey | ✅ |
 | FR4 | Fallback a regex sin API key | ✅ |
 | FR5 | Modelos soportados: claude, gpt, deepseek (server-side) | ✅ |
+| FR5b | Validador de API key en Settings (botón "Probar conexión") | ✅ |
 | FR6 | LiteLLM como gateway unificado | ⬜ Pendiente |
 | FR7 | Free-tier con modelos gratuitos | ⬜ Pendiente |
 | FR8 | Billing por tokens (tracking de consumo) | ⬜ Pendiente |
@@ -86,9 +88,17 @@ Usuario selecciona modelo
 ## Archivos actuales
 
 ```
-lib/ai.ts                  → parseJobOffer(), extractWithRegex(), callBackendProxy()
-lib/ai-cv.ts               → generateCv(), optimizeCv()
-app/api/ai/parse/route.ts  → POST route, server-side AI call
-app/(app)/settings/page.tsx → Selector de modelo + API key
-hooks/use-settings.ts       → Hook para leer/guardar settings (incl. aiModel, aiApiKey)
+lib/ai-providers/types.ts      → AIProvider interface + tipos comunes
+lib/ai-providers/claude.ts     → ClaudeProvider (Strategy)
+lib/ai-providers/gpt.ts        → GPTProvider (Strategy)
+lib/ai-providers/deepseek.ts   → DeepSeekProvider (Strategy)
+lib/ai-providers/factory.ts    → AIProviderFactory (Factory)
+lib/ai-proxy-client.ts         → callProxy() — cliente del proxy genérico
+lib/ai.ts                      → parseJobOffer(), extractWithRegex()
+lib/ai-cv.ts                   → generateCv(), optimizeCv(), chatWithCv(), etc.
+app/api/ai/proxy/route.ts      → POST gateway genérico (Factory+Strategy)
+app/api/ai/parse/route.ts      → POST route para parseo de ofertas
+app/api/ai/validate/route.ts   → POST validador de API key
+app/(app)/settings/page.tsx    → Selector de modelo + API key + botón "Probar conexión"
+hooks/use-settings.ts          → Hook para leer/guardar settings (incl. aiModel, aiApiKey)
 ```

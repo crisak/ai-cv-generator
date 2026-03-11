@@ -35,3 +35,9 @@ docs/.draft
 # Internal development notes
 memory/
 .claude/worktrees
+
+# TypeScript incremental build
+*.tsbuildinfo
+
+# clerk configuration (can include secrets)
+/.clerk/
