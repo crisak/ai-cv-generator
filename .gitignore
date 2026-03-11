@@ -32,3 +32,5 @@ Thumbs.db
 *.swo
 
 docs/.draft
+# Internal development notes
+memory/
