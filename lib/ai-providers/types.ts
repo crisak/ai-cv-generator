@@ -1,5 +1,3 @@
-import 'server-only'
-
 export type AIProviderName = 'claude' | 'gpt' | 'deepseek'
 
 export interface AIMessage {

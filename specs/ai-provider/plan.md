@@ -311,6 +311,7 @@ POST /api/ai/proxy
 | Ubicación del proxy | Next.js API Route | Sin infraestructura extra, elimina CORS, protegido por Clerk |
 | Respuesta normalizada | `{ text: string }` | Desacopla formato de provider del código de negocio |
 | Compatibilidad `parse/route.ts` | Migrar internamente | Evita breaking change en código existente |
+| Guard server-only | Sin directiva explícita | `'use server'` crea Server Actions (endpoints públicos), no es una guardia. `server-only` (paquete npm) es redundante porque Next.js App Router ya trata todo código sin `'use client'` como server-side por defecto |
 
 ---
 

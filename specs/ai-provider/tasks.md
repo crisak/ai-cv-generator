@@ -15,7 +15,7 @@
 ## Tareas pendientes (evolución)
 
 ### Fase 1: Implementar un MVP o POC
-- [ ] Task 9-1: Fix — Al configurar el api key de deekseek desde los settings, este no esta funcionando, en todas las partes del sistema donde se usa la API de la IA no esta respondiendo la IA, al principio de pensaba que la api key era invalida pero esto no es asi, se hizo la prueba con curl y funciona.
+- [x] Task 9-1: Fix — Al configurar el api key de deekseek desde los settings, este no esta funcionando, en todas las partes del sistema donde se usa la API de la IA no esta respondiendo la IA, al principio de pensaba que la api key era invalida pero esto no es asi, se hizo la prueba con curl y funciona.
 - [ ] Task 9-2: Implementa run validador de api key en la misma pantalla de settings para validar el api key
 
 ### Fase 2: LiteLLM Gateway

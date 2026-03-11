@@ -1,4 +1,3 @@
-import 'server-only'
 import type { AIProvider, AIRequest, AIResponse } from './types'
 
 export class DeepSeekProvider implements AIProvider {
