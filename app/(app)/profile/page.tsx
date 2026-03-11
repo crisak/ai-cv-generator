@@ -1,6 +1,6 @@
 'use client'
 
-import { useUser } from '@clerk/nextjs'
+import { useUser, useReverification } from '@clerk/nextjs'
 import { Sun, Moon, Monitor, Save, Upload, Plus, X, Loader2, Github } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useState, useEffect, useRef } from 'react'
@@ -121,15 +121,17 @@ export default function ProfilePage() {
   // --- Cuentas externas ---
   const connectedProviders = user?.externalAccounts.map((a) => a.provider as string) ?? []
 
+  const createExternalAccountWithReverification = useReverification(
+    (provider: 'oauth_google' | 'oauth_github') =>
+      user!.createExternalAccount({ strategy: provider, redirectUrl: window.location.href })
+  )
+
   async function handleLinkAccount(provider: 'oauth_google' | 'oauth_github') {
     if (!user) return
     setExternalError(null)
     setIsLinking(provider === 'oauth_google' ? 'google' : 'github')
     try {
-      const res = await user.createExternalAccount({
-        strategy: provider,
-        redirectUrl: window.location.href,
-      })
+      const res = await createExternalAccountWithReverification(provider)
       if (res.verification?.externalVerificationRedirectURL) {
         window.location.href = res.verification.externalVerificationRedirectURL.href
       }
