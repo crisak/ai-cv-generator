@@ -44,6 +44,7 @@ Usuario selecciona modelo
 - Como usuario, si no tengo API key la app usa extracción por regex como fallback
 
 ### Futuras
+- Como usuario, despues de configurar una api key de cualquier provedor en la misma pantalla de settings debe estar habilitado un mini chat con el objetivo de probar la api key recien configurada
 - Como usuario, puedo usar modelos gratuitos sin configurar API key
 - Como usuario, veo cuántos tokens he consumido este mes
 - Como usuario, cuando agoto el free-tier veo un prompt para suscribirme
