@@ -54,6 +54,28 @@ Billing
 | Free-tier models | DeepSeek / Ollama / Mistral free | Costos, calidad |
 | Token tracking | Por request / Por completion / Ambos | Precisión de billing |
 
+## Task 9-2: Validador de API key
+
+```
+Settings UI
+  → usuario ingresa API key
+  → clic en "Probar conexión"
+  → POST /api/ai/validate { model, apiKey }
+  → route.ts envía mensaje mínimo al provider
+  → retorna { valid: true } o { valid: false, reason }
+  → UI muestra badge: "Conexión exitosa" | "Key inválida"
+```
+
+Archivos involucrados:
+- **Nuevo**: `app/api/ai/validate/route.ts` — endpoint de validación
+- **Editar**: `app/(app)/settings/page.tsx` — botón + feedback
+
+Diseño del endpoint:
+- Reutiliza la misma lógica de auth (Clerk) que `/api/ai/parse`
+- Envía el mensaje más barato posible ("Hi") con max_tokens=1
+- Soporta: claude, gpt, deepseek
+- No guarda nada, solo valida
+
 ## Dependencias actuales
 
 - `lib/ai.ts` → lógica de parsing con IA

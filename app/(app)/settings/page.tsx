@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Save } from 'lucide-react'
+import { CheckCircle2, Eye, EyeOff, Loader2, Save, XCircle } from 'lucide-react'
 import { useSettings } from '@/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +32,8 @@ export default function SettingsPage() {
   const [showKey, setShowKey] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
   const [savedOk, setSavedOk] = useState(false)
+  const [isValidating, setIsValidating] = useState(false)
+  const [validationResult, setValidationResult] = useState<{ valid: boolean; reason?: string } | null>(null)
 
   useEffect(() => {
     if (settings) {
@@ -43,6 +45,26 @@ export default function SettingsPage() {
   function markDirty() {
     setIsDirty(true)
     setSavedOk(false)
+    setValidationResult(null)
+  }
+
+  async function handleValidate() {
+    if (!apiKey) return
+    setIsValidating(true)
+    setValidationResult(null)
+    try {
+      const res = await fetch('/api/ai/validate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ model: aiModel, apiKey }),
+      })
+      const data = await res.json()
+      setValidationResult({ valid: data.valid, reason: data.reason })
+    } catch {
+      setValidationResult({ valid: false, reason: 'Error de red' })
+    } finally {
+      setIsValidating(false)
+    }
   }
 
   async function handleSave() {
@@ -105,6 +127,35 @@ export default function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               La API key se almacena localmente en tu navegador (RxDB/IndexedDB). No se envía a ningún servidor externo salvo las APIs de IA seleccionadas.
             </p>
+            {apiKey && (
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleValidate}
+                  disabled={isValidating}
+                  className="gap-2"
+                >
+                  {isValidating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  )}
+                  {isValidating ? 'Probando…' : 'Probar conexión'}
+                </Button>
+                {validationResult && (
+                  <span className={`flex items-center gap-1.5 text-xs font-medium ${validationResult.valid ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                    {validationResult.valid ? (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    ) : (
+                      <XCircle className="h-3.5 w-3.5" />
+                    )}
+                    {validationResult.valid ? 'Conexión exitosa' : (validationResult.reason ?? 'Key inválida')}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {!apiKey && (

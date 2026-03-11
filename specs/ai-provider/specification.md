@@ -44,6 +44,8 @@ Usuario selecciona modelo
 - Como usuario, si no tengo API key la app usa extracción por regex como fallback
 
 ### Futuras
+- Como usuario, después de ingresar una api key en Settings, puedo hacer clic en "Probar conexión" para validar que la key es válida antes de guardar
+- Como usuario, veo feedback inmediato (válida / inválida / error de red) al probar la key
 - Como usuario, puedo usar modelos gratuitos sin configurar API key
 - Como usuario, veo cuántos tokens he consumido este mes
 - Como usuario, cuando agoto el free-tier veo un prompt para suscribirme
@@ -59,6 +61,7 @@ Usuario selecciona modelo
 | FR3 | Llamada a `/api/ai/parse` con model + apiKey | ✅ |
 | FR4 | Fallback a regex sin API key | ✅ |
 | FR5 | Modelos soportados: claude, gpt, deepseek (server-side) | ✅ |
+| FR5b | Validador de API key en Settings (botón "Probar conexión") | ✅ |
 | FR6 | LiteLLM como gateway unificado | ⬜ Pendiente |
 | FR7 | Free-tier con modelos gratuitos | ⬜ Pendiente |
 | FR8 | Billing por tokens (tracking de consumo) | ⬜ Pendiente |
