@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
+import { AIProviderFactory } from '@/lib/ai-providers/factory'
+import type { AIProviderName } from '@/lib/ai-providers/types'
 
 interface ParseRequest {
   jobOffer: string
@@ -31,6 +33,8 @@ function parseAIJson(text: string) {
   }
 }
 
+const SUPPORTED: AIProviderName[] = ['claude', 'gpt', 'deepseek']
+
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
   if (!userId) {
@@ -49,90 +53,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'AI service not configured.', code: 'NO_API_KEY' }, { status: 503 })
     }
 
-    const prompt = JOB_OFFER_PROMPT(jobOffer)
-
-    if (model === 'claude') {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 600,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('Anthropic API error:', error)
-        return NextResponse.json({ error: `AI API error: ${response.status}`, code: 'AI_API_ERROR' }, { status: response.status })
-      }
-
-      const data = await response.json()
-      const parsed = parseAIJson(data.content?.[0]?.text ?? '')
-      if (!parsed) return NextResponse.json({ error: 'Invalid response format from AI', code: 'INVALID_FORMAT' }, { status: 500 })
-      return NextResponse.json({ success: true, data: parsed })
+    if (!SUPPORTED.includes(model as AIProviderName)) {
+      return NextResponse.json({ error: 'Model not yet implemented', code: 'NOT_IMPLEMENTED' }, { status: 501 })
     }
 
-    if (model === 'deepseek') {
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'deepseek-chat',
-          max_tokens: 600,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
+    const provider = AIProviderFactory.create(model as AIProviderName)
+    const result = await provider.call({
+      apiKey,
+      messages: [{ role: 'user', content: JOB_OFFER_PROMPT(jobOffer) }],
+      maxTokens: 600,
+      responseFormat: 'json_object',
+    })
 
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('DeepSeek API error:', error)
-        return NextResponse.json({ error: `AI API error: ${response.status}`, code: 'AI_API_ERROR' }, { status: response.status })
-      }
-
-      const data = await response.json()
-      const parsed = parseAIJson(data.choices?.[0]?.message?.content ?? '')
-      if (!parsed) return NextResponse.json({ error: 'Invalid response format from AI', code: 'INVALID_FORMAT' }, { status: 500 })
-      return NextResponse.json({ success: true, data: parsed })
+    const parsed = parseAIJson(result.text)
+    if (!parsed) {
+      return NextResponse.json({ error: 'Invalid response format from AI', code: 'INVALID_FORMAT' }, { status: 500 })
     }
 
-    if (model === 'gpt') {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          max_tokens: 600,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        console.error('OpenAI API error:', error)
-        return NextResponse.json({ error: `AI API error: ${response.status}`, code: 'AI_API_ERROR' }, { status: response.status })
-      }
-
-      const data = await response.json()
-      const parsed = parseAIJson(data.choices?.[0]?.message?.content ?? '')
-      if (!parsed) return NextResponse.json({ error: 'Invalid response format from AI', code: 'INVALID_FORMAT' }, { status: 500 })
-      return NextResponse.json({ success: true, data: parsed })
-    }
-
-    return NextResponse.json({ error: 'Model not yet implemented', code: 'NOT_IMPLEMENTED' }, { status: 501 })
+    return NextResponse.json({ success: true, data: parsed })
   } catch (error) {
     console.error('API error:', error)
-    return NextResponse.json({ error: 'Internal server error', code: 'INTERNAL_ERROR' }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: message, code: 'INTERNAL_ERROR' }, { status: 500 })
   }
 }
