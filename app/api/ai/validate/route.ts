@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { AIProviderFactory } from '@/lib/ai-providers/factory'
+import { AIProviderError } from '@/lib/ai-providers/types'
 import type { AIProviderName } from '@/lib/ai-providers/types'
 
-const SUPPORTED: AIProviderName[] = ['claude', 'gpt', 'deepseek']
+const SUPPORTED: AIProviderName[] = ['claude', 'gpt', 'deepseek', 'gemini']
 
 interface ValidateRequest {
   model: string
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   const { model, apiKey } = body
 
   if (!SUPPORTED.includes(model as AIProviderName)) {
-    return NextResponse.json({ valid: false, reason: 'Modelo no soportado para validación' })
+    return NextResponse.json({ valid: false, reason: `Proveedor "${model}" no soportado para validación` })
   }
 
   try {
@@ -36,11 +37,9 @@ export async function POST(request: NextRequest) {
     })
     return NextResponse.json({ valid: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : ''
-    const isAuth = message.includes('401') || message.toLowerCase().includes('auth')
-    return NextResponse.json({
-      valid: false,
-      reason: isAuth ? 'API key inválida' : `Error al contactar el proveedor`,
-    })
+    if (error instanceof AIProviderError) {
+      return NextResponse.json({ valid: false, reason: error.message, code: error.code })
+    }
+    return NextResponse.json({ valid: false, reason: 'Error inesperado al validar la conexión' })
   }
 }

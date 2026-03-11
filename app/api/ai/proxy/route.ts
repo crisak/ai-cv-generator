@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { z } from 'zod'
 import { AIProviderFactory } from '@/lib/ai-providers/factory'
+import { AIProviderError } from '@/lib/ai-providers/types'
 
 const RequestSchema = z.object({
-  provider: z.enum(['claude', 'gpt', 'deepseek']),
+  provider: z.enum(['claude', 'gpt', 'deepseek', 'gemini']),
   apiKey: z.string().min(1),
   messages: z
     .array(
@@ -45,9 +46,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ text: result.text })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
+    const code = error instanceof AIProviderError ? error.code : 'PROVIDER_ERROR'
     console.error(`[ai/proxy] ${provider} error:`, message)
     return NextResponse.json(
-      { error: message, code: 'PROVIDER_ERROR' },
+      { error: message, code },
       { status: 502 }
     )
   }

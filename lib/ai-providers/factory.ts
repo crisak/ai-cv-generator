@@ -1,6 +1,7 @@
 import { ClaudeProvider } from './claude'
 import { GPTProvider } from './gpt'
 import { DeepSeekProvider } from './deepseek'
+import { GeminiProvider } from './gemini'
 import type { AIProvider, AIProviderName } from './types'
 
 export class AIProviderFactory {
@@ -12,6 +13,8 @@ export class AIProviderFactory {
         return new GPTProvider()
       case 'deepseek':
         return new DeepSeekProvider()
+      case 'gemini':
+        return new GeminiProvider()
     }
   }
 }

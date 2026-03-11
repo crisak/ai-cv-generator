@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { AIProviderFactory } from '@/lib/ai-providers/factory'
+import { AIProviderError } from '@/lib/ai-providers/types'
 import type { AIProviderName } from '@/lib/ai-providers/types'
 
 interface ParseRequest {
@@ -33,7 +34,7 @@ function parseAIJson(text: string) {
   }
 }
 
-const SUPPORTED: AIProviderName[] = ['claude', 'gpt', 'deepseek']
+const SUPPORTED: AIProviderName[] = ['claude', 'gpt', 'deepseek', 'gemini']
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('API error:', error)
     const message = error instanceof Error ? error.message : 'Internal server error'
-    return NextResponse.json({ error: message, code: 'INTERNAL_ERROR' }, { status: 500 })
+    const code = error instanceof AIProviderError ? error.code : 'INTERNAL_ERROR'
+    return NextResponse.json({ error: message, code }, { status: 500 })
   }
 }

@@ -38,3 +38,6 @@ memory/
 
 # TypeScript incremental build
 *.tsbuildinfo
+
+# clerk configuration (can include secrets)
+/.clerk/
