@@ -18,6 +18,7 @@ export default function LoginPage() {
         </div>
 
         <SignIn
+          forceRedirectUrl="/applications"
           appearance={{
             variables: {
               colorPrimary: '#1877F2',
