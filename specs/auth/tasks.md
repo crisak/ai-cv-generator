@@ -32,7 +32,7 @@
   - Depende de: nada
 
 - [x] Task 18: Vincular/desvincular cuentas externas (Google, GitHub) en perfil
-  - Scope: Descartado — `user.createExternalAccount()` devuelve 403 en el plan actual de Clerk. La opción de vincular cuentas post-login no está disponible en la instancia.
+  - Scope: Mostrar cuentas OAuth conectadas (lectura) + desvincular via `account.destroy()` + `useReverification`. Vincular nuevas cuentas descartado (403). Guard `passwordEnabled` previene lockout.
   - Depende de: nada
 
 - [ ] Task 19: Configurar Account Linking por email en Clerk Dashboard
