@@ -38,6 +38,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { TimelineView } from '@/components/applications/timeline-view'
+import { BenefitList } from '@/components/applications/benefit-list'
 import { TimelineEntryForm } from '@/components/applications/timeline-entry-form'
 import { CvViewer } from '@/components/cv/cv-viewer'
 import {
@@ -185,7 +186,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [status, setStatus] = useState<ApplicationStatus>('pending')
   const [salaryOffered, setSalaryOffered] = useState('')
   const [salaryCurrency, setSalaryCurrency] = useState('COP')
-  const [benefits, setBenefits] = useState('')
+  const [benefits, setBenefits] = useState<string[]>([])
   const [appliedAt, setAppliedAt] = useState('')
   const [responseDate, setResponseDate] = useState('')
   const [nextSteps, setNextSteps] = useState('')
@@ -205,7 +206,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       setStatus(app.status)
       setSalaryOffered(app.salaryOffered ? String(app.salaryOffered) : '')
       setSalaryCurrency(app.salaryCurrency || 'COP')
-      setBenefits(app.benefits?.join(', ') ?? '')
+      setBenefits(app.benefits ?? [])
       setAppliedAt(app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : '')
       setResponseDate(app.responseDate ? new Date(app.responseDate).toISOString().split('T')[0] : '')
       setNextSteps(app.nextSteps ?? '')
@@ -223,7 +224,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       status,
       salaryOffered: salaryOffered ? parseFloat(salaryOffered) : 0,
       salaryCurrency,
-      benefits: benefits.split(',').map((b) => b.trim()).filter(Boolean),
+      benefits,
       appliedAt: appliedAt ? new Date(appliedAt).toISOString() : '',
       responseDate: responseDate ? new Date(responseDate).toISOString() : '',
       nextSteps,
@@ -243,7 +244,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     setStatus(app.status)
     setSalaryOffered(app.salaryOffered ? String(app.salaryOffered) : '')
     setSalaryCurrency(app.salaryCurrency || 'COP')
-    setBenefits(app.benefits?.join(', ') ?? '')
+    setBenefits(app.benefits ?? [])
     setAppliedAt(app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : '')
     setResponseDate(app.responseDate ? new Date(app.responseDate).toISOString().split('T')[0] : '')
     setNextSteps(app.nextSteps ?? '')
@@ -544,12 +545,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground font-medium">Beneficios</Label>
                 {isEditing ? (
-                  <Input
-                    value={benefits}
-                    onChange={(e) => setBenefits(e.target.value)}
-                    placeholder="Separados por coma: remoto, seguro médico, bonos"
-                    className="h-8 text-sm"
-                  />
+                  <BenefitList value={benefits} onChange={setBenefits} />
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {app.benefits?.length > 0
