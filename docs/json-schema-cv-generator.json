@@ -26,7 +26,7 @@
           "minLength": 1,
           "default": "",
           "description": "Nombre completo tal como aparece en documentos oficiales. Evitar apodos o abreviaturas. Los ATS lo usan como identificador principal.",
-          "examples": ["Cristian Camilo Romero Piñeros"]
+          "examples": ["Nombre Apellido Ejemplo"]
         },
         "contact": {
           "type": "object",
@@ -42,13 +42,13 @@
               "type": "string",
               "default": "",
               "description": "Ciudad de residencia. Muchos ATS filtran por ubicación geográfica, incluirla siempre.",
-              "examples": ["Bogotá D.C"]
+              "examples": ["Ciudad Ejemplo"]
             },
             "state": {
               "type": "string",
               "default": "",
               "description": "País, estado o departamento. Importante para aplicaciones internacionales.",
-              "examples": ["Colombia"]
+              "examples": ["País Ejemplo"]
             },
             "zip": {
               "type": "string",
@@ -69,7 +69,7 @@
               "type": "string",
               "default": "",
               "description": "Número telefónico con código de país para aplicaciones internacionales. Formato: +XX XXXXXXXXXX.",
-              "examples": ["+57 3141111224"]
+              "examples": ["+00 3000000000"]
             }
           },
           "required": ["address", "city", "state", "zip", "email", "phone"],
@@ -114,13 +114,13 @@
             "type": "string",
             "default": "",
             "description": "Nombre completo oficial de la institución, sin abreviaturas. Los ATS pueden no reconocer siglas no estandarizadas.",
-            "examples": ["Fundación Universitaria del Área Andina", "Servicio Nacional de Aprendizaje (SENA)"]
+            "examples": ["Universidad Ejemplo A", "Instituto Técnico Ejemplo B"]
           },
           "location": {
             "type": "string",
             "default": "",
             "description": "Ciudad y país de la institución. Formato: 'Ciudad, País' o 'Ciudad, Departamento, País'.",
-            "examples": ["Bogotá, Colombia", "Soacha, Cundinamarca, Colombia"]
+            "examples": ["Ciudad A, País Ejemplo", "Ciudad B, Región B, País Ejemplo"]
           },
           "degree": {
             "type": "string",
@@ -226,7 +226,7 @@
             "type": "string",
             "default": "",
             "description": "Nombre oficial de la empresa. Si trabajaste como contractor para un cliente a través de una consultora, usar formato 'Consultora – Cliente'.",
-            "examples": ["VTEX", "Softgic – Línea Directa S.A.S", "NativApps Inc."]
+            "examples": ["Empresa A", "Empresa C – Cliente C", "Empresa B"]
           },
           "title": {
             "type": "string",
@@ -238,7 +238,7 @@
             "type": "string",
             "default": "",
             "description": "Ciudad y país del empleo. Formato consistente: 'Ciudad, País'.",
-            "examples": ["Bogotá, Colombia"]
+            "examples": ["Ciudad A, País Ejemplo"]
           },
           "dates": {
             "type": "string",
@@ -284,13 +284,13 @@
             "type": "string",
             "default": "",
             "description": "Nombre de la empresa donde ejerciste el liderazgo.",
-            "examples": ["VTEX", "Go Digital Colombia"]
+            "examples": ["Empresa A", "Empresa D"]
           },
           "location": {
             "type": "string",
             "default": "",
             "description": "Ciudad y país.",
-            "examples": ["Bogotá, Colombia"]
+            "examples": ["Ciudad A, País Ejemplo"]
           },
           "role": {
             "type": "string",
