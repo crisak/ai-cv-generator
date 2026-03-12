@@ -74,10 +74,11 @@ Los usuarios necesitan autenticarse para acceder a la plataforma. Cada usuario d
 
 | ID | Requerimiento | Estado |
 |----|--------------|--------|
-| FR10 | Actualizar nombre, apellido y email via Clerk `user.update()` | ⬜ Pendiente |
-| FR11 | Actualizar imagen de perfil via Clerk `user.setProfileImage()` | ⬜ Pendiente |
-| FR12 | Vincular/desvincular cuentas externas (Google, GitHub) via Clerk | ⬜ Pendiente |
-| FR13 | Habilitar Account Linking por email en Clerk Dashboard | ⬜ Pendiente |
+| FR10 | Actualizar nombre y apellido via Clerk `user.update()` | ✅ Implementado |
+| FR11 | Actualizar imagen de perfil via Clerk `user.setProfileImage()` | ✅ Implementado |
+| ~~FR12~~ | ~~Vincular/desvincular cuentas externas (Google, GitHub) via Clerk~~ | ❌ Descartado — requiere plan Clerk no disponible |
+| FR13 | Habilitar Account Linking por email en Clerk Dashboard | ⬜ Pendiente (configuración manual) |
+| ~~FR14~~ | ~~Gestión de múltiples emails~~ | ❌ Descartado — requiere plan Clerk no disponible |
 
 ### Edge Cases (v2)
 
