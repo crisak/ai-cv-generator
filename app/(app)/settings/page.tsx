@@ -1,28 +1,75 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { CheckCircle2, Eye, EyeOff, Loader2, Save, XCircle } from 'lucide-react'
+import { memo, useCallback, useState, useEffect } from 'react'
+import { CheckCircle2, CheckIcon, Eye, EyeOff, Loader2, Save, XCircle } from 'lucide-react'
 import { useSettings } from '@/hooks/use-settings'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  ModelSelector,
+  ModelSelectorContent,
+  ModelSelectorEmpty,
+  ModelSelectorGroup,
+  ModelSelectorInput,
+  ModelSelectorItem,
+  ModelSelectorList,
+  ModelSelectorLogo,
+  ModelSelectorName,
+  ModelSelectorTrigger,
+} from '@/components/ai-elements/model-selector'
 import { Badge } from '@/components/ui/badge'
 import type { AIModel } from '@/types/cv'
 
-const AI_MODELS: { value: AIModel; label: string; keyLabel: string }[] = [
-  { value: 'claude', label: 'Claude (Anthropic)', keyLabel: 'Anthropic API Key' },
-  { value: 'gpt', label: 'GPT-4o (OpenAI)', keyLabel: 'OpenAI API Key' },
-  { value: 'gemini', label: 'Gemini (Google)', keyLabel: 'Google AI Studio Key' },
-  { value: 'grok', label: 'Grok (xAI)', keyLabel: 'xAI API Key' },
-  { value: 'deepseek', label: 'DeepSeek', keyLabel: 'DeepSeek API Key' },
+type ModelEntry = {
+  value: AIModel
+  name: string
+  chef: string
+  chefSlug: string
+  keyLabel: string
+  disabled?: boolean
+}
+
+const AI_MODELS: ModelEntry[] = [
+  { value: 'claude', name: 'Claude', chef: 'Anthropic', chefSlug: 'anthropic', keyLabel: 'Anthropic API Key' },
+  { value: 'gpt', name: 'GPT-4o', chef: 'OpenAI', chefSlug: 'openai', keyLabel: 'OpenAI API Key' },
+  { value: 'gemini', name: 'Gemini', chef: 'Google', chefSlug: 'google', keyLabel: 'Google AI Studio Key' },
+  { value: 'grok', name: 'Grok', chef: 'xAI', chefSlug: 'xai', keyLabel: 'xAI API Key', disabled: true },
+  { value: 'deepseek', name: 'DeepSeek', chef: 'DeepSeek', chefSlug: 'deepseek', keyLabel: 'DeepSeek API Key' },
 ]
+
+const chefs = [...new Set(AI_MODELS.map((m) => m.chef))]
+
+interface ModelItemProps {
+  model: ModelEntry
+  selectedModel: AIModel
+  onSelect: (value: AIModel) => void
+}
+
+const ModelItem = memo(({ model, selectedModel, onSelect }: ModelItemProps) => {
+  const handleSelect = useCallback(() => onSelect(model.value), [onSelect, model.value])
+  return (
+    <ModelSelectorItem
+      value={model.value}
+      onSelect={handleSelect}
+      disabled={model.disabled}
+    >
+      <ModelSelectorLogo provider={model.chefSlug} />
+      <ModelSelectorName>{model.name}</ModelSelectorName>
+      {model.disabled && (
+        <span className="ml-auto text-xs text-muted-foreground">Próximamente</span>
+      )}
+      {!model.disabled && selectedModel === model.value && (
+        <CheckIcon className="ml-auto size-4" />
+      )}
+      {!model.disabled && selectedModel !== model.value && (
+        <div className="ml-auto size-4" />
+      )}
+    </ModelSelectorItem>
+  )
+})
+
+ModelItem.displayName = 'ModelItem'
 
 export default function SettingsPage() {
   const { settings, isSaving, saveSettings } = useSettings()
@@ -34,6 +81,7 @@ export default function SettingsPage() {
   const [savedOk, setSavedOk] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
   const [validationResult, setValidationResult] = useState<{ valid: boolean; reason?: string } | null>(null)
+  const [selectorOpen, setSelectorOpen] = useState(false)
 
   useEffect(() => {
     if (settings) {
@@ -47,6 +95,12 @@ export default function SettingsPage() {
     setSavedOk(false)
     setValidationResult(null)
   }
+
+  const handleModelSelect = useCallback((value: AIModel) => {
+    setAiModel(value)
+    setSelectorOpen(false)
+    markDirty()
+  }, [])
 
   async function handleValidate() {
     if (!apiKey) return
@@ -89,21 +143,34 @@ export default function SettingsPage() {
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Modelo</Label>
-            <Select
-              value={aiModel}
-              onValueChange={(v) => { setAiModel(v as AIModel); markDirty() }}
-            >
-              <SelectTrigger className="max-w-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {AI_MODELS.map((m) => (
-                  <SelectItem key={m.value} value={m.value}>
-                    {m.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative max-w-sm">
+              <ModelSelector open={selectorOpen} onOpenChange={setSelectorOpen}>
+              <ModelSelectorTrigger asChild>
+                <Button variant="outline" className="w-[240px] justify-start gap-2">
+                  <ModelSelectorLogo provider={selectedModel.chefSlug} />
+                  <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
+                </Button>
+              </ModelSelectorTrigger>
+              <ModelSelectorContent title="Seleccionar modelo">
+                <ModelSelectorInput placeholder="Buscar modelo…" />
+                <ModelSelectorList>
+                  <ModelSelectorEmpty>No se encontraron modelos.</ModelSelectorEmpty>
+                  {chefs.map((chef) => (
+                    <ModelSelectorGroup heading={chef} key={chef}>
+                      {AI_MODELS.filter((m) => m.chef === chef).map((m) => (
+                        <ModelItem
+                          key={m.value}
+                          model={m}
+                          selectedModel={aiModel}
+                          onSelect={handleModelSelect}
+                        />
+                      ))}
+                    </ModelSelectorGroup>
+                  ))}
+                </ModelSelectorList>
+              </ModelSelectorContent>
+            </ModelSelector>
+            </div>
           </div>
 
           <div className="space-y-1.5">
