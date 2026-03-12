@@ -36,6 +36,6 @@
   - Scope: En `applications-table.tsx`, quitar el dropdown inline que permite cambiar el estado. El campo estado se muestra como badge de solo lectura en la vista de lista. El estado solo se edita desde el formulario de edición o la página de detalle.
   - Depende de: nada
 
-- [ ] Task 14: Eliminar timeline header estático en página de detalle
+- [x] Task 14: Eliminar timeline header estático en página de detalle
   - Scope: En `app/(app)/applications/[id]/page.tsx`, eliminar el header con los pasos estáticos ("Aplicado", "Llamada", "Técnica", "RRHH", "Oferta", "Aceptado") que no aporta valor funcional.
   - Depende de: nada
