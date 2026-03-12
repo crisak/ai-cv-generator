@@ -20,7 +20,7 @@
 
 ### Mejoras de UX (pre-Fase 2)
 
-- [ ] Task 9-3: Reemplazar selector de modelo con ModelSelector de ai-elements
+- [x] Task 9-3: Reemplazar selector de modelo con ModelSelector de ai-elements
   - Scope: Reemplazar el `<Select>` actual en `app/(app)/settings/page.tsx` con el componente `<ModelSelector>` de ai-elements. Mapear providers agrupados a los modelos soportados por la Factory. Mantener compatibilidad con RxDB settings (`aiModel`, `aiApiKey`). Deshabilitar modelos de providers no implementados.
   - Depende de: cross-cutting Task 2 (instalación de ai-elements)
 
