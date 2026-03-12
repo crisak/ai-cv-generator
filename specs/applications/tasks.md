@@ -12,7 +12,7 @@
 
 ## Tareas pendientes (v2)
 
-- [ ] Task 8: POST /api/scrape endpoint — Cloudflare Browser Rendering URL-to-markdown
+- [x] Task 8: POST /api/scrape endpoint — Cloudflare Browser Rendering URL-to-markdown
   - Scope: Crear `app/api/scrape/route.ts`. Validación con Zod del body (`{ url: string }`). Llamada server-side a Cloudflare `/markdown` API. Auth con Clerk. Manejo de errores (URL inválida, timeout, contenido no legible). Retorna `{ markdown: string }` o `{ error: string }`.
   - Depende de: nada (task de infraestructura)
 
