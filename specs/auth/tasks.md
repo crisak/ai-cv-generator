@@ -35,6 +35,7 @@
   - Scope: Mostrar cuentas OAuth conectadas (lectura) + desvincular via `account.destroy()` + `useReverification`. Vincular nuevas cuentas descartado (403). Guard `passwordEnabled` previene lockout.
   - Depende de: nada
 
-- [ ] Task 19: Configurar Account Linking por email en Clerk Dashboard
+- [x] Task 19: Configurar Account Linking por email en Clerk Dashboard
   - Scope: Tarea de configuración. Habilitar "Account Linking" en Clerk Dashboard. Documentar en specs. Verificar que cuentas con mismo email se fusionen correctamente.
   - Depende de: nada (puede ejecutarse en paralelo con Tasks 16-18)
+  > Este tarea no fue posible configurar debido a plan free de Clerk
