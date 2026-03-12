@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { motion } from 'framer-motion'
 import {
   Loader2,
   Heart,
@@ -12,6 +13,7 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  Link,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,6 +40,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BenefitTags } from './benefit-tags'
 import { ApplicationTimeline } from './application-timeline'
 import type { ApplicationDocument } from '@/lib/db/schemas'
@@ -45,6 +48,20 @@ import { APPLICATION_STATUS_LABELS } from '@/types/cv'
 import { parseJobOffer } from '@/lib/ai'
 import { useSettings } from '@/hooks/use-settings'
 import { cn } from '@/lib/utils'
+
+type FlashField = 'company' | 'position' | 'salaryOffered' | 'salaryCurrency' | 'benefits'
+
+function FlashWrapper({ flash, children }: { flash: boolean; children: React.ReactNode }) {
+  return (
+    <motion.div
+      animate={flash ? { backgroundColor: ['transparent', 'hsl(var(--primary) / 0.15)', 'hsl(var(--primary) / 0.08)', 'transparent'] } : {}}
+      transition={{ duration: 0.8, times: [0, 0.2, 0.6, 1] }}
+      className="rounded-md"
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 const schema = z.object({
   jobOfferText: z.string(),
@@ -96,6 +113,9 @@ export function ApplicationForm({
   const [parseNotice, setParseNotice] = useState<{ type: 'ai' | 'regex' | 'error'; msg: string } | null>(null)
   const [showJobOffer, setShowJobOffer] = useState(!isEditing)
   const [showTimeline, setShowTimeline] = useState(false)
+  const [urlInput, setUrlInput] = useState('')
+  const [flashFields, setFlashFields] = useState<Set<FlashField>>(new Set())
+  const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -143,32 +163,72 @@ export function ApplicationForm({
   const isFavoriteValue = form.watch('isFavorite')
   const jobOfferText = form.watch('jobOfferText')
 
+  function triggerFlash(fields: FlashField[]) {
+    if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current)
+    setFlashFields(new Set(fields))
+    flashTimeoutRef.current = setTimeout(() => setFlashFields(new Set()), 1000)
+  }
+
+  async function applyParseResult(text: string) {
+    const { result, usedAI } = await parseJobOffer(text, settings)
+
+    const updated: FlashField[] = []
+    if (result.company) { form.setValue('company', result.company, { shouldValidate: true }); updated.push('company') }
+    if (result.position) { form.setValue('position', result.position, { shouldValidate: true }); updated.push('position') }
+    if (result.salaryOffered) { form.setValue('salaryOffered', result.salaryOffered); updated.push('salaryOffered') }
+    if (result.salaryCurrency) { form.setValue('salaryCurrency', result.salaryCurrency); updated.push('salaryCurrency') }
+    if (result.benefits?.length) { form.setValue('benefits', result.benefits); updated.push('benefits') }
+
+    if (updated.length) triggerFlash(updated)
+
+    if (usedAI) {
+      setParseNotice({ type: 'ai', msg: 'Campos extraídos con IA ✓' })
+    } else if (settings?.aiApiKey) {
+      setParseNotice({ type: 'regex', msg: 'Modelo no soportado aún. Extracción básica, revisa los campos.' })
+    } else {
+      setParseNotice({
+        type: 'regex',
+        msg: 'Extracción básica. Configura tu API key en Configuración para usar IA.',
+      })
+    }
+  }
+
   async function handleAnalyze() {
     if (!jobOfferText.trim()) return
     setIsParsing(true)
     setParseNotice(null)
-
     try {
-      const { result, usedAI } = await parseJobOffer(jobOfferText, settings)
-
-      if (result.company) form.setValue('company', result.company, { shouldValidate: true })
-      if (result.position) form.setValue('position', result.position, { shouldValidate: true })
-      if (result.salaryOffered) form.setValue('salaryOffered', result.salaryOffered)
-      if (result.salaryCurrency) form.setValue('salaryCurrency', result.salaryCurrency)
-      if (result.benefits?.length) form.setValue('benefits', result.benefits)
-
-      if (usedAI) {
-        setParseNotice({ type: 'ai', msg: 'Campos extraídos con IA ✓' })
-      } else if (settings?.aiApiKey) {
-        setParseNotice({ type: 'regex', msg: 'Modelo no soportado aún. Extracción básica, revisa los campos.' })
-      } else {
-        setParseNotice({
-          type: 'regex',
-          msg: 'Extracción básica. Configura tu API key en Configuración para usar IA.',
-        })
-      }
+      await applyParseResult(jobOfferText)
     } catch {
       setParseNotice({ type: 'error', msg: 'Error al analizar. Revisa los campos manualmente.' })
+    } finally {
+      setIsParsing(false)
+    }
+  }
+
+  async function handleAnalyzeUrl() {
+    const trimmedUrl = urlInput.trim()
+    if (!trimmedUrl) return
+    setIsParsing(true)
+    setParseNotice(null)
+    try {
+      const res = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: trimmedUrl }),
+      })
+      const data = (await res.json()) as { markdown?: string; error?: string }
+      if (!res.ok || !data.markdown) {
+        setParseNotice({
+          type: 'error',
+          msg: data.error ?? 'No se pudo procesar la URL. Intenta copiar y pegar el texto directamente.',
+        })
+        return
+      }
+      form.setValue('jobOfferText', data.markdown)
+      await applyParseResult(data.markdown)
+    } catch {
+      setParseNotice({ type: 'error', msg: 'Error al procesar la URL. Intenta copiar y pegar el texto directamente.' })
     } finally {
       setIsParsing(false)
     }
@@ -212,46 +272,91 @@ export function ApplicationForm({
 
                 {showJobOffer && (
                   <div className="border-t border-border/60 px-4 pb-4 pt-3 space-y-3">
-                    <FormField
-                      control={form.control}
-                      name="jobOfferText"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <textarea
-                              {...field}
-                              rows={5}
-                              placeholder="Pega aquí la descripción completa de la oferta laboral..."
-                              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
+                    <Tabs defaultValue="text" className="w-full">
+                      <TabsList className="h-8 w-full">
+                        <TabsTrigger value="text" className="flex-1 gap-1.5 text-xs h-6">
+                          <FileText className="h-3 w-3" />
+                          Texto plano
+                        </TabsTrigger>
+                        <TabsTrigger value="url" className="flex-1 gap-1.5 text-xs h-6">
+                          <Link className="h-3 w-3" />
+                          URL
+                        </TabsTrigger>
+                      </TabsList>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        onClick={handleAnalyze}
-                        disabled={isParsing || !jobOfferText.trim()}
-                        className="gap-1.5"
-                      >
-                        {isParsing ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-3.5 w-3.5" />
-                        )}
-                        {isParsing ? 'Analizando...' : 'Analizar con IA'}
-                      </Button>
-                      {!settings?.aiApiKey && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <AlertCircle className="h-3 w-3" />
-                          Configura API key en Configuración
-                        </span>
-                      )}
-                    </div>
+                      <TabsContent value="text" className="space-y-3 mt-3">
+                        <FormField
+                          control={form.control}
+                          name="jobOfferText"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <textarea
+                                  {...field}
+                                  rows={5}
+                                  placeholder="Pega aquí la descripción completa de la oferta laboral..."
+                                  className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleAnalyze}
+                            disabled={isParsing || !jobOfferText.trim()}
+                            className="gap-1.5"
+                          >
+                            {isParsing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-3.5 w-3.5" />
+                            )}
+                            {isParsing ? 'Analizando...' : 'Analizar con IA'}
+                          </Button>
+                          {!settings?.aiApiKey && (
+                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <AlertCircle className="h-3 w-3" />
+                              Configura API key en Configuración
+                            </span>
+                          )}
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="url" className="space-y-3 mt-3">
+                        <div className="flex gap-2">
+                          <Input
+                            type="url"
+                            placeholder="https://www.linkedin.com/jobs/view/..."
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAnalyzeUrl() } }}
+                            className="flex-1 text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            onClick={handleAnalyzeUrl}
+                            disabled={isParsing || !urlInput.trim()}
+                            className="gap-1.5 shrink-0"
+                          >
+                            {isParsing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-3.5 w-3.5" />
+                            )}
+                            {isParsing ? 'Analizando...' : 'Analizar con IA'}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Pega la URL de la oferta laboral. Si falla, usa la pestaña "Texto plano" para copiar y pegar el contenido.
+                        </p>
+                      </TabsContent>
+                    </Tabs>
 
                     {parseNotice && (
                       <p
@@ -271,32 +376,36 @@ export function ApplicationForm({
 
               {/* ── Sección: Detalles ───────────────────────────────────── */}
               <div className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="company"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empresa *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ej. Google, VTEX..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="position"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cargo *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ej. Senior Backend Engineer..." {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FlashWrapper flash={flashFields.has('company')}>
+                  <FormField
+                    control={form.control}
+                    name="company"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Empresa *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ej. Google, VTEX..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FlashWrapper>
+                <FlashWrapper flash={flashFields.has('position')}>
+                  <FormField
+                    control={form.control}
+                    name="position"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cargo *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="ej. Senior Backend Engineer..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </FlashWrapper>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -349,39 +458,43 @@ export function ApplicationForm({
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Economía</p>
                 <div className="flex items-end gap-3">
-                  <FormField
-                    control={form.control}
-                    name="salaryOffered"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Salario ofertado</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="0" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="salaryCurrency"
-                    render={({ field }) => (
-                      <FormItem className="w-24">
-                        <FormLabel>Moneda</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                  <FlashWrapper flash={flashFields.has('salaryOffered')}>
+                    <FormField
+                      control={form.control}
+                      name="salaryOffered"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Salario ofertado</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <Input type="number" placeholder="0" {...field} />
                           </FormControl>
-                          <SelectContent>
-                            {CURRENCIES.map((c) => (
-                              <SelectItem key={c} value={c}>{c}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                        </FormItem>
+                      )}
+                    />
+                  </FlashWrapper>
+                  <FlashWrapper flash={flashFields.has('salaryCurrency')}>
+                    <FormField
+                      control={form.control}
+                      name="salaryCurrency"
+                      render={({ field }) => (
+                        <FormItem className="w-24">
+                          <FormLabel>Moneda</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {CURRENCIES.map((c) => (
+                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </FlashWrapper>
                   <Controller
                     control={form.control}
                     name="isFavorite"
@@ -411,20 +524,22 @@ export function ApplicationForm({
               <Separator className="my-5" />
 
               {/* ── Sección: Beneficios ────────────────────────────────── */}
-              <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Beneficios</p>
-                <Controller
-                  control={form.control}
-                  name="benefits"
-                  render={({ field }) => (
-                    <BenefitTags
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Ej: Home office, Seguro médico... (Enter o coma)"
-                    />
-                  )}
-                />
-              </div>
+              <FlashWrapper flash={flashFields.has('benefits')}>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Beneficios</p>
+                  <Controller
+                    control={form.control}
+                    name="benefits"
+                    render={({ field }) => (
+                      <BenefitTags
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Ej: Home office, Seguro médico... (Enter o coma)"
+                      />
+                    )}
+                  />
+                </div>
+              </FlashWrapper>
 
               <Separator className="my-5" />
 

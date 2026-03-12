@@ -16,11 +16,11 @@
   - Scope: Crear `app/api/scrape/route.ts`. Validación con Zod del body (`{ url: string }`). Llamada server-side a Cloudflare `/markdown` API. Auth con Clerk. Manejo de errores (URL inválida, timeout, contenido no legible). Retorna `{ markdown: string }` o `{ error: string }`.
   - Depende de: nada (task de infraestructura)
 
-- [ ] Task 9: URL extraction UI — Tabs "Texto plano" / "URL" en formulario de nueva postulación
+- [x] Task 9: URL extraction UI — Tabs "Texto plano" / "URL" en formulario de nueva postulación
   - Scope: Agregar componente Tabs al campo "Oferta laboral" en `application-form.tsx`. Tab "Texto plano" mantiene el textarea actual. Tab "URL" muestra input de URL + botón "Analizar con IA". Al analizar: llama a POST /api/scrape, luego alimenta el markdown al flujo existente de `parseJobOffer()` para auto-rellenar campos. Feedback visual durante el proceso. Si falla, sugerir copiar-pegar como alternativa.
   - Depende de: Task 8, cross-cutting Task 2 (ai-elements Shimmer)
 
-- [ ] Task 10: Animación Double Flash/Shimmer en campos auto-rellenados por IA
+- [x] Task 10: Animación Double Flash/Shimmer en campos auto-rellenados por IA
   - Scope: Después de que `parseJobOffer()` auto-rellena campos, aplicar animación "Double Flash" (shimmer breve) en cada campo actualizado. Usar componente Shimmer de ai-elements + framer-motion para la animación.
   - Depende de: Task 9, cross-cutting Task 1 y 2
 
