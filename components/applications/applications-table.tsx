@@ -22,18 +22,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import type { ApplicationDocument } from '@/lib/db/schemas'
 import {
   APPLICATION_STATUS_LABELS,
   APPLICATION_STATUS_COLORS,
-  type ApplicationStatus,
 } from '@/types/cv'
 import { cn } from '@/lib/utils'
 
@@ -41,7 +33,6 @@ interface ApplicationsTableProps {
   applications: ApplicationDocument[]
   onEdit: (application: ApplicationDocument) => void
   onDelete: (id: string) => void
-  onStatusChange: (id: string, status: ApplicationStatus) => void
   onToggleFavorite: (id: string) => void
 }
 
@@ -58,7 +49,6 @@ export function ApplicationsTable({
   applications,
   onEdit,
   onDelete,
-  onStatusChange,
   onToggleFavorite,
 }: ApplicationsTableProps) {
   const router = useRouter()
@@ -153,35 +143,14 @@ export function ApplicationsTable({
                   )}
                 </TableCell>
 
-                {/* Status selector */}
+                {/* Status (read-only) */}
                 <TableCell>
-                  <Select
-                    value={app.status}
-                    onValueChange={(val) => onStatusChange(app.id, val as ApplicationStatus)}
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs font-medium ${APPLICATION_STATUS_COLORS[app.status]}`}
                   >
-                    <SelectTrigger className="h-7 w-full border-0 p-0 shadow-none focus:ring-0">
-                      <SelectValue>
-                        <Badge
-                          variant="secondary"
-                          className={`text-xs font-medium ${APPLICATION_STATUS_COLORS[app.status]}`}
-                        >
-                          {APPLICATION_STATUS_LABELS[app.status]}
-                        </Badge>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          <Badge
-                            variant="secondary"
-                            className={`text-xs ${APPLICATION_STATUS_COLORS[value as ApplicationStatus]}`}
-                          >
-                            {label}
-                          </Badge>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {APPLICATION_STATUS_LABELS[app.status]}
+                  </Badge>
                 </TableCell>
 
                 {/* Salary */}

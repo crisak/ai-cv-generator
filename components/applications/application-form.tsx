@@ -12,6 +12,7 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
+  HelpCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -324,7 +325,17 @@ export function ApplicationForm({
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Estado</FormLabel>
+                        <FormLabel>
+                          <span className="flex items-center gap-1">
+                            Estado
+                            <span className="group relative inline-flex">
+                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                              <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
+                                Refleja el paso actual del proceso. Actualízalo desde aquí o en la página de detalle.
+                              </span>
+                            </span>
+                          </span>
+                        </FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -412,7 +423,15 @@ export function ApplicationForm({
 
               {/* ── Sección: Beneficios ────────────────────────────────── */}
               <div className="space-y-2">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Beneficios</p>
+                <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Beneficios
+                  <span className="group relative inline-flex normal-case">
+                    <HelpCircle className="h-3.5 w-3.5 cursor-help" />
+                    <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-56 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
+                      Escribe un beneficio y presiona Enter o coma para agregarlo. Ejemplos: Home office, Seguro médico, Bono anual.
+                    </span>
+                  </span>
+                </p>
                 <Controller
                   control={form.control}
                   name="benefits"
@@ -434,7 +453,17 @@ export function ApplicationForm({
                   name="appliedAt"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fecha postulación</FormLabel>
+                      <FormLabel>
+                        <span className="flex items-center gap-1">
+                          Fecha postulación
+                          <span className="group relative inline-flex">
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                            <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
+                              Día en que enviaste tu candidatura a esta oferta.
+                            </span>
+                          </span>
+                        </span>
+                      </FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -446,7 +475,17 @@ export function ApplicationForm({
                   name="responseDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Fecha respuesta</FormLabel>
+                      <FormLabel>
+                        <span className="flex items-center gap-1">
+                          Fecha respuesta
+                          <span className="group relative inline-flex">
+                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
+                            <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
+                              Fecha en que la empresa te dio una respuesta (positiva o negativa). Déjala vacía si aún esperas.
+                            </span>
+                          </span>
+                        </span>
+                      </FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>

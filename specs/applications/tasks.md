@@ -28,11 +28,11 @@
   - Scope: Crear `components/applications/benefit-list.tsx` con controles de agregar, editar, eliminar. Max-height con scroll o accordion similar al campo "Oferta laboral". Aplicar mismo diseño en formulario de creación y en página de detalle `[id]/page.tsx`.
   - Depende de: nada
 
-- [ ] Task 12: Tooltips de ayuda en campos del formulario
+- [x] Task 12: Tooltips de ayuda en campos del formulario
   - Scope: Agregar icono de ayuda (?) con tooltip en 4 campos de `application-form.tsx`: Fecha respuesta, Fecha postulación, Beneficios, Estado. Texto de ayuda estático que orienta al usuario sobre qué ingresar en cada campo.
   - Depende de: nada
 
-- [ ] Task 13: Estado solo lectura en tabla de postulaciones
+- [x] Task 13: Estado solo lectura en tabla de postulaciones
   - Scope: En `applications-table.tsx`, quitar el dropdown inline que permite cambiar el estado. El campo estado se muestra como badge de solo lectura en la vista de lista. El estado solo se edita desde el formulario de edición o la página de detalle.
   - Depende de: nada
 
