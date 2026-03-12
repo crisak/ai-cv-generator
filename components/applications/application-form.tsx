@@ -38,7 +38,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
-import { BenefitTags } from './benefit-tags'
+import { BenefitList } from './benefit-list'
 import { ApplicationTimeline } from './application-timeline'
 import type { ApplicationDocument } from '@/lib/db/schemas'
 import { APPLICATION_STATUS_LABELS } from '@/types/cv'
@@ -417,10 +417,9 @@ export function ApplicationForm({
                   control={form.control}
                   name="benefits"
                   render={({ field }) => (
-                    <BenefitTags
+                    <BenefitList
                       value={field.value}
                       onChange={field.onChange}
-                      placeholder="Ej: Home office, Seguro médico... (Enter o coma)"
                     />
                   )}
                 />

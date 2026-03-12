@@ -24,7 +24,7 @@
   - Scope: Después de que `parseJobOffer()` auto-rellena campos, aplicar animación "Double Flash" (shimmer breve) en cada campo actualizado. Usar componente Shimmer de ai-elements + framer-motion para la animación.
   - Depende de: Task 9, cross-cutting Task 1 y 2
 
-- [ ] Task 11: Rediseño de Beneficios — Lista con CRUD (reemplaza tags)
+- [x] Task 11: Rediseño de Beneficios — Lista con CRUD (reemplaza tags)
   - Scope: Crear `components/applications/benefit-list.tsx` con controles de agregar, editar, eliminar. Max-height con scroll o accordion similar al campo "Oferta laboral". Aplicar mismo diseño en formulario de creación y en página de detalle `[id]/page.tsx`.
   - Depende de: nada
 
