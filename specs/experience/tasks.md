@@ -14,6 +14,6 @@
 
 ## Tareas pendientes (v2)
 
-- [ ] Task 10: Anonimizar datos personales en archivos de documentación
+- [x] Task 10: Anonimizar datos personales en archivos de documentación
   - Scope: Reemplazar información personal real en `docs/cv-experiencia-real.json` y `docs/json-schema-cv-generator.json` con placeholders genéricos. Mantener estructura JSON, formato de bullets y coherencia de métricas. Nombres → "Nombre Ejemplo", empresas → "Empresa A/B/C", emails/teléfonos → placeholders.
   - Depende de: nada
