@@ -52,6 +52,7 @@ import { APPLICATION_STATUS_LABELS } from '@/types/cv'
 import { parseJobOffer } from '@/lib/ai'
 import { useSettings } from '@/hooks/use-settings'
 import { cn } from '@/lib/utils'
+import { Shimmer } from '@/components/ai-elements/shimmer'
 
 type FlashField = 'company' | 'position' | 'salaryOffered' | 'salaryCurrency' | 'benefits'
 
@@ -72,10 +73,18 @@ function getUnsupportedDomain(url: string): string | null {
   }
 }
 
-function NotFoundNotice() {
+function NotFoundNotice({ onDismiss }: { onDismiss: () => void }) {
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/10">
-      <div className="flex gap-2.5">
+    <div className="relative rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/10">
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="absolute right-2 top-2 rounded p-0.5 text-amber-500 hover:bg-amber-100 hover:text-amber-700 dark:hover:bg-amber-900/40"
+        aria-label="Cerrar"
+      >
+        <XCircle className="h-3.5 w-3.5" />
+      </button>
+      <div className="flex gap-2.5 pr-5">
         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
           <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
         </div>
@@ -101,16 +110,35 @@ function NotFoundNotice() {
   )
 }
 
+// Double-flash: two bright pulses to signal a field was filled by AI
 function FlashWrapper({ flash, children }: { flash: boolean; children: React.ReactNode }) {
   return (
     <motion.div
-      animate={flash ? { backgroundColor: ['transparent', 'hsl(var(--primary) / 0.15)', 'hsl(var(--primary) / 0.08)', 'transparent'] } : {}}
-      transition={{ duration: 0.8, times: [0, 0.2, 0.6, 1] }}
+      animate={
+        flash
+          ? {
+              backgroundColor: [
+                'transparent',
+                'hsl(var(--primary) / 0.18)',
+                'transparent',
+                'hsl(var(--primary) / 0.12)',
+                'transparent',
+              ],
+            }
+          : {}
+      }
+      transition={{ duration: 1.1, times: [0, 0.2, 0.45, 0.65, 1], ease: 'easeOut' }}
       className="rounded-md"
     >
       {children}
     </motion.div>
   )
+}
+
+// Shimmer label: replaces FormLabel text while AI is mapping fields
+function ShimmerLabel({ children, active }: { children: string; active: boolean }) {
+  if (!active) return <span>{children}</span>
+  return <Shimmer className="text-sm font-medium" duration={1.5}>{children}</Shimmer>
 }
 
 const schema = z.object({
@@ -160,6 +188,7 @@ export function ApplicationForm({
 }: ApplicationFormProps) {
   const { settings } = useSettings()
   const [isParsing, setIsParsing] = useState(false)
+  const [isShimmering, setIsShimmering] = useState(false)
   const [parseNotice, setParseNotice] = useState<{ type: 'ai' | 'regex' | 'error' | 'not_found'; msg: string } | null>(null)
   const [showJobOffer, setShowJobOffer] = useState(!isEditing)
   const [showTimeline, setShowTimeline] = useState(false)
@@ -252,6 +281,7 @@ export function ApplicationForm({
   async function handleAnalyze() {
     if (!jobOfferText.trim()) return
     setIsParsing(true)
+    setIsShimmering(true)
     setParseNotice(null)
     try {
       await applyParseResult(jobOfferText)
@@ -259,6 +289,7 @@ export function ApplicationForm({
       setParseNotice({ type: 'error', msg: 'Error al analizar. Revisa los campos manualmente.' })
     } finally {
       setIsParsing(false)
+      setIsShimmering(false)
     }
   }
 
@@ -266,6 +297,7 @@ export function ApplicationForm({
     abortRef.current?.abort()
     abortRef.current = null
     setIsParsing(false)
+    setIsShimmering(false)
     setParseNotice(null)
   }
 
@@ -280,6 +312,8 @@ export function ApplicationForm({
 
     setIsParsing(true)
     setParseNotice(null)
+    // Shimmer only starts once scraping finishes and AI begins mapping
+    setIsShimmering(false)
     try {
       // Step 1: Scrape the URL
       const scrapeRes = await fetch('/api/scrape', {
@@ -299,6 +333,8 @@ export function ApplicationForm({
       }
 
       // Step 2: If AI is available, clean the raw text to a proper job offer markdown
+      // Shimmer starts now: scraping done, AI is about to map fields
+      setIsShimmering(true)
       if (settings?.aiApiKey) {
         const cleanRes = await fetch('/api/ai/parse', {
           method: 'POST',
@@ -332,6 +368,7 @@ export function ApplicationForm({
     } finally {
       abortRef.current = null
       setIsParsing(false)
+      setIsShimmering(false)
     }
   }
 
@@ -451,10 +488,12 @@ export function ApplicationForm({
                                     size="sm"
                                     variant="outline"
                                     onClick={handleCancelUrl}
-                                    className="gap-1.5 shrink-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                    className="relative gap-1.5 shrink-0 overflow-hidden border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                                   >
-                                    <Square className="h-3 w-3 fill-current" />
-                                    Cancelar
+                                    {/* Pulse ring animation */}
+                                    <span className="absolute inset-0 animate-ping rounded-sm bg-red-400/20" />
+                                    <Square className="relative h-3 w-3 fill-current" />
+                                    <span className="relative">Cancelar</span>
                                   </Button>
                                 ) : (
                                   <Button
@@ -499,21 +538,31 @@ export function ApplicationForm({
                     {parseNotice && (
                       <>
                         {parseNotice.type === 'not_found' ? (
-                          <NotFoundNotice />
+                          <NotFoundNotice onDismiss={() => setParseNotice(null)} />
                         ) : (
-                          <p
+                          <div
                             className={cn(
-                              'flex items-center gap-1.5 text-xs px-3 py-2 rounded-md',
+                              'flex items-center justify-between gap-1.5 rounded-md px-3 py-2',
                               parseNotice.type === 'ai' && 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400',
                               parseNotice.type === 'regex' && 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
                               parseNotice.type === 'error' && 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
                             )}
                           >
-                            {parseNotice.type === 'ai' && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
-                            {parseNotice.type === 'error' && <XCircle className="h-3.5 w-3.5 shrink-0" />}
-                            {parseNotice.type === 'regex' && <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
-                            {parseNotice.msg}
-                          </p>
+                            <span className="flex items-center gap-1.5 text-xs">
+                              {parseNotice.type === 'ai' && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
+                              {parseNotice.type === 'error' && <XCircle className="h-3.5 w-3.5 shrink-0" />}
+                              {parseNotice.type === 'regex' && <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                              {parseNotice.msg}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setParseNotice(null)}
+                              className="ml-2 shrink-0 rounded p-0.5 opacity-60 hover:opacity-100"
+                              aria-label="Cerrar"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         )}
                       </>
                     )}
@@ -529,7 +578,7 @@ export function ApplicationForm({
                     name="company"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Empresa *</FormLabel>
+                        <FormLabel><ShimmerLabel active={isShimmering}>Empresa *</ShimmerLabel></FormLabel>
                         <FormControl>
                           <Input placeholder="ej. Google, VTEX..." {...field} />
                         </FormControl>
@@ -544,7 +593,7 @@ export function ApplicationForm({
                     name="position"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cargo *</FormLabel>
+                        <FormLabel><ShimmerLabel active={isShimmering}>Cargo *</ShimmerLabel></FormLabel>
                         <FormControl>
                           <Input placeholder="ej. Senior Backend Engineer..." {...field} />
                         </FormControl>
@@ -611,7 +660,7 @@ export function ApplicationForm({
                       name="salaryOffered"
                       render={({ field }) => (
                         <FormItem className="flex-1">
-                          <FormLabel>Salario ofertado</FormLabel>
+                          <FormLabel><ShimmerLabel active={isShimmering}>Salario ofertado</ShimmerLabel></FormLabel>
                           <FormControl>
                             <Input type="number" placeholder="0" {...field} />
                           </FormControl>
@@ -625,7 +674,7 @@ export function ApplicationForm({
                       name="salaryCurrency"
                       render={({ field }) => (
                         <FormItem className="w-24">
-                          <FormLabel>Moneda</FormLabel>
+                          <FormLabel><ShimmerLabel active={isShimmering}>Moneda</ShimmerLabel></FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -673,7 +722,9 @@ export function ApplicationForm({
               {/* ── Sección: Beneficios ────────────────────────────────── */}
               <FlashWrapper flash={flashFields.has('benefits')}>
                 <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Beneficios</p>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    {isShimmering ? <Shimmer className="text-xs font-medium" duration={1.5}>Beneficios</Shimmer> : 'Beneficios'}
+                  </p>
                   <Controller
                     control={form.control}
                     name="benefits"
