@@ -282,7 +282,7 @@ export function ApplicationForm({
     const isValid = (v: unknown): v is string =>
       typeof v === 'string' &&
       v.trim() !== '' &&
-      !/^(indefinido|undefined|null|n\/a|none|no\s+aplica)$/i.test(v.trim())
+      !/^(undefined|null|n\/a|none|no\s+aplica)$/i.test(v.trim())
 
     const updated: FlashField[] = []
     if (isValid(result.company)) {
