@@ -30,6 +30,7 @@ El usuario necesita generar CVs optimizados para ATS a partir de ofertas laboral
 - Como usuario, puedo ver mis CVs guardados desde `/cvs`
 - Como usuario, puedo editar un CV guardado volviendo al workflow de Step 2 para pulirlo progresivamente
 - Como usuario, al editar un CV guardado se actualiza el mismo documento (no se crea uno nuevo)
+- Como usuario, si recargo o cierro la página accidentalmente durante la creación/edición de un CV, mis cambios se recuperan automáticamente al volver
 
 ## Requerimientos funcionales
 
@@ -49,7 +50,8 @@ El usuario necesita generar CVs optimizados para ATS a partir de ofertas laboral
 | FR12 | Viewer: Lista de CVs guardados | ✅ |
 | FR13 | Viewer: Visualización del CV en formato web | ✅ |
 | FR16 | Editar CV guardado desde /cvs con navegación a cv-generator en modo edición | ⬜ Pendiente |
-| FR17 | Persistir `jobOfferText` y `updatedAt` en CvDocument para re-optimización IA | ⬜ Pendiente |
+| FR17 | Persistir `jobOfferText`, `updatedAt`, `isDraft` en CvDocument | ⬜ Pendiente |
+| FR18 | Auto-save en RxDB: recuperación automática ante recargas en nuevo CV y edición | ⬜ Pendiente |
 
 ## Reglas de generación de CV (IA)
 
