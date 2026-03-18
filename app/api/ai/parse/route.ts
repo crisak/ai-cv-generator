@@ -25,18 +25,18 @@ ${jobOffer.substring(0, 4000)}
 
 JSON:`
 
-// mode=clean: given raw scraped text, return ONLY the job offer in clean markdown, or null if not a job offer
-const CLEAN_PROMPT = (raw: string) => `Eres un extractor de ofertas laborales. Se te dará texto extraído de una página web (puede incluir navegación, cookies, scripts, etc.).
+// mode=clean: convert raw scraped text to clean markdown preserving the FULL original job offer
+const CLEAN_PROMPT = (raw: string) => `Eres un conversor de texto a markdown para ofertas laborales. Se te dará texto extraído de una página web (puede incluir navegación, cookies, scripts, publicidad, etc.).
 
 Tu tarea:
-1. Identifica si el texto contiene UNA oferta laboral concreta (no una lista de ofertas, no un portal genérico).
-2. Si SÍ hay oferta: extrae SOLO la información relevante de esa oferta y devuélvela en markdown limpio y estructurado (título, empresa, descripción, requisitos, beneficios, salario si hay).
-3. Si NO hay oferta concreta (página de login, captcha, lista de búsqueda, error): responde exactamente con la palabra NULL.
+1. Identifica si el texto contiene UNA oferta laboral concreta (no una lista de ofertas, no un portal genérico, no una página de login, no un captcha).
+2. Si SÍ hay oferta: convierte TODA la oferta laboral a markdown limpio. Incluye TODO el contenido original de la oferta sin resumir, sin omitir, sin parafrasear — solo elimina el ruido de la página (navegación, footer, cookies, publicidad). El resultado debe ser la oferta completa tal como fue publicada.
+3. Si NO hay oferta concreta: responde exactamente con la palabra NULL.
 
-Responde SOLO con el markdown de la oferta O con la palabra NULL. Sin explicaciones.
+Responde SOLO con el markdown completo de la oferta O con la palabra NULL. Sin explicaciones ni texto adicional.
 
 Texto extraído:
-${raw.substring(0, 6000)}`
+${raw.substring(0, 8000)}`
 
 function parseAIJson(text: string) {
   const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       const result = await provider.call({
         apiKey,
         messages: [{ role: 'user', content: CLEAN_PROMPT(jobOffer) }],
-        maxTokens: 1500,
+        maxTokens: 3000,
       })
       const text = result.text.trim()
       if (text === 'NULL' || text.toUpperCase() === 'NULL') {

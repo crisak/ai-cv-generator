@@ -145,6 +145,23 @@ npm run lint             # ESLint
 npm run format           # Prettier
 ```
 
+## Compatibilidad de extracción por URL
+
+Al pegar una URL de oferta laboral, la app intenta extraer el contenido automáticamente con Cloudflare Browser Rendering.
+
+| Plataforma | Soporte | Método |
+|---|---|---|
+| Computrabajo | ✅ Funciona | Selector `.box_offer` |
+| Elempleo | ✅ Funciona | Selector `[class*="description"]` |
+| Rappi / Workday | ✅ Funciona | Renderizado JS completo |
+| MercadoLibre / Eightfold | ✅ Funciona | Meta tags de la página |
+| GetOnBoard | ✅ Funciona | Markdown directo |
+| LinkedIn | ❌ No soportado | Anti-bot agresivo |
+| Indeed | ❌ No soportado | Anti-bot agresivo |
+| InfoJobs | ❌ No soportado | Captcha Cloudflare |
+
+**Para plataformas no soportadas**: abre la oferta en tu navegador, selecciona todo el texto (Ctrl+A / Cmd+A) y pégalo en la pestaña **Texto plano** del formulario.
+
 ## Solución de Problemas
 
 **"IA no genera nada"** — Sin API key usa fallback regex. Verifica la key en `/settings`.

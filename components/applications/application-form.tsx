@@ -54,6 +54,23 @@ import { cn } from '@/lib/utils'
 
 type FlashField = 'company' | 'position' | 'salaryOffered' | 'salaryCurrency' | 'benefits'
 
+// Domains known to block scraping
+const UNSUPPORTED_DOMAINS = [
+  { pattern: /linkedin\.com/i, name: 'LinkedIn' },
+  { pattern: /indeed\.com/i, name: 'Indeed' },
+  { pattern: /infojobs\.net/i, name: 'InfoJobs' },
+]
+
+function getUnsupportedDomain(url: string): string | null {
+  try {
+    const hostname = new URL(url).hostname
+    const match = UNSUPPORTED_DOMAINS.find((d) => d.pattern.test(hostname))
+    return match?.name ?? null
+  } catch {
+    return null
+  }
+}
+
 function NotFoundNotice() {
   return (
     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/10">
@@ -393,34 +410,61 @@ export function ApplicationForm({
                       </TabsContent>
 
                       <TabsContent value="url" className="space-y-3 mt-3">
-                        <div className="flex gap-2">
-                          <Input
-                            type="url"
-                            placeholder="https://www.linkedin.com/jobs/view/..."
-                            value={urlInput}
-                            onChange={(e) => setUrlInput(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAnalyzeUrl() } }}
-                            className="flex-1 text-sm"
-                          />
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={handleAnalyzeUrl}
-                            disabled={isParsing || !urlInput.trim()}
-                            className="gap-1.5 shrink-0"
-                          >
-                            {isParsing ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Sparkles className="h-3.5 w-3.5" />
-                            )}
-                            {isParsing ? 'Analizando...' : 'Analizar con IA'}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Pega la URL de la oferta laboral. Si falla, usa la pestaña "Texto plano" para copiar y pegar el contenido.
-                        </p>
+                        {(() => {
+                          const blocked = getUnsupportedDomain(urlInput)
+                          return (
+                            <>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="url"
+                                  placeholder="https://empresa.com/careers/job/..."
+                                  value={urlInput}
+                                  onChange={(e) => { setUrlInput(e.target.value); setParseNotice(null) }}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!blocked) handleAnalyzeUrl() } }}
+                                  className={cn(
+                                    'flex-1 text-sm',
+                                    blocked && 'border-amber-400 focus-visible:ring-amber-400 dark:border-amber-600',
+                                  )}
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={handleAnalyzeUrl}
+                                  disabled={isParsing || !urlInput.trim() || !!blocked}
+                                  className="gap-1.5 shrink-0"
+                                >
+                                  {isParsing ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                  )}
+                                  {isParsing ? 'Analizando...' : 'Analizar con IA'}
+                                </Button>
+                              </div>
+
+                              {blocked ? (
+                                <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-800/40 dark:bg-amber-900/10">
+                                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                  <div className="space-y-0.5">
+                                    <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                                      {blocked} no permite extraer ofertas automáticamente
+                                    </p>
+                                    <p className="text-xs text-amber-700 dark:text-amber-400/80">
+                                      Abre la oferta, selecciona todo el texto (Ctrl+A) y pégalo en{' '}
+                                      <span className="rounded bg-amber-100 px-1 py-0.5 font-semibold dark:bg-amber-900/40">Texto plano</span>.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-muted-foreground">
+                                  Pega la URL directa a la oferta. Funciona con Computrabajo, Elempleo, Workday, Eightfold y otros portales. Si falla, usa{' '}
+                                  <span className="font-medium">Texto plano</span>.
+                                </p>
+                              )}
+                            </>
+                          )
+                        })()}
                       </TabsContent>
                     </Tabs>
 
