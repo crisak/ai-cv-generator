@@ -138,7 +138,7 @@ function FlashWrapper({ flash, children }: { flash: boolean; children: React.Rea
 // Shimmer label: replaces FormLabel text while AI is mapping fields
 function ShimmerLabel({ children, active }: { children: string; active: boolean }) {
   if (!active) return <span>{children}</span>
-  return <Shimmer className="text-sm font-medium" duration={1.5}>{children}</Shimmer>
+  return <Shimmer as="span" className="text-sm font-medium" duration={1.5}>{children}</Shimmer>
 }
 
 const schema = z.object({
@@ -723,7 +723,7 @@ export function ApplicationForm({
               <FlashWrapper flash={flashFields.has('benefits')}>
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {isShimmering ? <Shimmer className="text-xs font-medium" duration={1.5}>Beneficios</Shimmer> : 'Beneficios'}
+                    {isShimmering ? <Shimmer as="span" className="text-xs font-medium" duration={1.5}>Beneficios</Shimmer> : 'Beneficios'}
                   </p>
                   <Controller
                     control={form.control}
