@@ -79,7 +79,7 @@ function NotFoundNotice({ reason, onDismiss }: { reason?: string; onDismiss: () 
       <button
         type="button"
         onClick={onDismiss}
-        className="absolute right-2 top-2 rounded p-0.5 text-amber-500 hover:bg-amber-100 hover:text-amber-700 dark:hover:bg-amber-900/40"
+        className="absolute top-2 right-2 rounded p-0.5 text-amber-500 hover:bg-amber-100 hover:text-amber-700 dark:hover:bg-amber-900/40"
         aria-label="Cerrar"
       >
         <XCircle className="h-3.5 w-3.5" />
@@ -92,11 +92,10 @@ function NotFoundNotice({ reason, onDismiss }: { reason?: string; onDismiss: () 
           <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
             No encontramos la oferta en esa página
           </p>
-          {reason && (
-            <p className="text-xs text-amber-700 dark:text-amber-400/80">{reason}</p>
-          )}
+          {reason && <p className="text-xs text-amber-700 dark:text-amber-400/80">{reason}</p>}
           <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400/80">
-            Esta página puede requerir inicio de sesión, tener protección anti-bots, o mostrar una lista de ofertas en lugar de una oferta individual.
+            Esta página puede requerir inicio de sesión, tener protección anti-bots, o mostrar una
+            lista de ofertas en lugar de una oferta individual.
           </p>
           <div className="flex items-center gap-1.5 pt-0.5">
             <ClipboardPaste className="h-3 w-3 text-amber-600 dark:text-amber-400" />
@@ -115,7 +114,15 @@ function NotFoundNotice({ reason, onDismiss }: { reason?: string; onDismiss: () 
 
 // Double-flash: two bright pulses to signal a field was filled by AI.
 // Uses key to force re-mount so framer-motion replays the animation each time.
-function FlashWrapper({ flash, flashKey, children }: { flash: boolean; flashKey: number; children: React.ReactNode }) {
+function FlashWrapper({
+  flash,
+  flashKey,
+  children,
+}: {
+  flash: boolean
+  flashKey: number
+  children: React.ReactNode
+}) {
   if (!flash) return <div className="rounded-md">{children}</div>
   return (
     <motion.div
@@ -141,7 +148,11 @@ function FlashWrapper({ flash, flashKey, children }: { flash: boolean; flashKey:
 // Shimmer label: replaces FormLabel text while AI is mapping fields
 function ShimmerLabel({ children, active }: { children: string; active: boolean }) {
   if (!active) return <span>{children}</span>
-  return <Shimmer as="span" className="text-sm font-medium" duration={1.5}>{children}</Shimmer>
+  return (
+    <Shimmer as="span" className="text-sm font-medium" duration={1.5}>
+      {children}
+    </Shimmer>
+  )
 }
 
 const schema = z.object({
@@ -192,7 +203,10 @@ export function ApplicationForm({
   const { settings } = useSettings()
   const [isParsing, setIsParsing] = useState(false)
   const [isShimmering, setIsShimmering] = useState(false)
-  const [parseNotice, setParseNotice] = useState<{ type: 'ai' | 'regex' | 'error' | 'not_found'; msg: string } | null>(null)
+  const [parseNotice, setParseNotice] = useState<{
+    type: 'ai' | 'regex' | 'error' | 'not_found'
+    msg: string
+  } | null>(null)
   const [showJobOffer, setShowJobOffer] = useState(!isEditing)
   const [showTimeline, setShowTimeline] = useState(false)
   const [urlInput, setUrlInput] = useState('')
@@ -266,16 +280,33 @@ export function ApplicationForm({
     const { result, usedAI } = await parseJobOffer(text, settings)
 
     const isValid = (v: unknown): v is string =>
-      typeof v === 'string' && v.trim() !== '' && !/^(indefinido|undefined|null|n\/a|none|no\s+aplica)$/i.test(v.trim())
+      typeof v === 'string' &&
+      v.trim() !== '' &&
+      !/^(indefinido|undefined|null|n\/a|none|no\s+aplica)$/i.test(v.trim())
 
     const updated: FlashField[] = []
-    if (isValid(result.company)) { form.setValue('company', result.company, { shouldValidate: true }); updated.push('company') }
-    if (isValid(result.position)) { form.setValue('position', result.position, { shouldValidate: true }); updated.push('position') }
-    if (result.salaryOffered != null) { form.setValue('salaryOffered', result.salaryOffered); updated.push('salaryOffered') }
-    if (isValid(result.salaryCurrency)) { form.setValue('salaryCurrency', result.salaryCurrency); updated.push('salaryCurrency') }
+    if (isValid(result.company)) {
+      form.setValue('company', result.company, { shouldValidate: true })
+      updated.push('company')
+    }
+    if (isValid(result.position)) {
+      form.setValue('position', result.position, { shouldValidate: true })
+      updated.push('position')
+    }
+    if (result.salaryOffered != null) {
+      form.setValue('salaryOffered', result.salaryOffered)
+      updated.push('salaryOffered')
+    }
+    if (isValid(result.salaryCurrency)) {
+      form.setValue('salaryCurrency', result.salaryCurrency)
+      updated.push('salaryCurrency')
+    }
     if (result.benefits?.length) {
       const validBenefits = result.benefits.filter(isValid)
-      if (validBenefits.length) { form.setValue('benefits', validBenefits); updated.push('benefits') }
+      if (validBenefits.length) {
+        form.setValue('benefits', validBenefits)
+        updated.push('benefits')
+      }
     }
 
     const hasUsefulData = !!(result.company || result.position)
@@ -286,7 +317,10 @@ export function ApplicationForm({
     } else if (usedAI && !hasUsefulData) {
       setParseNotice({ type: 'not_found', msg: '' })
     } else if (settings?.aiApiKey) {
-      setParseNotice({ type: 'regex', msg: 'Modelo no soportado aún. Extracción básica, revisa los campos.' })
+      setParseNotice({
+        type: 'regex',
+        msg: 'Modelo no soportado aún. Extracción básica, revisa los campos.',
+      })
     } else {
       setParseNotice({
         type: 'regex',
@@ -341,7 +375,10 @@ export function ApplicationForm({
         body: JSON.stringify({ url: trimmedUrl }),
         signal: controller.signal,
       })
-      const scrapeData = (await scrapeRes.json().catch(() => ({}))) as { raw?: string; error?: string }
+      const scrapeData = (await scrapeRes.json().catch(() => ({}))) as {
+        raw?: string
+        error?: string
+      }
 
       if (!scrapeRes.ok || !scrapeData.raw) {
         setParseNotice({
@@ -366,9 +403,19 @@ export function ApplicationForm({
           }),
           signal: controller.signal,
         })
-        const cleanData = (await cleanRes.json().catch(() => ({}))) as { success?: boolean; markdown?: string | null; error?: string }
+        const cleanData = (await cleanRes.json().catch(() => ({}))) as {
+          success?: boolean
+          markdown?: string | null
+          error?: string
+        }
 
-        if (!cleanRes.ok || !cleanData.success || cleanData.markdown === null || cleanData.markdown === undefined || cleanData.markdown.trim().length < 50) {
+        if (
+          !cleanRes.ok ||
+          !cleanData.success ||
+          cleanData.markdown === null ||
+          cleanData.markdown === undefined ||
+          cleanData.markdown.trim().length < 50
+        ) {
           setParseNotice({ type: 'not_found', msg: '' })
           return
         }
@@ -386,7 +433,10 @@ export function ApplicationForm({
       // Network errors from abort racing with inflight requests have no useful
       // info for the user, but real connectivity failures should surface feedback.
       if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
-        setParseNotice({ type: 'error', msg: 'Error de red. Verifica tu conexión e intenta de nuevo.' })
+        setParseNotice({
+          type: 'error',
+          msg: 'Error de red. Verifica tu conexión e intenta de nuevo.',
+        })
         return
       }
       setParseNotice({ type: 'error', msg: 'Error al procesar la URL.' })
@@ -408,47 +458,54 @@ export function ApplicationForm({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <SheetHeader className="shrink-0 border-b border-border px-6 py-4">
+        <SheetHeader className="border-border shrink-0 border-b px-6 py-4">
           <SheetTitle>{isEditing ? 'Editar postulación' : 'Nueva postulación'}</SheetTitle>
           <SheetDescription>
-            {isEditing ? 'Actualiza los datos de esta postulación' : 'Registra una nueva oferta laboral'}
+            {isEditing
+              ? 'Actualiza los datos de esta postulación'
+              : 'Registra una nueva oferta laboral'}
           </SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-0 py-5">
-
               {/* ── Sección: Oferta laboral ─────────────────────────────── */}
-              <div className="mb-5 rounded-lg border border-border/60 bg-muted/30">
+              <div className="border-border/60 bg-muted/30 mb-5 rounded-lg border">
                 <button
                   type="button"
                   className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium"
                   onClick={() => setShowJobOffer((v) => !v)}
                 >
-                  <span className="flex items-center gap-2 text-muted-foreground">
+                  <span className="text-muted-foreground flex items-center gap-2">
                     <FileText className="h-4 w-4" />
                     Oferta laboral
-                    {!isEditing && <span className="text-xs font-normal">(pega aquí para auto-rellenar)</span>}
+                    {!isEditing && (
+                      <span className="text-xs font-normal">(pega aquí para auto-rellenar)</span>
+                    )}
                   </span>
-                  {showJobOffer ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  {showJobOffer ? (
+                    <ChevronUp className="text-muted-foreground h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="text-muted-foreground h-4 w-4" />
+                  )}
                 </button>
 
                 {showJobOffer && (
-                  <div className="border-t border-border/60 px-4 pb-4 pt-3 space-y-3">
+                  <div className="border-border/60 space-y-3 border-t px-4 pt-3 pb-4">
                     <Tabs defaultValue="text" className="w-full">
                       <TabsList className="h-8 w-full">
-                        <TabsTrigger value="text" className="flex-1 gap-1.5 text-xs h-6">
+                        <TabsTrigger value="text" className="h-6 flex-1 gap-1.5 text-xs">
                           <FileText className="h-3 w-3" />
                           Texto plano
                         </TabsTrigger>
-                        <TabsTrigger value="url" className="flex-1 gap-1.5 text-xs h-6">
+                        <TabsTrigger value="url" className="h-6 flex-1 gap-1.5 text-xs">
                           <Link className="h-3 w-3" />
                           URL
                         </TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="text" className="space-y-3 mt-3">
+                      <TabsContent value="text" className="mt-3 space-y-3">
                         <FormField
                           control={form.control}
                           name="jobOfferText"
@@ -459,7 +516,7 @@ export function ApplicationForm({
                                   {...field}
                                   rows={5}
                                   placeholder="Pega aquí la descripción completa de la oferta laboral..."
-                                  className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
+                                  className="border-input bg-background placeholder:text-muted-foreground focus:ring-ring w-full resize-none rounded-md border px-3 py-2 text-sm outline-none focus:ring-1"
                                 />
                               </FormControl>
                             </FormItem>
@@ -482,7 +539,7 @@ export function ApplicationForm({
                             {isParsing ? 'Analizando...' : 'Analizar con IA'}
                           </Button>
                           {!settings?.aiApiKey && (
-                            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span className="text-muted-foreground flex items-center gap-1 text-xs">
                               <AlertCircle className="h-3 w-3" />
                               Configura API key en Configuración
                             </span>
@@ -490,7 +547,7 @@ export function ApplicationForm({
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="url" className="space-y-3 mt-3">
+                      <TabsContent value="url" className="mt-3 space-y-3">
                         {(() => {
                           const blocked = getUnsupportedDomain(urlInput)
                           return (
@@ -500,11 +557,20 @@ export function ApplicationForm({
                                   type="url"
                                   placeholder="https://empresa.com/careers/job/..."
                                   value={urlInput}
-                                  onChange={(e) => { setUrlInput(e.target.value); setParseNotice(null) }}
-                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAnalyzeUrl() } }}
+                                  onChange={(e) => {
+                                    setUrlInput(e.target.value)
+                                    setParseNotice(null)
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault()
+                                      handleAnalyzeUrl()
+                                    }
+                                  }}
                                   className={cn(
                                     'flex-1 text-sm',
-                                    blocked && 'border-amber-400 focus-visible:ring-amber-400 dark:border-amber-600',
+                                    blocked &&
+                                      'border-amber-400 focus-visible:ring-amber-400 dark:border-amber-600'
                                   )}
                                 />
                                 {isParsing ? (
@@ -513,7 +579,7 @@ export function ApplicationForm({
                                     size="sm"
                                     variant="outline"
                                     onClick={handleCancelUrl}
-                                    className="relative gap-1.5 shrink-0 overflow-hidden border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                    className="relative shrink-0 gap-1.5 overflow-hidden border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                                   >
                                     {/* Indeterminate progress bar at bottom */}
                                     <span className="absolute inset-x-0 bottom-0 h-0.5 bg-red-200 dark:bg-red-900/40">
@@ -529,7 +595,7 @@ export function ApplicationForm({
                                     variant="secondary"
                                     onClick={handleAnalyzeUrl}
                                     disabled={!urlInput.trim()}
-                                    className="gap-1.5 shrink-0"
+                                    className="shrink-0 gap-1.5"
                                   >
                                     <Sparkles className="h-3.5 w-3.5" />
                                     Analizar con IA
@@ -546,13 +612,17 @@ export function ApplicationForm({
                                     </p>
                                     <p className="text-xs text-amber-700 dark:text-amber-400/80">
                                       Abre la oferta, selecciona todo el texto (Ctrl+A) y pégalo en{' '}
-                                      <span className="rounded bg-amber-100 px-1 py-0.5 font-semibold dark:bg-amber-900/40">Texto plano</span>.
+                                      <span className="rounded bg-amber-100 px-1 py-0.5 font-semibold dark:bg-amber-900/40">
+                                        Texto plano
+                                      </span>
+                                      .
                                     </p>
                                   </div>
                                 </div>
                               ) : (
-                                <p className="text-xs text-muted-foreground">
-                                  Pega la URL directa a la oferta. Funciona con Computrabajo, Elempleo, Workday, Eightfold y otros portales. Si falla, usa{' '}
+                                <p className="text-muted-foreground text-xs">
+                                  Pega la URL directa a la oferta. Funciona con Computrabajo,
+                                  Elempleo, Workday, Eightfold y otros portales. Si falla, usa{' '}
                                   <span className="font-medium">Texto plano</span>.
                                 </p>
                               )}
@@ -565,20 +635,32 @@ export function ApplicationForm({
                     {parseNotice && (
                       <>
                         {parseNotice.type === 'not_found' ? (
-                          <NotFoundNotice reason={parseNotice.msg || undefined} onDismiss={() => setParseNotice(null)} />
+                          <NotFoundNotice
+                            reason={parseNotice.msg || undefined}
+                            onDismiss={() => setParseNotice(null)}
+                          />
                         ) : (
                           <div
                             className={cn(
                               'flex items-center justify-between gap-1.5 rounded-md px-3 py-2',
-                              parseNotice.type === 'ai' && 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400',
-                              parseNotice.type === 'regex' && 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
-                              parseNotice.type === 'error' && 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+                              parseNotice.type === 'ai' &&
+                                'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400',
+                              parseNotice.type === 'regex' &&
+                                'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
+                              parseNotice.type === 'error' &&
+                                'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400'
                             )}
                           >
                             <span className="flex items-center gap-1.5 text-xs">
-                              {parseNotice.type === 'ai' && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
-                              {parseNotice.type === 'error' && <XCircle className="h-3.5 w-3.5 shrink-0" />}
-                              {parseNotice.type === 'regex' && <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                              {parseNotice.type === 'ai' && (
+                                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                              )}
+                              {parseNotice.type === 'error' && (
+                                <XCircle className="h-3.5 w-3.5 shrink-0" />
+                              )}
+                              {parseNotice.type === 'regex' && (
+                                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              )}
                               {parseNotice.msg}
                             </span>
                             <button
@@ -605,7 +687,9 @@ export function ApplicationForm({
                     name="company"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel><ShimmerLabel active={isShimmering}>Empresa *</ShimmerLabel></FormLabel>
+                        <FormLabel>
+                          <ShimmerLabel active={isShimmering}>Empresa *</ShimmerLabel>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="ej. Google, VTEX..." {...field} />
                         </FormControl>
@@ -620,7 +704,9 @@ export function ApplicationForm({
                     name="position"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel><ShimmerLabel active={isShimmering}>Cargo *</ShimmerLabel></FormLabel>
+                        <FormLabel>
+                          <ShimmerLabel active={isShimmering}>Cargo *</ShimmerLabel>
+                        </FormLabel>
                         <FormControl>
                           <Input placeholder="ej. Senior Backend Engineer..." {...field} />
                         </FormControl>
@@ -644,7 +730,9 @@ export function ApplicationForm({
                           </FormControl>
                           <SelectContent>
                             {SOURCES.map((s) => (
-                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                              <SelectItem key={s} value={s}>
+                                {s}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -660,9 +748,10 @@ export function ApplicationForm({
                           <span className="flex items-center gap-1">
                             Estado
                             <span className="group relative inline-flex">
-                              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
-                              <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
-                                Refleja el paso actual del proceso. Actualízalo desde aquí o en la página de detalle.
+                              <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
+                              <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
+                                Refleja el paso actual del proceso. Actualízalo desde aquí o en la
+                                página de detalle.
                               </span>
                             </span>
                           </span>
@@ -675,7 +764,9 @@ export function ApplicationForm({
                           </FormControl>
                           <SelectContent>
                             {Object.entries(APPLICATION_STATUS_LABELS).map(([v, l]) => (
-                              <SelectItem key={v} value={v}>{l}</SelectItem>
+                              <SelectItem key={v} value={v}>
+                                {l}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -689,7 +780,9 @@ export function ApplicationForm({
 
               {/* ── Sección: Economía ──────────────────────────────────── */}
               <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Economía</p>
+                <p className="text-muted-foreground mb-3 text-xs font-medium tracking-wider uppercase">
+                  Economía
+                </p>
                 <div className="flex items-end gap-3">
                   <FlashWrapper flash={flashFields.has('salaryOffered')} flashKey={flashKey}>
                     <FormField
@@ -697,7 +790,9 @@ export function ApplicationForm({
                       name="salaryOffered"
                       render={({ field }) => (
                         <FormItem className="flex-1">
-                          <FormLabel><ShimmerLabel active={isShimmering}>Salario ofertado</ShimmerLabel></FormLabel>
+                          <FormLabel>
+                            <ShimmerLabel active={isShimmering}>Salario ofertado</ShimmerLabel>
+                          </FormLabel>
                           <FormControl>
                             <Input type="number" placeholder="0" {...field} />
                           </FormControl>
@@ -711,7 +806,9 @@ export function ApplicationForm({
                       name="salaryCurrency"
                       render={({ field }) => (
                         <FormItem className="w-24">
-                          <FormLabel><ShimmerLabel active={isShimmering}>Moneda</ShimmerLabel></FormLabel>
+                          <FormLabel>
+                            <ShimmerLabel active={isShimmering}>Moneda</ShimmerLabel>
+                          </FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger>
@@ -720,7 +817,9 @@ export function ApplicationForm({
                             </FormControl>
                             <SelectContent>
                               {CURRENCIES.map((c) => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                                <SelectItem key={c} value={c}>
+                                  {c}
+                                </SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -733,7 +832,7 @@ export function ApplicationForm({
                     name="isFavorite"
                     render={({ field }) => (
                       <div className="flex flex-col items-center gap-1 pb-0.5">
-                        <span className="text-sm font-medium leading-none">Favorita</span>
+                        <span className="text-sm leading-none font-medium">Favorita</span>
                         <button
                           type="button"
                           onClick={() => field.onChange(!field.value)}
@@ -759,12 +858,19 @@ export function ApplicationForm({
               {/* ── Sección: Beneficios ────────────────────────────────── */}
               <FlashWrapper flash={flashFields.has('benefits')} flashKey={flashKey}>
                 <div className="space-y-2">
-                  <p className="flex items-center gap-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {isShimmering ? <Shimmer as="span" className="text-xs font-medium" duration={1.5}>Beneficios</Shimmer> : 'Beneficios'}
+                  <p className="text-muted-foreground flex items-center gap-1 text-xs font-medium tracking-wider uppercase">
+                    {isShimmering ? (
+                      <Shimmer as="span" className="text-xs font-medium" duration={1.5}>
+                        Beneficios
+                      </Shimmer>
+                    ) : (
+                      'Beneficios'
+                    )}
                     <span className="group relative inline-flex normal-case">
                       <HelpCircle className="h-3.5 w-3.5 cursor-help" />
-                      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-56 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
-                        Escribe un beneficio y presiona Enter o coma para agregarlo. Ejemplos: Home office, Seguro médico, Bono anual.
+                      <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-56 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
+                        Escribe un beneficio y presiona Enter o coma para agregarlo. Ejemplos: Home
+                        office, Seguro médico, Bono anual.
                       </span>
                     </span>
                   </p>
@@ -772,10 +878,7 @@ export function ApplicationForm({
                     control={form.control}
                     name="benefits"
                     render={({ field }) => (
-                      <BenefitList
-                        value={field.value}
-                        onChange={field.onChange}
-                      />
+                      <BenefitList value={field.value} onChange={field.onChange} />
                     )}
                   />
                 </div>
@@ -794,8 +897,8 @@ export function ApplicationForm({
                         <span className="flex items-center gap-1">
                           Fecha postulación
                           <span className="group relative inline-flex">
-                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
-                            <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
+                            <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
+                            <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
                               Día en que enviaste tu candidatura a esta oferta.
                             </span>
                           </span>
@@ -816,9 +919,10 @@ export function ApplicationForm({
                         <span className="flex items-center gap-1">
                           Fecha respuesta
                           <span className="group relative inline-flex">
-                            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground/60 cursor-help" />
-                            <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-3 py-2 text-xs font-normal text-popover-foreground shadow-md ring-1 ring-border group-hover:block">
-                              Fecha en que la empresa te dio una respuesta (positiva o negativa). Déjala vacía si aún esperas.
+                            <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
+                            <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
+                              Fecha en que la empresa te dio una respuesta (positiva o negativa).
+                              Déjala vacía si aún esperas.
                             </span>
                           </span>
                         </span>
@@ -858,7 +962,7 @@ export function ApplicationForm({
                           {...field}
                           rows={2}
                           placeholder="Observaciones sobre la empresa, proceso, cultura..."
-                          className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring"
+                          className="border-input bg-background placeholder:text-muted-foreground focus:ring-ring w-full resize-none rounded-md border px-3 py-2 text-sm outline-none focus:ring-1"
                         />
                       </FormControl>
                     </FormItem>
@@ -868,16 +972,24 @@ export function ApplicationForm({
 
               {/* ── Sección: CV asociado ───────────────────────────────── */}
               <Separator className="my-5" />
-              <div className="rounded-lg border border-dashed border-border/70 p-4">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-2">CV Asociado</p>
+              <div className="border-border/70 rounded-lg border border-dashed p-4">
+                <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">
+                  CV Asociado
+                </p>
                 {defaultValues?.cvId ? (
-                  <p className="text-sm text-primary cursor-pointer hover:underline">
+                  <p className="text-primary cursor-pointer text-sm hover:underline">
                     Ver CV generado →
                   </p>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Sin CV generado aún</p>
-                    <Button type="button" variant="outline" size="sm" className="gap-1.5 text-xs" disabled>
+                    <p className="text-muted-foreground text-sm">Sin CV generado aún</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      disabled
+                    >
                       <Sparkles className="h-3 w-3" />
                       Generar CV con IA
                     </Button>
@@ -892,15 +1004,17 @@ export function ApplicationForm({
                   <div>
                     <button
                       type="button"
-                      className="flex w-full items-center justify-between text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3"
+                      className="text-muted-foreground mb-3 flex w-full items-center justify-between text-xs font-medium tracking-wider uppercase"
                       onClick={() => setShowTimeline((v) => !v)}
                     >
                       <span>Historial de estados ({defaultValues.timeline.length})</span>
-                      {showTimeline ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      {showTimeline ? (
+                        <ChevronUp className="h-3.5 w-3.5" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      )}
                     </button>
-                    {showTimeline && (
-                      <ApplicationTimeline entries={defaultValues.timeline} />
-                    )}
+                    {showTimeline && <ApplicationTimeline entries={defaultValues.timeline} />}
                   </div>
                 </>
               )}
@@ -911,7 +1025,7 @@ export function ApplicationForm({
         </div>
 
         {/* ── Footer fijo ────────────────────────────────────────────── */}
-        <div className="shrink-0 border-t border-border px-6 py-4">
+        <div className="border-border shrink-0 border-t px-6 py-4">
           <div className="flex gap-3">
             <Button
               type="button"
