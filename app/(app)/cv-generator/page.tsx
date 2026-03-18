@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { StepJobOffer } from '@/components/cv-generator/step-job-offer'
@@ -39,7 +39,7 @@ function buildDraftAndIds(
   return { cv, ids }
 }
 
-export default function CvGeneratorPage() {
+function CvGeneratorContent() {
   const { cvData } = useExperience()
   const { applications, updateApplication } = useApplications()
   const { settings } = useSettings()
@@ -526,5 +526,13 @@ export default function CvGeneratorPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function CvGeneratorPage() {
+  return (
+    <Suspense>
+      <CvGeneratorContent />
+    </Suspense>
   )
 }

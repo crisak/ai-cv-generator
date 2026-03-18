@@ -9,7 +9,7 @@
 ### framer-motion
 
 ```bash
-npm install framer-motion
+pnpm add framer-motion
 ```
 
 - Importar `motion` directamente en componentes: `import { motion } from 'framer-motion'`

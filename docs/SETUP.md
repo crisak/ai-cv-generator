@@ -7,7 +7,7 @@ Documentación de referencia para desarrolladores: configuración del entorno, v
 ## Requisitos
 
 - **Node.js** 18+
-- **npm** 9+
+- **pnpm** 9+
 - Cuenta en [Clerk](https://clerk.com) (autenticación)
 - API key de al menos un proveedor de IA (opcional para desarrollo básico)
 
@@ -18,14 +18,14 @@ Documentación de referencia para desarrolladores: configuración del entorno, v
 ```bash
 git clone https://github.com/crisak/ai-cv-generator.git
 cd ai-cv-generator
-npm install
+pnpm install
 cp .env.example .env.local
 ```
 
 Edita `.env.local` con tus variables (ver sección siguiente).
 
 ```bash
-npm run dev
+pnpm dev
 # Disponible en http://localhost:3000
 ```
 
@@ -204,10 +204,10 @@ Patrón con Tailwind puro (sin librería):
 ## Scripts
 
 ```bash
-npm run dev        # Dev server con hot reload (localhost:3000)
-npm run build      # Build de producción
-npm run lint       # ESLint
-npm run format     # Prettier (formatea todos los archivos)
+pnpm dev           # Dev server con hot reload (localhost:3000)
+pnpm build         # Build de producción
+pnpm lint          # ESLint
+pnpm format        # Prettier (formatea todos los archivos)
 ```
 
 ---
@@ -251,7 +251,7 @@ Asegúrate de que cualquier lectura de `useTheme()` esté protegida con el guard
 
 1. Fork el repositorio
 2. Crea una rama: `git checkout -b feature/nombre-feature`
-3. Formatea antes de commitear: `npm run format`
+3. Formatea antes de commitear: `pnpm format`
 4. Commit semántico: `git commit -m "feat: descripción clara"`
 5. Abre un Pull Request
 

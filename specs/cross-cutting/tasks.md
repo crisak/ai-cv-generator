@@ -3,7 +3,7 @@
 ## Tareas pendientes
 
 - [x] Task 1: Instalar framer-motion y actualizar documentación técnica
-  - Scope: `npm install framer-motion`. Agregar framer-motion al Tech Stack en `constitution/constitution.md` y `CLAUDE.md`. No modificar componentes existentes.
+  - Scope: `pnpm add framer-motion`. Agregar framer-motion al Tech Stack en `constitution/constitution.md` y `CLAUDE.md`. No modificar componentes existentes.
   - Depende de: nada
 
 - [x] Task 2: Instalar ai-elements (ModelSelector + Shimmer) y configurar theme
