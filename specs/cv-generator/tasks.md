@@ -21,7 +21,27 @@
 - [x] Task 17: Fix Dialog accessibility (DialogDescription)
 - [x] Task 18: Unificar diseño de cv-generator con otras páginas
 
-## Tareas pendientes (v2)
+## Tareas pendientes — Editar CV guardado (v2)
+
+- [ ] Task 20: Schema migration — Agregar `jobOfferText` y `updatedAt` a CvDocument
+  - Scope: Agregar campos a `CvDocument` interface + schema en `lib/db/schemas.ts`, bump version 0→1. Agregar `migrationStrategies` en `lib/db/index.ts`. Actualizar `SaveCvInput` en `hooks/use-cvs.ts` para persistir `jobOfferText`. Pasar `jobOfferText` en `handleSaveCv()` de `cv-generator/page.tsx`.
+  - Archivos: `lib/db/schemas.ts`, `lib/db/index.ts`, `hooks/use-cvs.ts`, `app/(app)/cv-generator/page.tsx`
+
+- [ ] Task 21: Agregar `updateCV` y `getCvById` al hook `useCvs`
+  - Scope: `updateCV(id, input)` usa `doc.patch()` de RxDB. `getCvById(id)` busca un CV por ID. Exportar ambos desde el hook.
+  - Archivos: `hooks/use-cvs.ts`
+  - Depende de: Task 20
+
+- [ ] Task 22: Botón "Editar" en página Mis CVs
+  - Scope: Agregar botón "Editar" con icono Pencil y `<Link href={/cv-generator?editId=${cv.id}}>` entre los botones "Ver" y "PDF". Mismo estilo ghost/sm/h-8.
+  - Archivos: `app/(app)/cvs/page.tsx`
+
+- [ ] Task 23: Modo edición en cv-generator (core)
+  - Scope: Leer `editId` de searchParams. Cargar CV guardado con `getCvById()`. Reconstruir selections con `initSelectionsFromSavedCv()` (nueva función en `lib/ai-cv.ts`). Iniciar en Step 2. `handleSaveCv` → `updateCV()` cuando `editingCvId`. Header "Editar CV" condicional. `step-preview.tsx` con prop `isEditing` para textos "Actualizar CV" / "CV actualizado".
+  - Archivos: `app/(app)/cv-generator/page.tsx`, `lib/ai-cv.ts`, `components/cv-generator/step-preview.tsx`
+  - Depende de: Tasks 20, 21
+
+## Tareas pendientes — Shimmer (v2)
 
 - [ ] Task 19: Shimmer loading animation durante generación IA
   - Scope: Agregar componente Shimmer de ai-elements durante `suggestBullets()`, `generateCv()`, `optimizeCv()`. Efecto shimmer en borde de cv-editor durante generación. Reemplazar estados de loading existentes (spinner/skeleton) con Shimmer.

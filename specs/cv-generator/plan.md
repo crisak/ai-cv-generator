@@ -21,22 +21,33 @@ cv-generator/page.tsx (wizard 3 pasos)
         → CvViewer (renderizado ATS)
         → Descargar PDF / Guardar en RxDB
 
-cvs/page.tsx (viewer)
+cvs/page.tsx (viewer + edit entry point)
   → Lista de CVs guardados
   → CvViewer para visualización
+  → Botón "Editar" → /cv-generator?editId=xxx
+
+cv-generator/page.tsx (modo edición)
+  → Detecta ?editId=xxx en URL
+  → Carga CV guardado via getCvById()
+  → Reconstruye selections comparando bullets guardados vs experiencia
+  → Inicia en Step 2 directamente
+  → Guardar → updateCV() en lugar de saveCV()
 ```
 
 ## Modelo de datos (RxDB)
 
-Collection: `cvs`
+Collection: `cvs` (schema v1)
 
 ```typescript
 {
   id: string
   applicationId?: string     // vínculo a postulación
-  jobOffer: string           // texto de la oferta
-  cv: CvData                 // CV generado (json-schema-cv-generator)
+  jobTitle: string           // título del puesto
+  company: string            // empresa
+  jobOfferText: string       // texto completo de la oferta (para re-optimización IA)
+  cvData: string             // CV generado (JSON stringified CvData)
   createdAt: string
+  updatedAt: string          // fecha de última edición
 }
 ```
 
