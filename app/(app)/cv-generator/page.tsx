@@ -220,6 +220,7 @@ export default function CvGeneratorPage() {
       applicationId: applicationId || undefined,
       jobTitle: app?.position ?? 'Sin título',
       company: app?.company ?? 'Sin empresa',
+      jobOfferText,
       cvData: generatedCv,
     })
     if (result) {
