@@ -8,9 +8,10 @@ interface ParseRequest {
   jobOffer: string
   model?: string
   apiKey?: string
+  mode?: 'extract' | 'clean'
 }
 
-const JOB_OFFER_PROMPT = (jobOffer: string) => `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
+const EXTRACT_PROMPT = (jobOffer: string) => `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
 
 Campos a extraer:
 - company: nombre de la empresa (string)
@@ -23,6 +24,19 @@ Oferta laboral:
 ${jobOffer.substring(0, 4000)}
 
 JSON:`
+
+// mode=clean: convert raw scraped text to clean markdown preserving the FULL original job offer
+const CLEAN_PROMPT = (raw: string) => `Eres un conversor de texto a markdown para ofertas laborales. Se te dará texto extraído de una página web (puede incluir navegación, cookies, scripts, publicidad, etc.).
+
+Tu tarea:
+1. Identifica si el texto contiene UNA oferta laboral concreta (no una lista de ofertas, no un portal genérico, no una página de login, no un captcha).
+2. Si SÍ hay oferta: convierte TODA la oferta laboral a markdown limpio. Incluye TODO el contenido original de la oferta sin resumir, sin omitir, sin parafrasear — solo elimina el ruido de la página (navegación, footer, cookies, publicidad). El resultado debe ser la oferta completa tal como fue publicada.
+3. Si NO hay oferta concreta: responde exactamente con la palabra NULL.
+
+Responde SOLO con el markdown completo de la oferta O con la palabra NULL. Sin explicaciones ni texto adicional.
+
+Texto extraído:
+${raw.substring(0, 8000)}`
 
 function parseAIJson(text: string) {
   const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -44,7 +58,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as ParseRequest
-    const { jobOffer, model = 'claude', apiKey } = body
+    const { jobOffer, model = 'claude', apiKey, mode = 'extract' } = body
 
     if (!jobOffer || typeof jobOffer !== 'string' || jobOffer.trim().length === 0) {
       return NextResponse.json({ error: 'Missing or invalid jobOffer' }, { status: 400 })
@@ -59,9 +73,25 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = AIProviderFactory.create(model as AIProviderName)
+
+    // mode=clean: return cleaned markdown of the job offer, or null if not a job offer
+    if (mode === 'clean') {
+      const result = await provider.call({
+        apiKey,
+        messages: [{ role: 'user', content: CLEAN_PROMPT(jobOffer) }],
+        maxTokens: 3000,
+      })
+      const text = result.text.trim()
+      if (text === 'NULL' || text.toUpperCase() === 'NULL') {
+        return NextResponse.json({ success: true, markdown: null })
+      }
+      return NextResponse.json({ success: true, markdown: text })
+    }
+
+    // mode=extract (default): return structured JSON fields
     const result = await provider.call({
       apiKey,
-      messages: [{ role: 'user', content: JOB_OFFER_PROMPT(jobOffer) }],
+      messages: [{ role: 'user', content: EXTRACT_PROMPT(jobOffer) }],
       maxTokens: 600,
       responseFormat: 'json_object',
     })
