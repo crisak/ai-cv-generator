@@ -17,6 +17,7 @@ import {
   ClipboardPaste,
   CheckCircle2,
   XCircle,
+  Square,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -165,6 +166,7 @@ export function ApplicationForm({
   const [urlInput, setUrlInput] = useState('')
   const [flashFields, setFlashFields] = useState<Set<FlashField>>(new Set())
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -260,9 +262,22 @@ export function ApplicationForm({
     }
   }
 
+  function handleCancelUrl() {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setIsParsing(false)
+    setParseNotice(null)
+  }
+
   async function handleAnalyzeUrl() {
     const trimmedUrl = urlInput.trim()
     if (!trimmedUrl) return
+
+    // Cancel any in-flight request
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
+
     setIsParsing(true)
     setParseNotice(null)
     try {
@@ -271,6 +286,7 @@ export function ApplicationForm({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: trimmedUrl }),
+        signal: controller.signal,
       })
       const scrapeData = (await scrapeRes.json()) as { raw?: string; error?: string }
 
@@ -293,11 +309,11 @@ export function ApplicationForm({
             apiKey: settings.aiApiKey,
             mode: 'clean',
           }),
+          signal: controller.signal,
         })
         const cleanData = (await cleanRes.json()) as { success?: boolean; markdown?: string | null; error?: string }
 
         if (!cleanRes.ok || !cleanData.success || cleanData.markdown === null || cleanData.markdown === undefined || cleanData.markdown.trim().length < 50) {
-          // AI confirmed: no job offer found in this page
           setParseNotice({ type: 'not_found', msg: '' })
           return
         }
@@ -310,15 +326,18 @@ export function ApplicationForm({
         form.setValue('jobOfferText', scrapeData.raw)
         await applyParseResult(scrapeData.raw)
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
       setParseNotice({ type: 'error', msg: 'Error al procesar la URL.' })
     } finally {
+      abortRef.current = null
       setIsParsing(false)
     }
   }
 
   async function handleSubmit(data: FormData) {
     await onSubmit(data)
+    abortRef.current?.abort()
     form.reset()
     setParseNotice(null)
     onOpenChange(false)
@@ -420,27 +439,36 @@ export function ApplicationForm({
                                   placeholder="https://empresa.com/careers/job/..."
                                   value={urlInput}
                                   onChange={(e) => { setUrlInput(e.target.value); setParseNotice(null) }}
-                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (!blocked) handleAnalyzeUrl() } }}
+                                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAnalyzeUrl() } }}
                                   className={cn(
                                     'flex-1 text-sm',
                                     blocked && 'border-amber-400 focus-visible:ring-amber-400 dark:border-amber-600',
                                   )}
                                 />
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant="secondary"
-                                  onClick={handleAnalyzeUrl}
-                                  disabled={isParsing || !urlInput.trim() || !!blocked}
-                                  className="gap-1.5 shrink-0"
-                                >
-                                  {isParsing ? (
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  ) : (
+                                {isParsing ? (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={handleCancelUrl}
+                                    className="gap-1.5 shrink-0 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
+                                  >
+                                    <Square className="h-3 w-3 fill-current" />
+                                    Cancelar
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={handleAnalyzeUrl}
+                                    disabled={!urlInput.trim()}
+                                    className="gap-1.5 shrink-0"
+                                  >
                                     <Sparkles className="h-3.5 w-3.5" />
-                                  )}
-                                  {isParsing ? 'Analizando...' : 'Analizar con IA'}
-                                </Button>
+                                    Analizar con IA
+                                  </Button>
+                                )}
                               </div>
 
                               {blocked ? (
