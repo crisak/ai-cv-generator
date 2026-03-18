@@ -81,7 +81,17 @@ export async function getDatabase(userId: string): Promise<AppDatabase> {
           },
         },
       },
-      cvs: { schema: cvSchema },
+      cvs: {
+        schema: cvSchema,
+        migrationStrategies: {
+          1: (oldDoc: Record<string, unknown>) => ({
+            ...oldDoc,
+            jobOfferText: '',
+            updatedAt: oldDoc.createdAt,
+            isDraft: false,
+          }),
+        },
+      },
       settings: { schema: settingsSchema },
       experiences: { schema: experienceSchema },
     })

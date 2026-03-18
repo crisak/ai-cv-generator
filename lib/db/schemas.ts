@@ -44,8 +44,11 @@ export interface CvDocument {
   applicationId: string
   jobTitle: string
   company: string
+  jobOfferText: string
   cvData: string
+  isDraft: boolean
   createdAt: string
+  updatedAt: string
 }
 
 export interface SettingsDocument {
@@ -130,7 +133,7 @@ export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
 }
 
 export const cvSchema: RxJsonSchema<CvDocument> = {
-  version: 0,
+  version: 1,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -138,10 +141,13 @@ export const cvSchema: RxJsonSchema<CvDocument> = {
     applicationId: { type: 'string' },
     jobTitle: { type: 'string' },
     company: { type: 'string' },
+    jobOfferText: { type: 'string' },
     cvData: { type: 'string' },
+    isDraft: { type: 'boolean' },
     createdAt: { type: 'string' },
+    updatedAt: { type: 'string' },
   },
-  required: ['id', 'cvData', 'createdAt'],
+  required: ['id', 'cvData', 'createdAt', 'updatedAt', 'isDraft'],
 }
 
 export const settingsSchema: RxJsonSchema<SettingsDocument> = {
