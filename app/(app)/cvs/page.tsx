@@ -129,7 +129,7 @@ export default function CvsPage() {
                   className="h-8 gap-1.5 text-xs"
                   asChild
                 >
-                  <Link href={`/cv-generator?editId=${cv.id}`}>
+                  <Link href={`/cv-generator?editId=${cv.id}&step=2`}>
                     <Pencil className="h-3.5 w-3.5" />
                     Editar
                   </Link>

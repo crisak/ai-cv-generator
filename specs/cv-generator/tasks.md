@@ -41,7 +41,7 @@
   - Archivos: `app/(app)/cv-generator/page.tsx`, `hooks/use-cvs.ts`
   - Depende de: Task 21
 
-- [ ] Task 24: Modo edición en cv-generator (core)
+- [x] Task 24: Modo edición en cv-generator (core)
   - Scope: Leer `editId` de searchParams con `useSearchParams()`. Cargar CV con `getCvById()`. Reconstruir selections con `initSelectionsFromSavedCv()` (nueva función en `lib/ai-cv.ts`). Iniciar en Step 2. `handleSaveCv` → `updateCV(editId, { isDraft: false })` cuando `editingCvId`, sino patch draft a `isDraft: false`. Header "Editar CV" condicional. `step-preview.tsx` con prop `isEditing` para textos "Actualizar CV" / "CV actualizado".
   - Archivos: `app/(app)/cv-generator/page.tsx`, `lib/ai-cv.ts`, `components/cv-generator/step-preview.tsx`
   - Depende de: Tasks 20, 21, 23

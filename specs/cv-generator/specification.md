@@ -49,9 +49,9 @@ El usuario necesita generar CVs optimizados para ATS a partir de ofertas laboral
 | FR11 | Step 3: Guardar CV en RxDB con vínculo a postulación | ✅ |
 | FR12 | Viewer: Lista de CVs guardados | ✅ |
 | FR13 | Viewer: Visualización del CV en formato web | ✅ |
-| FR16 | Editar CV guardado desde /cvs con navegación a cv-generator en modo edición | ⬜ Pendiente |
-| FR17 | Persistir `jobOfferText`, `updatedAt`, `isDraft` en CvDocument | ⬜ Pendiente |
-| FR18 | Auto-save en RxDB: recuperación automática ante recargas en nuevo CV y edición | ⬜ Pendiente |
+| FR16 | Editar CV guardado desde /cvs con navegación a cv-generator en modo edición | ✅ |
+| FR17 | Persistir `jobOfferText`, `updatedAt`, `isDraft` en CvDocument | ✅ |
+| FR18 | Auto-save en RxDB: recuperación automática ante recargas en nuevo CV y edición | ✅ |
 
 ## Reglas de generación de CV (IA)
 

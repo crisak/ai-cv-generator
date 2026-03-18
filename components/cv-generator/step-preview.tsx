@@ -22,6 +22,7 @@ interface StepPreviewProps {
   isGenerating: boolean
   isSaving: boolean
   savedCvId: string | null
+  isEditing?: boolean
   onBack: () => void
   onSave: () => void
   onDownload: () => void
@@ -33,6 +34,7 @@ export function StepPreview({
   isGenerating,
   isSaving,
   savedCvId,
+  isEditing,
   onBack,
   onSave,
   onDownload,
@@ -77,11 +79,13 @@ export function StepPreview({
               ) : (
                 <Save className="h-3.5 w-3.5" />
               )}
-              {isSaving ? 'Guardando…' : 'Guardar CV'}
+              {isSaving
+                ? (isEditing ? 'Actualizando…' : 'Guardando…')
+                : (isEditing ? 'Actualizar CV' : 'Guardar CV')}
             </Button>
           ) : (
             <Badge variant="secondary" className="text-xs text-green-600 dark:text-green-400 bg-green-500/10">
-              CV guardado
+              {isEditing ? 'CV actualizado' : 'CV guardado'}
             </Badge>
           )}
           <Button variant="outline" size="sm" onClick={() => downloadJson(cv)} className="gap-1.5 h-8">

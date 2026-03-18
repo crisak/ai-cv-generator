@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { StepJobOffer } from '@/components/cv-generator/step-job-offer'
 import { StepGoals } from '@/components/cv-generator/step-goals'
@@ -10,7 +10,7 @@ import { useExperience } from '@/hooks/use-experience'
 import { useApplications } from '@/hooks/use-applications'
 import { useSettings } from '@/hooks/use-settings'
 import { useCvs } from '@/hooks/use-cvs'
-import { suggestBullets, generateCv, initSelections } from '@/lib/ai-cv'
+import { suggestBullets, generateCv, initSelections, initSelectionsFromSavedCv } from '@/lib/ai-cv'
 import type { BulletsBySection } from '@/lib/ai-cv'
 import type { CvData } from '@/types/experience'
 
@@ -43,11 +43,24 @@ export default function CvGeneratorPage() {
   const { cvData } = useExperience()
   const { applications, updateApplication } = useApplications()
   const { settings } = useSettings()
-  const { saveCV, updateCV, getDraft, createDraft, deleteDraft } = useCvs()
+  const { saveCV, updateCV, getCvById, getDraft, createDraft, deleteDraft } = useCvs()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const editId = searchParams.get('editId')
+  const stepParam = searchParams.get('step')
 
-  const [step, setStep] = useState<Step>(1)
+  const [step, setStepRaw] = useState<Step>(() => {
+    const parsed = Number(stepParam)
+    if (parsed === 2 || parsed === 3) return parsed as Step
+    return 1
+  })
+
+  function setStep(newStep: Step) {
+    setStepRaw(newStep)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('step', String(newStep))
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
   const [jobOfferText, setJobOfferText] = useState('')
   const [applicationId, setApplicationId] = useState('')
   const [selections, setSelections] = useState<BulletsBySection>({})
@@ -70,8 +83,9 @@ export default function CvGeneratorPage() {
   // Ref to debounce timer
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Initialize selections + draftCv when cvData loads
+  // Initialize selections + draftCv when cvData loads (new CV only)
   useEffect(() => {
+    if (editId) return
     if (cvData && Object.keys(selections).length === 0) {
       const init = initSelections(cvData)
       setSelections(init)
@@ -79,7 +93,35 @@ export default function CvGeneratorPage() {
       setDraftCv(cv)
       setDraftBulletIds(ids)
     }
-  }, [cvData, selections])
+  }, [cvData, selections, editId])
+
+  // EDIT CV: Load saved CV and reconstruct state
+  useEffect(() => {
+    if (!editId || !cvData) return
+    let cancelled = false
+
+    getCvById(editId).then((savedDoc) => {
+      if (cancelled || !savedDoc) return
+      try {
+        const savedCvData = JSON.parse(savedDoc.cvData) as CvData
+        setDraftCv(savedCvData)
+        setJobOfferText(savedDoc.jobOfferText ?? '')
+
+        const editSelections = initSelectionsFromSavedCv(savedCvData, cvData)
+        setSelections(editSelections)
+
+        const { ids } = buildDraftAndIds(cvData, editSelections)
+        setDraftBulletIds(ids)
+      } catch {
+        // CV malformado — ignorar
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId, cvData])
 
   // NEW CV: On mount, check for an existing draft and restore it
   useEffect(() => {
@@ -315,7 +357,15 @@ export default function CvGeneratorPage() {
     setIsSaving(true)
     const app = applications.find((a) => a.id === applicationId)
 
-    if (draftIdRef.current) {
+    if (editId) {
+      // Edit mode: update existing CV
+      await updateCV(editId, {
+        cvData: generatedCv,
+        jobOfferText,
+      })
+      savedIntentionallyRef.current = true
+      setSavedCvId(editId)
+    } else if (draftIdRef.current) {
       // Finalize draft: patch isDraft → false with final metadata
       await updateCV(draftIdRef.current, {
         jobTitle: app?.position ?? 'Sin título',
@@ -468,6 +518,7 @@ export default function CvGeneratorPage() {
             isGenerating={false}
             isSaving={isSaving}
             savedCvId={savedCvId}
+            isEditing={!!editId}
             onBack={() => setStep(2)}
             onSave={handleSaveCv}
             onDownload={handleDownload}

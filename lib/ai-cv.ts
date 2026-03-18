@@ -304,6 +304,37 @@ export function initSelections(cvData: CvData): BulletsBySection {
   return result
 }
 
+// ── Reconstruct selections from a saved CV ────────────────────────────────────
+
+export function initSelectionsFromSavedCv(
+  savedCv: CvData,
+  fullCvData: CvData
+): BulletsBySection {
+  const result: BulletsBySection = {}
+
+  fullCvData.experience.forEach((exp) => {
+    const savedExp = savedCv.experience.find((e) => e.id === exp.id)
+    const savedBulletTexts = new Set(savedExp?.bullets ?? [])
+    result[exp.id] = exp.bullets.map((text, i) => ({
+      id: `${exp.id}-b${i}`,
+      selected: savedBulletTexts.has(text),
+      text,
+    }))
+  })
+
+  fullCvData.leadership.forEach((lead) => {
+    const savedLead = savedCv.leadership.find((l) => l.id === lead.id)
+    const savedBulletTexts = new Set(savedLead?.bullets ?? [])
+    result[lead.id] = lead.bullets.map((text, i) => ({
+      id: `${lead.id}-b${i}`,
+      selected: savedBulletTexts.has(text),
+      text,
+    }))
+  })
+
+  return result
+}
+
 // ── AI bullet suggestion ──────────────────────────────────────────────────────
 
 export interface SuggestBulletsResult {

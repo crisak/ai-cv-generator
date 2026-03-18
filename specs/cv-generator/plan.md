@@ -95,6 +95,20 @@ app/api/ai/parse/  → POST route (server-side, auth protected)
 
 ---
 
+## Navegación por pasos via query params
+
+El paso activo se persiste en la URL como `?step=N` (1, 2 o 3). Esto permite:
+- Controlar el paso inicial al navegar (ej: `?editId=xxx&step=2` para editar directo en Step 2)
+- Preservar el estado al recargar la página
+- `router.replace()` (no `push`) para no contaminar el historial del navegador
+
+### Modo edición (`?editId=xxx&step=2`)
+- `getCvById(editId)` carga el CV guardado desde RxDB
+- `initSelectionsFromSavedCv(savedCv, fullCvData)` reconstruye las selecciones comparando bullets guardados vs experiencia completa
+- `draftCv` se inicializa con el CV guardado (no con la experiencia base)
+- `handleSaveCv` usa `updateCV(editId, ...)` en lugar de crear nuevo doc
+- `StepPreview` muestra "Actualizar CV" / "CV actualizado" via prop `isEditing`
+
 ## Mejoras v2
 
 ### Unificación de diseño
