@@ -18,21 +18,24 @@ AI CV Generator es una plataforma web que elimina el proceso manual y repetitivo
 
 ### 2.1 Contexto
 
-Los profesionales que buscan empleo activamente deben personalizar su CV para cada oferta laboral. Enviar el mismo CV genérico reduce drásticamente las posibilidades de pasar filtros ATS (Applicant Tracking Systems) y llegar a entrevista.
+Los profesionales que buscan empleo activamente deben personalizar su CV para cada oferta laboral. Enviar el mismo CV genérico reduce drásticamente las posibilidades de pasar filtros ATS (Applicant Tracking Systems) y llegar a entrevista. Al mismo tiempo, gestionar múltiples procesos de selección en paralelo — cada uno con su empresa, salario, estado y documentación — se vuelve inmanejable sin una herramienta dedicada.
 
 ### 2.2 Pain Points identificados
 
-| #   | Dolor                                                                            | Impacto                                   |
-| --- | -------------------------------------------------------------------------------- | ----------------------------------------- |
-| 1   | Copiar/pegar manualmente entre Claude, archivos JSON y plataformas de CV         | ~1 hora por aplicación                    |
-| 2   | La IA genera goals (logros) irreales o que el usuario no valida antes de usarlos | CV poco auténtico, riesgo en entrevistas  |
-| 3   | Rastrear postulaciones en una hoja de Excel manual                               | Pérdida de oportunidades, desorganización |
-| 4   | No hay forma rápida de comparar cuál empresa ofrece mejores condiciones          | Toma de decisiones deficiente             |
-| 5   | Editar el JSON del CV directamente no es intuitivo                               | Barrera técnica alta, errores frecuentes  |
+| #   | Dolor                                                                                                                                                    | Impacto                                                                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 1   | Personalizar el CV para cada oferta usando IA no es interactivo: el usuario va y vuelve entre la oferta, sus notas y el chat sin feedback en tiempo real | Proceso lento, sin visibilidad del match hasta el final                     |
+| 2   | La IA propone logros que el usuario no puede validar fácilmente antes de que queden en el CV final                                                       | CV con métricas o afirmaciones que comprometen al usuario en entrevistas    |
+| 3   | Al postularse a muchas ofertas simultáneamente, el usuario pierde track de empresas, salarios solicitados y estado de cada proceso                       | Pérdida de contexto crítico en llamadas de negociación y entrevistas        |
+| 4   | El usuario no sabe si su CV hace un buen match con la oferta antes de enviarlo                                                                           | CVs enviados sin optimización, menor tasa de respuesta                      |
+| 5   | No hay forma rápida de identificar qué habilidades o palabras clave faltan en el CV respecto a la oferta                                                 | Gaps no detectados que el ATS filtra automáticamente                        |
+| 6   | Los CVs versionados para distintos tipos de rol se acumulan sin orden ni vinculación a los resultados                                                    | Imposible saber qué funcionó, difícil reutilizar lo que ya resultó efectivo |
+| 7   | No hay un lugar único para comparar condiciones (salario, beneficios) entre múltiples ofertas activas                                                    | Decisiones tomadas de memoria o con información incompleta                  |
+| 8   | El historial laboral del usuario vive disperso y sin actualización centralizada                                                                          | Cada nueva postulación requiere reconstruir el contexto desde cero          |
 
 ### 2.3 Problema principal
 
-> **Un profesional invierte más de 1 hora por postulación en tareas mecánicas y repetitivas, cuando ese tiempo debería estar enfocado en prepararse para entrevistas y tomar mejores decisiones de carrera.**
+> **Los profesionales en búsqueda activa de empleo pierden tiempo y contexto valioso en un proceso fragmentado: personalizar el CV sin feedback real, gestionar postulaciones sin registro y tomar decisiones de carrera sin información consolidada.**
 
 ---
 
@@ -40,11 +43,12 @@ Los profesionales que buscan empleo activamente deben personalizar su CV para ca
 
 Una plataforma all-in-one que centraliza el ciclo completo de búsqueda de empleo:
 
-1. **Gestión de postulaciones** — dashboard con estado, salario, beneficios y timeline
-2. **Editor de experiencia** — CRUD visual sobre el JSON de experiencia real (sin tocar código)
-3. **Generador de CV con IA** — flujo en 3 pasos con revisión de goals antes de generar
-4. **Historial de CVs** — acceso a todos los CVs generados vinculados a cada postulación
-5. **Configuración de IA** — elige el modelo (Claude, GPT-4o, DeepSeek, Gemini, Grok)
+1. **Generador de CV con IA interactivo** — flujo guiado en 3 pasos con revisión de goals, preview en vivo y score de match en tiempo real antes de generar el CV final
+2. **Gestión de postulaciones** — dashboard con estado, salario, beneficios, timeline y favoritos; todo el contexto de cada proceso disponible en segundos
+3. **Detección de gaps** — alertas visuales que muestran qué habilidades o palabras clave falta incluir para mejorar el match con la oferta
+4. **Historial de CVs vinculado** — cada CV generado queda asociado a su postulación; reutilizable y consultable en cualquier momento
+5. **Editor de experiencia** — historial laboral centralizado y editable por sección, fuente de verdad para todos los CVs generados
+6. **Configuración de IA** — elige el modelo (Claude, GPT-4o, DeepSeek, Gemini, Grok) sin depender de un único proveedor
 
 ---
 
@@ -62,29 +66,36 @@ Una plataforma all-in-one que centraliza el ciclo completo de búsqueda de emple
 
 ### 4.2 Jobs to Be Done
 
-| Situación                            | Motivación                                   | Resultado esperado                                  |
-| ------------------------------------ | -------------------------------------------- | --------------------------------------------------- |
-| Encuentro una oferta interesante     | Quiero aplicar rápido antes de que cierre    | Tener un CV personalizado y listo en < 10 min       |
-| Tengo varias entrevistas en paralelo | Necesito recordar qué ofrecí y a qué empresa | Ver todos mis procesos activos en un solo lugar     |
-| Una empresa me hace contraoferta     | Quiero comparar con las otras opciones       | Dashboard con salario y beneficios por oferta       |
-| La IA inventó un logro que no es mío | No quiero arriesgarme en una entrevista      | Poder revisar y editar goals antes de generar el CV |
+| Situación                                        | Motivación                                          | Resultado esperado                                             |
+| ------------------------------------------------ | --------------------------------------------------- | -------------------------------------------------------------- |
+| Encuentro una oferta interesante                 | Quiero aplicar rápido sin un proceso manual largo   | CV personalizado y listo en < 10 min                           |
+| No sé si mi CV matchea bien con la oferta        | Quiero maximizar mis chances de pasar el filtro ATS | Score de match y alertas de gaps antes de enviar               |
+| La IA propone logros que no puedo defender       | No quiero arriesgarme en una entrevista             | Revisar y aprobar o rechazar cada logro antes de generar el CV |
+| Tengo 5 procesos activos en paralelo             | Necesito saber en qué punto está cada uno           | Dashboard con estado, fechas y notas por empresa               |
+| Una empresa me llama semanas después de aplicar  | No recuerdo qué salario pedí ni con qué CV apliqué  | Historial vinculado: postulación + CV + salario + notas        |
+| Dos empresas me hacen oferta simultánea          | Quiero tomar la mejor decisión con información real | Comparación de salario y beneficios en un solo lugar           |
+| Tengo CVs distintos para distintos tipos de rol  | No quiero armar todo de cero cada vez               | Historial de CVs reutilizable, organizado por postulación      |
+| Actualicé mi experiencia o adquirí nuevas skills | Quiero que todos mis CVs futuros reflejen eso       | Editor centralizado que actualiza la fuente de verdad          |
 
 ---
 
 ## 5. Propuesta de Valor
 
 ```
-Antes:  1 hora + Claude + JSON manual + Excel + buildresume.work
-Ahora:  < 10 minutos en una sola plataforma
+Antes:  IA + proceso manual + archivos sueltos + notas dispersas = desorganización y tiempo perdido
+Ahora:  Una sola plataforma que organiza tu búsqueda de principio a fin
 ```
 
 **Diferenciadores clave:**
 
-- **Revisión de goals antes de generar** — la IA propone, el usuario aprueba o rechaza cada logro
-- **Score de coincidencia visual** — sabes cuánto matchea tu CV con la oferta antes de enviar
-- **Privacidad total** — todos los datos viven en tu navegador (RxDB/IndexedDB), sin backend
-- **Multi-modelo de IA** — no dependes de un solo proveedor
-- **ATS-optimizado por defecto** — 1 página, formato limpio, jerarquía correcta
+- **Generación interactiva con revisión de goals** — la IA propone, el usuario aprueba o rechaza cada logro antes de que quede en el CV; sin sorpresas en entrevistas
+- **Score de coincidencia en tiempo real** — sabes cuánto matchea tu CV con la oferta mientras lo armas, no después de enviarlo
+- **Alertas de gaps** — la plataforma señala habilidades y palabras clave que la oferta pide y que tu CV no cubre, para que puedas actuar antes de aplicar
+- **Dashboard de postulaciones con timeline** — registro completo por empresa: estado, salario, beneficios, notas y fechas; el contexto que necesitás cuando más importa
+- **Historial de CVs vinculado y reutilizable** — cada CV queda asociado a su postulación, accesible y reutilizable sin reconstruir nada desde cero
+- **Privacidad total** — todos los datos viven en tu navegador, sin servidor propio que almacene tu información de carrera
+- **Multi-modelo de IA** — no dependés de un solo proveedor; usás el modelo que ya tenés o preferís
+- **ATS-optimizado por defecto** — 1 página, formato limpio, jerarquía que los filtros automáticos leen correctamente
 
 ---
 

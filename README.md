@@ -1,33 +1,37 @@
 # AI CV Generator
 
-**Deja de perder 1 hora por postulación. Genera un CV personalizado y optimizado para ATS en menos de 10 minutos.**
+**Tu próximo empleo no lo consigues enviando el mismo CV a todas partes. Lo consigues con el CV correcto, para la oferta correcta, en el momento correcto.**
 
 ---
 
-## El problema que resuelve
+## Los problemas reales de buscar empleo hoy
 
-Si buscas empleo activamente, sabes lo que significa este ciclo:
+### Tu CV tiene que hablarle a cada oferta — y eso cuesta tiempo
 
-1. Encontrar una oferta interesante
-2. Abrir el chat de IA, buscar tu contexto guardado
-3. Armar el prompt manualmente con la oferta y tus notas
-4. Esperar la respuesta, copiar el JSON, importarlo en algún generador de PDF
-5. Revisar que los logros que la IA inventó no te comprometan en una entrevista
-6. Anotar la postulación en tu hoja de Excel
-7. Repetir todo esto para la siguiente oferta
+Cada oferta pide cosas distintas. Una enfatiza liderazgo, otra pide experiencia con tecnologías específicas, otra busca alguien con foco en métricas de negocio. Enviar el mismo CV genérico significa que los filtros ATS lo descartan antes de que alguien lo lea.
 
-**Ese proceso toma más de 1 hora por postulación.** Y si aplicas a 10 ofertas al mes, son 10 horas de trabajo mecánico que podrías estar usando para prepararte para las entrevistas.
+Personalizar el CV para cada oferta usando IA ayuda, pero el proceso no es fluido: vas y vuelves entre la oferta, tu historial, el chat de IA y la revisión final. No es interactivo, no te da feedback en tiempo real y sigue tomando más tiempo del que debería.
+
+**AI CV Generator hace ese proceso guiado, visual e inmediato**: analizas la oferta, ves qué tan bien matchea tu perfil, ajustas lo que quieres incluir y tienes el CV listo en minutos — sin salir de la app.
+
+### Cuando aplicas a muchas ofertas, el caos es inevitable
+
+¿A cuántas empresas aplicaste este mes? ¿Cuál era el salario que pediste en cada una? ¿Cuáles siguen activas y cuáles ya respondieron? ¿Con qué CV aplicaste a esa empresa que te llamó hace tres semanas?
+
+Si tu respuesta a alguna de esas preguntas es "no recuerdo" o "está en algún chat o correo", estás perdiendo información que importa. Un proceso de selección puede durar semanas, y sin un registro claro pierdes contexto justo cuando más lo necesitas — en la llamada de negociación, en la entrevista final, al comparar dos ofertas simultáneas.
+
+### Tienes versiones de tu CV por todas partes y no sabes cuál es cuál
+
+Con el tiempo terminas con un CV para roles de liderazgo, otro para posiciones más técnicas, otro que ajustaste para una empresa en particular. Esos archivos se acumulan sin orden, sin saber cuál funcionó, sin poder reutilizar lo que ya hiciste.
 
 ---
 
 ## Qué cambia con AI CV Generator
 
 ```
-Antes:  Claude + JSON manual + Excel + generador externo = ~1 hora por oferta
-Ahora:  Pega la oferta → revisa → descarga = menos de 10 minutos
+Antes:  IA + proceso manual + archivos sueltos + notas dispersas = desorganización y tiempo perdido
+Ahora:  Una sola plataforma que organiza tu búsqueda de principio a fin
 ```
-
-Todo en un solo lugar, sin copiar y pegar entre herramientas, sin perder el hilo de tus postulaciones.
 
 ---
 
@@ -35,31 +39,33 @@ Todo en un solo lugar, sin copiar y pegar entre herramientas, sin perder el hilo
 
 ### Paso 1 — Pega la oferta laboral
 
-Copia el texto de la oferta (o pega la URL si la plataforma es compatible). La IA extrae automáticamente la empresa, el cargo, los requisitos y el stack tecnológico.
+Copia el texto de la oferta (o pega la URL si la plataforma es compatible). La IA extrae automáticamente la empresa, el cargo, los requisitos y el stack tecnológico — sin que tengas que redactar ningún prompt.
 
-### Paso 2 — Revisa antes de generar
+### Paso 2 — Revisa y ajusta en tiempo real
 
-Aquí está la diferencia clave: **antes de generar el CV, puedes aprobar o rechazar cada logro propuesto**. Ya no más CVs con métricas inventadas que te comprometan en una entrevista. Si un goal no te convence, pides uno alternativo al instante.
+Aquí está la diferencia clave: **antes de generar el CV, ves qué logros propone la IA y decides cuáles incluir**. Si un logro no refleja tu experiencia real o no te convence para una entrevista, lo descartás o pedís una alternativa al instante.
 
-A la derecha ves el score de coincidencia con la oferta en tiempo real. Sabes exactamente cuánto matchea tu CV antes de enviarlo.
+A la derecha ves el score de coincidencia con la oferta actualizándose en tiempo real. Si hay gaps — habilidades o palabras clave que la oferta pide y tu CV no tiene — aparecen alertas claras para que puedas actuar antes de enviar.
 
 ### Paso 3 — Descarga y aplica
 
-El CV se renderiza en formato ATS-optimizado: una página, tipografía limpia, estructura que los filtros automáticos leen correctamente. Descárgalo como PDF y aplica.
+El CV se renderiza en formato ATS-optimizado: una página, tipografía limpia, jerarquía que los filtros automáticos leen correctamente. Descárgalo como PDF, guárdalo en tu historial y aplica.
 
 ---
 
 ## Todo tu proceso de búsqueda, centralizado
 
-Además del generador, la plataforma incluye:
+Además del generador, la plataforma resuelve el caos de gestionar múltiples procesos en paralelo:
 
-**Dashboard de postulaciones** — Un solo lugar para ver todas tus aplicaciones activas. Empresa, cargo, salario, beneficios, estado del proceso, notas. Nada se pierde, nada se olvida.
+**Dashboard de postulaciones** — Todas tus aplicaciones activas en un solo lugar. Empresa, cargo, salario solicitado, beneficios, estado del proceso, notas y timeline. Cuando una empresa te llame tres semanas después, tienes todo el contexto en segundos, no en treinta minutos buscando en correos y chats.
 
-**Comparación de ofertas** — ¿Dos empresas te hacen oferta al mismo tiempo? El dashboard te muestra salario y beneficios lado a lado para que tomes la mejor decisión.
+**Seguimiento de estado con timeline** — Cada cambio de estado queda registrado automáticamente. Sabes exactamente en qué punto está cada proceso: si ya aplicaste, si hay entrevista pendiente, si recibiste oferta o si quedó descartado.
 
-**Historial de CVs** — Cada CV que generas queda guardado y vinculado a su postulación. Si una empresa te llama 2 meses después, sabes exactamente con qué CV aplicaste.
+**Comparación de ofertas** — ¿Dos empresas te hacen oferta al mismo tiempo? Compara salario y beneficios lado a lado para tomar la decisión con información real, no con memoria.
 
-**Editor de experiencia** — Tu historial laboral real se guarda y edita en la app. Sin tocar JSON, sin archivos sueltos en tu computadora.
+**Historial de CVs organizado** — Cada CV generado queda guardado y vinculado a su postulación. Si reutilizás un CV que ya funcionó antes, lo tenés a un clic. Si querés saber cuál versión enviaste a una empresa en particular, lo encontrás de inmediato.
+
+**Editor de experiencia** — Tu historial laboral completo vive en la app, editable por sección. Lo actualizás cuando cambiás de trabajo o adquirís nuevas habilidades, y esos cambios se reflejan en todos los CVs que generes a partir de ese momento.
 
 ---
 
