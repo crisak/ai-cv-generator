@@ -14,6 +14,9 @@ import {
   ChevronDown,
   ChevronUp,
   Link,
+  ClipboardPaste,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,6 +53,35 @@ import { useSettings } from '@/hooks/use-settings'
 import { cn } from '@/lib/utils'
 
 type FlashField = 'company' | 'position' | 'salaryOffered' | 'salaryCurrency' | 'benefits'
+
+function NotFoundNotice() {
+  return (
+    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/10">
+      <div className="flex gap-2.5">
+        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+          <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+            No encontramos la oferta en esa página
+          </p>
+          <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400/80">
+            Esta página puede requerir inicio de sesión, tener protección anti-bots, o mostrar una lista de ofertas en lugar de una oferta individual.
+          </p>
+          <div className="flex items-center gap-1.5 pt-0.5">
+            <ClipboardPaste className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+            <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
+              Abre la oferta en el navegador, copia todo el texto y pégalo en la pestaña{' '}
+              <span className="rounded bg-amber-100 px-1 py-0.5 font-semibold dark:bg-amber-900/40">
+                Texto plano
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function FlashWrapper({ flash, children }: { flash: boolean; children: React.ReactNode }) {
   return (
@@ -110,7 +142,7 @@ export function ApplicationForm({
 }: ApplicationFormProps) {
   const { settings } = useSettings()
   const [isParsing, setIsParsing] = useState(false)
-  const [parseNotice, setParseNotice] = useState<{ type: 'ai' | 'regex' | 'error'; msg: string } | null>(null)
+  const [parseNotice, setParseNotice] = useState<{ type: 'ai' | 'regex' | 'error' | 'not_found'; msg: string } | null>(null)
   const [showJobOffer, setShowJobOffer] = useState(!isEditing)
   const [showTimeline, setShowTimeline] = useState(false)
   const [urlInput, setUrlInput] = useState('')
@@ -169,7 +201,7 @@ export function ApplicationForm({
     flashTimeoutRef.current = setTimeout(() => setFlashFields(new Set()), 1000)
   }
 
-  async function applyParseResult(text: string) {
+  async function applyParseResult(text: string): Promise<boolean> {
     const { result, usedAI } = await parseJobOffer(text, settings)
 
     const updated: FlashField[] = []
@@ -179,10 +211,13 @@ export function ApplicationForm({
     if (result.salaryCurrency) { form.setValue('salaryCurrency', result.salaryCurrency); updated.push('salaryCurrency') }
     if (result.benefits?.length) { form.setValue('benefits', result.benefits); updated.push('benefits') }
 
+    const hasUsefulData = !!(result.company || result.position)
     if (updated.length) triggerFlash(updated)
 
-    if (usedAI) {
+    if (usedAI && hasUsefulData) {
       setParseNotice({ type: 'ai', msg: 'Campos extraídos con IA ✓' })
+    } else if (usedAI && !hasUsefulData) {
+      setParseNotice({ type: 'not_found', msg: '' })
     } else if (settings?.aiApiKey) {
       setParseNotice({ type: 'regex', msg: 'Modelo no soportado aún. Extracción básica, revisa los campos.' })
     } else {
@@ -191,6 +226,8 @@ export function ApplicationForm({
         msg: 'Extracción básica. Configura tu API key en Configuración para usar IA.',
       })
     }
+
+    return hasUsefulData
   }
 
   async function handleAnalyze() {
@@ -212,23 +249,52 @@ export function ApplicationForm({
     setIsParsing(true)
     setParseNotice(null)
     try {
-      const res = await fetch('/api/scrape', {
+      // Step 1: Scrape the URL
+      const scrapeRes = await fetch('/api/scrape', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: trimmedUrl }),
       })
-      const data = (await res.json()) as { markdown?: string; error?: string }
-      if (!res.ok || !data.markdown) {
+      const scrapeData = (await scrapeRes.json()) as { raw?: string; error?: string }
+
+      if (!scrapeRes.ok || !scrapeData.raw) {
         setParseNotice({
-          type: 'error',
-          msg: data.error ?? 'No se pudo procesar la URL. Intenta copiar y pegar el texto directamente.',
+          type: 'not_found',
+          msg: scrapeData.error ?? 'No se pudo leer la página.',
         })
         return
       }
-      form.setValue('jobOfferText', data.markdown)
-      await applyParseResult(data.markdown)
+
+      // Step 2: If AI is available, clean the raw text to a proper job offer markdown
+      if (settings?.aiApiKey) {
+        const cleanRes = await fetch('/api/ai/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobOffer: scrapeData.raw,
+            model: settings.aiModel ?? 'claude',
+            apiKey: settings.aiApiKey,
+            mode: 'clean',
+          }),
+        })
+        const cleanData = (await cleanRes.json()) as { success?: boolean; markdown?: string | null; error?: string }
+
+        if (!cleanRes.ok || !cleanData.success || cleanData.markdown === null || cleanData.markdown === undefined || cleanData.markdown.trim().length < 50) {
+          // AI confirmed: no job offer found in this page
+          setParseNotice({ type: 'not_found', msg: '' })
+          return
+        }
+
+        // Step 3: Set cleaned markdown in the text field and extract fields
+        form.setValue('jobOfferText', cleanData.markdown)
+        await applyParseResult(cleanData.markdown)
+      } else {
+        // No AI: just put the raw text and use regex extraction
+        form.setValue('jobOfferText', scrapeData.raw)
+        await applyParseResult(scrapeData.raw)
+      }
     } catch {
-      setParseNotice({ type: 'error', msg: 'Error al procesar la URL. Intenta copiar y pegar el texto directamente.' })
+      setParseNotice({ type: 'error', msg: 'Error al procesar la URL.' })
     } finally {
       setIsParsing(false)
     }
@@ -359,16 +425,25 @@ export function ApplicationForm({
                     </Tabs>
 
                     {parseNotice && (
-                      <p
-                        className={cn(
-                          'text-xs px-2 py-1 rounded',
-                          parseNotice.type === 'ai' && 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                          parseNotice.type === 'regex' && 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-                          parseNotice.type === 'error' && 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      <>
+                        {parseNotice.type === 'not_found' ? (
+                          <NotFoundNotice />
+                        ) : (
+                          <p
+                            className={cn(
+                              'flex items-center gap-1.5 text-xs px-3 py-2 rounded-md',
+                              parseNotice.type === 'ai' && 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400',
+                              parseNotice.type === 'regex' && 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400',
+                              parseNotice.type === 'error' && 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400',
+                            )}
+                          >
+                            {parseNotice.type === 'ai' && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
+                            {parseNotice.type === 'error' && <XCircle className="h-3.5 w-3.5 shrink-0" />}
+                            {parseNotice.type === 'regex' && <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
+                            {parseNotice.msg}
+                          </p>
                         )}
-                      >
-                        {parseNotice.msg}
-                      </p>
+                      </>
                     )}
                   </div>
                 )}

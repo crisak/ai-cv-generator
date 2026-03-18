@@ -8,9 +8,10 @@ interface ParseRequest {
   jobOffer: string
   model?: string
   apiKey?: string
+  mode?: 'extract' | 'clean'
 }
 
-const JOB_OFFER_PROMPT = (jobOffer: string) => `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
+const EXTRACT_PROMPT = (jobOffer: string) => `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
 
 Campos a extraer:
 - company: nombre de la empresa (string)
@@ -23,6 +24,19 @@ Oferta laboral:
 ${jobOffer.substring(0, 4000)}
 
 JSON:`
+
+// mode=clean: given raw scraped text, return ONLY the job offer in clean markdown, or null if not a job offer
+const CLEAN_PROMPT = (raw: string) => `Eres un extractor de ofertas laborales. Se te dará texto extraído de una página web (puede incluir navegación, cookies, scripts, etc.).
+
+Tu tarea:
+1. Identifica si el texto contiene UNA oferta laboral concreta (no una lista de ofertas, no un portal genérico).
+2. Si SÍ hay oferta: extrae SOLO la información relevante de esa oferta y devuélvela en markdown limpio y estructurado (título, empresa, descripción, requisitos, beneficios, salario si hay).
+3. Si NO hay oferta concreta (página de login, captcha, lista de búsqueda, error): responde exactamente con la palabra NULL.
+
+Responde SOLO con el markdown de la oferta O con la palabra NULL. Sin explicaciones.
+
+Texto extraído:
+${raw.substring(0, 6000)}`
 
 function parseAIJson(text: string) {
   const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -44,7 +58,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as ParseRequest
-    const { jobOffer, model = 'claude', apiKey } = body
+    const { jobOffer, model = 'claude', apiKey, mode = 'extract' } = body
 
     if (!jobOffer || typeof jobOffer !== 'string' || jobOffer.trim().length === 0) {
       return NextResponse.json({ error: 'Missing or invalid jobOffer' }, { status: 400 })
@@ -59,9 +73,25 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = AIProviderFactory.create(model as AIProviderName)
+
+    // mode=clean: return cleaned markdown of the job offer, or null if not a job offer
+    if (mode === 'clean') {
+      const result = await provider.call({
+        apiKey,
+        messages: [{ role: 'user', content: CLEAN_PROMPT(jobOffer) }],
+        maxTokens: 1500,
+      })
+      const text = result.text.trim()
+      if (text === 'NULL' || text.toUpperCase() === 'NULL') {
+        return NextResponse.json({ success: true, markdown: null })
+      }
+      return NextResponse.json({ success: true, markdown: text })
+    }
+
+    // mode=extract (default): return structured JSON fields
     const result = await provider.call({
       apiKey,
-      messages: [{ role: 'user', content: JOB_OFFER_PROMPT(jobOffer) }],
+      messages: [{ role: 'user', content: EXTRACT_PROMPT(jobOffer) }],
       maxTokens: 600,
       responseFormat: 'json_object',
     })
