@@ -73,7 +73,7 @@ function getUnsupportedDomain(url: string): string | null {
   }
 }
 
-function NotFoundNotice({ onDismiss }: { onDismiss: () => void }) {
+function NotFoundNotice({ reason, onDismiss }: { reason?: string; onDismiss: () => void }) {
   return (
     <div className="relative rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/40 dark:bg-amber-900/10">
       <button
@@ -92,6 +92,9 @@ function NotFoundNotice({ onDismiss }: { onDismiss: () => void }) {
           <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
             No encontramos la oferta en esa página
           </p>
+          {reason && (
+            <p className="text-xs text-amber-700 dark:text-amber-400/80">{reason}</p>
+          )}
           <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-400/80">
             Esta página puede requerir inicio de sesión, tener protección anti-bots, o mostrar una lista de ofertas en lugar de una oferta individual.
           </p>
@@ -217,6 +220,14 @@ export function ApplicationForm({
     },
   })
 
+  // Cleanup timeout and abort controller on unmount
+  useEffect(() => {
+    return () => {
+      if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current)
+      abortRef.current?.abort()
+    }
+  }, [])
+
   useEffect(() => {
     if (defaultValues && open) {
       form.reset({
@@ -257,7 +268,7 @@ export function ApplicationForm({
     const updated: FlashField[] = []
     if (result.company) { form.setValue('company', result.company, { shouldValidate: true }); updated.push('company') }
     if (result.position) { form.setValue('position', result.position, { shouldValidate: true }); updated.push('position') }
-    if (result.salaryOffered) { form.setValue('salaryOffered', result.salaryOffered); updated.push('salaryOffered') }
+    if (result.salaryOffered != null) { form.setValue('salaryOffered', result.salaryOffered); updated.push('salaryOffered') }
     if (result.salaryCurrency) { form.setValue('salaryCurrency', result.salaryCurrency); updated.push('salaryCurrency') }
     if (result.benefits?.length) { form.setValue('benefits', result.benefits); updated.push('benefits') }
 
@@ -366,8 +377,12 @@ export function ApplicationForm({
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
-      // Network errors (e.g. from abort racing with inflight requests)
-      if (err instanceof TypeError && err.message.includes('Failed to fetch')) return
+      // Network errors from abort racing with inflight requests have no useful
+      // info for the user, but real connectivity failures should surface feedback.
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) {
+        setParseNotice({ type: 'error', msg: 'Error de red. Verifica tu conexión e intenta de nuevo.' })
+        return
+      }
       setParseNotice({ type: 'error', msg: 'Error al procesar la URL.' })
     } finally {
       abortRef.current = null
@@ -544,7 +559,7 @@ export function ApplicationForm({
                     {parseNotice && (
                       <>
                         {parseNotice.type === 'not_found' ? (
-                          <NotFoundNotice onDismiss={() => setParseNotice(null)} />
+                          <NotFoundNotice reason={parseNotice.msg || undefined} onDismiss={() => setParseNotice(null)} />
                         ) : (
                           <div
                             className={cn(
