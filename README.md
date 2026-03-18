@@ -1,182 +1,99 @@
 # AI CV Generator
 
-**AI-powered CV generator that creates ATS-optimized resumes by analyzing job postings in real-time**
+**Deja de perder 1 hora por postulación. Genera un CV personalizado y optimizado para ATS en menos de 10 minutos.**
 
-[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-blue)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
-[![RxDB](https://img.shields.io/badge/RxDB-Local%20First-brightgreen)](https://rxdb.info/)
+---
 
-Una plataforma web moderna para generar, editar y administrar CVs optimizados para ATS mediante inteligencia artificial. Centraliza ofertas laborales, genera CVs contextualizados y rastrea el estado de tus aplicaciones.
+## El problema que resuelve
 
-## Por qué AI CV Generator
+Si buscas empleo activamente, sabes lo que significa este ciclo:
 
-- **Generación instantánea** — Pega una oferta laboral, obtén un CV optimizado en segundos
-- **Análisis con IA** — Claude/GPT/DeepSeek analizan automáticamente los requisitos
-- **Score de coincidencia** — Ve el porcentaje de match antes de aplicar
-- **Sin backend** — Todos tus datos se guardan en tu navegador (privacidad total)
-- **Optimizado para ATS** — Una página, formato limpio para sistemas de selección
-- **Multi-usuario** — Login con Google, GitHub o Email/Password via Clerk
+1. Encontrar una oferta interesante
+2. Abrir el chat de IA, buscar tu contexto guardado
+3. Armar el prompt manualmente con la oferta y tus notas
+4. Esperar la respuesta, copiar el JSON, importarlo en algún generador de PDF
+5. Revisar que los logros que la IA inventó no te comprometan en una entrevista
+6. Anotar la postulación en tu hoja de Excel
+7. Repetir todo esto para la siguiente oferta
 
-## Características Principales
+**Ese proceso toma más de 1 hora por postulación.** Y si aplicas a 10 ofertas al mes, son 10 horas de trabajo mecánico que podrías estar usando para prepararte para las entrevistas.
 
-- **Autenticación** — Google OAuth, GitHub OAuth, Email/Password (Clerk v7+)
-- **Dashboard de aplicaciones** — Rastrear ofertas, salarios, beneficios, estado y timeline
-- **Editor de experiencia** — Importar, editar y exportar experiencia profesional en JSON
-- **Generador de CV con IA** — Análisis automático y generación optimizada en 3 pasos
-- **Matching análisis** — Comparación visual entre oferta y CV con score
-- **Optimización con IA** — Diff view para revisar cambios antes de aplicar
-- **Almacenamiento local** — RxDB/IndexedDB, datos aislados por usuario
+---
 
-## Quick Start
-
-### Requisitos
-
-- Node.js 18+
-- Cuenta en [Clerk](https://clerk.com) para autenticación
-
-### Instalación
-
-```bash
-git clone https://github.com/crisak/ai-cv-generator.git
-cd ai-cv-generator
-npm install
-cp .env.example .env.local
-```
-
-Editar `.env.local` con las keys de Clerk (ver sección Configuración).
-
-```bash
-npm run dev
-# Abrir http://localhost:3000
-```
-
-### Configuración de Clerk
-
-1. Crear app en [Clerk Dashboard](https://dashboard.clerk.com)
-2. Copiar `Publishable Key` y `Secret Key` al `.env.local`
-3. Habilitar Social connections: Google y GitHub
-
-Variables requeridas en `.env.local`:
-```
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
-CLERK_SECRET_KEY=sk_test_...
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/login
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/applications
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/applications
-```
-
-## Guía de Uso
-
-### 1. Dashboard (Rastreo de aplicaciones)
-
-- **Nueva aplicación**: Click en "Nueva aplicación"
-- **Cambiar estado**: Dropdown de estado en la tabla
-- **Timeline**: Historial de estados por aplicación
-- **Favoritos**: Marcar aplicaciones relevantes
-
-Campos editables: empresa, puesto, salario, beneficios, estado, notas.
-
-### 2. Editor de Experiencia
-
-Importa tu experiencia desde un JSON o edita directamente en la app:
-- Datos básicos, educación, experiencia, liderazgo, skills
-
-Exporta para respaldar tus cambios.
-
-### 3. Generador de CV (3 pasos)
-
-**Paso 1**: Pega la oferta laboral — la IA extrae empresa, puesto y requisitos automáticamente.
-
-**Paso 2**: Layout de 3 columnas:
-- Izquierda: selecciona bullets por sección, edita inline
-- Centro: preview en vivo del CV
-- Derecha: score de coincidencia, alertas, botón continuar
-
-Toolbar: Vista previa · Ver oferta · Chat IA · Optimizar con IA (diff review)
-
-**Paso 3**: CV renderizado en formato ATS — descarga como PDF o guarda en historial.
-
-### 4. Configuración
-
-- `/settings` — Modelo de IA (Claude, GPT-4o, DeepSeek, Gemini, Grok) + API key
-- `/profile` — Nombre, apellido y tema (oscuro/claro/sistema)
-
-## Stack Tecnológico
-
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | Next.js 16, React 19, TypeScript |
-| Estilos | TailwindCSS 4, shadcn/ui |
-| Auth | Clerk v7+ |
-| Estado | Zustand 5 |
-| Formularios | React Hook Form, Zod |
-| BD Local | RxDB 15 (Dexie/IndexedDB) |
-| Herramientas | Prettier, ESLint, Vitest |
-
-## Estructura del Proyecto
+## Qué cambia con AI CV Generator
 
 ```
-middleware.ts                     — Protección de rutas (Clerk, Edge)
-app/
-  (auth)/login/[[...sign-in]]/   — Login (Clerk)
-  (auth)/sign-up/[[...sign-up]]/ — Registro (Clerk)
-  (app)/applications/            — Dashboard postulaciones
-  (app)/experience/              — Editor de experiencia
-  (app)/cv-generator/            — Generador 3 pasos
-  (app)/cvs/                     — Historial de CVs
-  (app)/settings/                — Modelo IA + API key
-  (app)/profile/                 — Perfil + tema
-lib/db/                          — RxDB schemas e inicialización por usuario
-lib/ai.ts                        — Análisis de ofertas con IA/regex
-lib/ai-cv.ts                     — Generación y optimización de CVs
-hooks/                           — use-applications, use-cvs, use-experience, use-settings
-components/layout/sidebar.tsx    — Sidebar con dropdown de usuario (Clerk useUser)
-docs/                            — JSON schema y experiencia de ejemplo
+Antes:  Claude + JSON manual + Excel + generador externo = ~1 hora por oferta
+Ahora:  Pega la oferta → revisa → descarga = menos de 10 minutos
 ```
 
-## Scripts
+Todo en un solo lugar, sin copiar y pegar entre herramientas, sin perder el hilo de tus postulaciones.
 
-```bash
-npm run dev              # Dev server con hot reload
-npm run build            # Build producción
-npm run lint             # ESLint
-npm run format           # Prettier
-```
+---
 
-## Compatibilidad de extracción por URL
+## Cómo funciona
 
-Al pegar una URL de oferta laboral, la app intenta extraer el contenido automáticamente con Cloudflare Browser Rendering.
+### Paso 1 — Pega la oferta laboral
 
-| Plataforma | Soporte | Método |
-|---|---|---|
-| Computrabajo | ✅ Funciona | Selector `.box_offer` |
-| Elempleo | ✅ Funciona | Selector `[class*="description"]` |
-| Rappi / Workday | ✅ Funciona | Renderizado JS completo |
-| MercadoLibre / Eightfold | ✅ Funciona | Meta tags de la página |
-| GetOnBoard | ✅ Funciona | Markdown directo |
-| LinkedIn | ❌ No soportado | Anti-bot agresivo |
-| Indeed | ❌ No soportado | Anti-bot agresivo |
-| InfoJobs | ❌ No soportado | Captcha Cloudflare |
+Copia el texto de la oferta (o pega la URL si la plataforma es compatible). La IA extrae automáticamente la empresa, el cargo, los requisitos y el stack tecnológico.
 
-**Para plataformas no soportadas**: abre la oferta en tu navegador, selecciona todo el texto (Ctrl+A / Cmd+A) y pégalo en la pestaña **Texto plano** del formulario.
+### Paso 2 — Revisa antes de generar
 
-## Solución de Problemas
+Aquí está la diferencia clave: **antes de generar el CV, puedes aprobar o rechazar cada logro propuesto**. Ya no más CVs con métricas inventadas que te comprometan en una entrevista. Si un goal no te convence, pides uno alternativo al instante.
 
-**"IA no genera nada"** — Sin API key usa fallback regex. Verifica la key en `/settings`.
+A la derecha ves el score de coincidencia con la oferta en tiempo real. Sabes exactamente cuánto matchea tu CV antes de enviarlo.
 
-**"CV no cabe en 1 página"** — Reduce bullets (máx 4-5 recientes, 3 otros). Usa "Vista previa" en Paso 2.
+### Paso 3 — Descarga y aplica
 
-**"Formulario no guarda"** — Verifica que IndexedDB no esté deshabilitado (modo incógnito lo limita).
+El CV se renderiza en formato ATS-optimizado: una página, tipografía limpia, estructura que los filtros automáticos leen correctamente. Descárgalo como PDF y aplica.
 
-## Contribuir
+---
 
-1. Fork el repositorio
-2. Crea rama: `git checkout -b feature/tu-feature`
-3. Formatea: `npm run format`
-4. Commit: `git commit -m "feat: descripción"`
-5. Abre PR
+## Todo tu proceso de búsqueda, centralizado
+
+Además del generador, la plataforma incluye:
+
+**Dashboard de postulaciones** — Un solo lugar para ver todas tus aplicaciones activas. Empresa, cargo, salario, beneficios, estado del proceso, notas. Nada se pierde, nada se olvida.
+
+**Comparación de ofertas** — ¿Dos empresas te hacen oferta al mismo tiempo? El dashboard te muestra salario y beneficios lado a lado para que tomes la mejor decisión.
+
+**Historial de CVs** — Cada CV que generas queda guardado y vinculado a su postulación. Si una empresa te llama 2 meses después, sabes exactamente con qué CV aplicaste.
+
+**Editor de experiencia** — Tu historial laboral real se guarda y edita en la app. Sin tocar JSON, sin archivos sueltos en tu computadora.
+
+---
+
+## Tu información es tuya
+
+Todos tus datos (CVs, postulaciones, experiencia laboral) se guardan **exclusivamente en tu navegador**. No hay servidor propio que almacene tu información. La única conexión externa que ocurre es cuando la IA genera contenido, y eso va directo al proveedor de IA que tú elijas con tu propia API key.
+
+---
+
+## Elige tu IA
+
+Conecta el modelo que prefieras: **Claude, GPT-4o, DeepSeek, Gemini o Grok**. Si no tienes API key, la app funciona con análisis básico de todas formas.
+
+---
+
+## Capturas
+
+> _(Agregar screenshots del dashboard, del generador paso 2 y del CV renderizado)_
+
+---
+
+## Empieza ahora
+
+Instrucciones de instalación y configuración en [`docs/SETUP.md`](docs/SETUP.md).
+
+---
+
+## Documentación
+
+- [`docs/PRD.md`](docs/PRD.md) — Product Requirements Document
+- [`docs/SETUP.md`](docs/SETUP.md) — Guía técnica para desarrolladores
+- [`docs/json-schema-cv-generator.json`](docs/json-schema-cv-generator.json) — Schema del CV
+
+---
 
 ## Licencia
 
