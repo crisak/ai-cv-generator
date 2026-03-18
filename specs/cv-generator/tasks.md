@@ -23,11 +23,11 @@
 
 ## Tareas pendientes — Editar CV guardado (v2)
 
-- [ ] Task 20: Schema migration — Agregar `jobOfferText`, `updatedAt`, `isDraft` a CvDocument
+- [x] Task 20: Schema migration — Agregar `jobOfferText`, `updatedAt`, `isDraft` a CvDocument
   - Scope: Agregar campos a `CvDocument` interface + schema en `lib/db/schemas.ts`, bump version 0→1. Agregar `migrationStrategies` en `lib/db/index.ts` (defaults: `jobOfferText: ''`, `updatedAt: createdAt`, `isDraft: false`). Actualizar `SaveCvInput` en `hooks/use-cvs.ts`. Pasar `jobOfferText` en `handleSaveCv()` de `cv-generator/page.tsx`.
   - Archivos: `lib/db/schemas.ts`, `lib/db/index.ts`, `hooks/use-cvs.ts`, `app/(app)/cv-generator/page.tsx`
 
-- [ ] Task 21: Agregar `updateCV`, `getCvById`, `createDraft`, `deleteDraft`, `getDraft` al hook `useCvs`
+- [x] Task 21: Agregar `updateCV`, `getCvById`, `createDraft`, `deleteDraft`, `getDraft` al hook `useCvs`
   - Scope: `updateCV(id, input)` — `doc.patch()` + `updatedAt`. `getCvById(id)` — busca por ID. `createDraft(input)` — inserta con `isDraft: true`. `deleteDraft(id)` — elimina draft. `getDraft()` — busca draft activo. Filtrar `isDraft: false` en query de lista existente.
   - Archivos: `hooks/use-cvs.ts`
   - Depende de: Task 20
