@@ -265,12 +265,18 @@ export function ApplicationForm({
   async function applyParseResult(text: string): Promise<boolean> {
     const { result, usedAI } = await parseJobOffer(text, settings)
 
+    const isValid = (v: unknown): v is string =>
+      typeof v === 'string' && v.trim() !== '' && !/^(indefinido|undefined|null|n\/a|none|no\s+aplica)$/i.test(v.trim())
+
     const updated: FlashField[] = []
-    if (result.company) { form.setValue('company', result.company, { shouldValidate: true }); updated.push('company') }
-    if (result.position) { form.setValue('position', result.position, { shouldValidate: true }); updated.push('position') }
+    if (isValid(result.company)) { form.setValue('company', result.company, { shouldValidate: true }); updated.push('company') }
+    if (isValid(result.position)) { form.setValue('position', result.position, { shouldValidate: true }); updated.push('position') }
     if (result.salaryOffered != null) { form.setValue('salaryOffered', result.salaryOffered); updated.push('salaryOffered') }
-    if (result.salaryCurrency) { form.setValue('salaryCurrency', result.salaryCurrency); updated.push('salaryCurrency') }
-    if (result.benefits?.length) { form.setValue('benefits', result.benefits); updated.push('benefits') }
+    if (isValid(result.salaryCurrency)) { form.setValue('salaryCurrency', result.salaryCurrency); updated.push('salaryCurrency') }
+    if (result.benefits?.length) {
+      const validBenefits = result.benefits.filter(isValid)
+      if (validBenefits.length) { form.setValue('benefits', validBenefits); updated.push('benefits') }
+    }
 
     const hasUsefulData = !!(result.company || result.position)
     if (updated.length) triggerFlash(updated)
