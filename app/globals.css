@@ -68,6 +68,11 @@
     0%   { transform: translateX(-100%); }
     100% { transform: translateX(600%); }
   }
+
+  @keyframes indeterminate {
+    0%   { left: -33%; }
+    100% { left: 100%; }
+  }
 }
 
 /* Light mode defaults */

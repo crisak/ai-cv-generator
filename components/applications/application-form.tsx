@@ -110,24 +110,24 @@ function NotFoundNotice({ onDismiss }: { onDismiss: () => void }) {
   )
 }
 
-// Double-flash: two bright pulses to signal a field was filled by AI
-function FlashWrapper({ flash, children }: { flash: boolean; children: React.ReactNode }) {
+// Double-flash: two bright pulses to signal a field was filled by AI.
+// Uses key to force re-mount so framer-motion replays the animation each time.
+function FlashWrapper({ flash, flashKey, children }: { flash: boolean; flashKey: number; children: React.ReactNode }) {
+  if (!flash) return <div className="rounded-md">{children}</div>
   return (
     <motion.div
-      animate={
-        flash
-          ? {
-              backgroundColor: [
-                'transparent',
-                'hsl(var(--primary) / 0.18)',
-                'transparent',
-                'hsl(var(--primary) / 0.12)',
-                'transparent',
-              ],
-            }
-          : {}
-      }
-      transition={{ duration: 1.1, times: [0, 0.2, 0.45, 0.65, 1], ease: 'easeOut' }}
+      key={flashKey}
+      initial={{ backgroundColor: 'transparent' }}
+      animate={{
+        backgroundColor: [
+          'transparent',
+          'hsl(var(--primary) / 0.20)',
+          'transparent',
+          'hsl(var(--primary) / 0.14)',
+          'transparent',
+        ],
+      }}
+      transition={{ duration: 1.2, times: [0, 0.18, 0.42, 0.62, 1], ease: 'easeOut' }}
       className="rounded-md"
     >
       {children}
@@ -194,6 +194,7 @@ export function ApplicationForm({
   const [showTimeline, setShowTimeline] = useState(false)
   const [urlInput, setUrlInput] = useState('')
   const [flashFields, setFlashFields] = useState<Set<FlashField>>(new Set())
+  const [flashKey, setFlashKey] = useState(0)
   const flashTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -246,7 +247,8 @@ export function ApplicationForm({
   function triggerFlash(fields: FlashField[]) {
     if (flashTimeoutRef.current) clearTimeout(flashTimeoutRef.current)
     setFlashFields(new Set(fields))
-    flashTimeoutRef.current = setTimeout(() => setFlashFields(new Set()), 1000)
+    setFlashKey((k) => k + 1)
+    flashTimeoutRef.current = setTimeout(() => setFlashFields(new Set()), 1500)
   }
 
   async function applyParseResult(text: string): Promise<boolean> {
@@ -322,7 +324,7 @@ export function ApplicationForm({
         body: JSON.stringify({ url: trimmedUrl }),
         signal: controller.signal,
       })
-      const scrapeData = (await scrapeRes.json()) as { raw?: string; error?: string }
+      const scrapeData = (await scrapeRes.json().catch(() => ({}))) as { raw?: string; error?: string }
 
       if (!scrapeRes.ok || !scrapeData.raw) {
         setParseNotice({
@@ -347,7 +349,7 @@ export function ApplicationForm({
           }),
           signal: controller.signal,
         })
-        const cleanData = (await cleanRes.json()) as { success?: boolean; markdown?: string | null; error?: string }
+        const cleanData = (await cleanRes.json().catch(() => ({}))) as { success?: boolean; markdown?: string | null; error?: string }
 
         if (!cleanRes.ok || !cleanData.success || cleanData.markdown === null || cleanData.markdown === undefined || cleanData.markdown.trim().length < 50) {
           setParseNotice({ type: 'not_found', msg: '' })
@@ -364,6 +366,8 @@ export function ApplicationForm({
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
+      // Network errors (e.g. from abort racing with inflight requests)
+      if (err instanceof TypeError && err.message.includes('Failed to fetch')) return
       setParseNotice({ type: 'error', msg: 'Error al procesar la URL.' })
     } finally {
       abortRef.current = null
@@ -490,10 +494,12 @@ export function ApplicationForm({
                                     onClick={handleCancelUrl}
                                     className="relative gap-1.5 shrink-0 overflow-hidden border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                                   >
-                                    {/* Pulse ring animation */}
-                                    <span className="absolute inset-0 animate-ping rounded-sm bg-red-400/20" />
-                                    <Square className="relative h-3 w-3 fill-current" />
-                                    <span className="relative">Cancelar</span>
+                                    {/* Indeterminate progress bar at bottom */}
+                                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-red-200 dark:bg-red-900/40">
+                                      <span className="absolute inset-y-0 w-1/3 animate-[indeterminate_1.5s_ease-in-out_infinite] bg-red-500 dark:bg-red-400" />
+                                    </span>
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Cancelar
                                   </Button>
                                 ) : (
                                   <Button
@@ -572,7 +578,7 @@ export function ApplicationForm({
 
               {/* ── Sección: Detalles ───────────────────────────────────── */}
               <div className="space-y-4">
-                <FlashWrapper flash={flashFields.has('company')}>
+                <FlashWrapper flash={flashFields.has('company')} flashKey={flashKey}>
                   <FormField
                     control={form.control}
                     name="company"
@@ -587,7 +593,7 @@ export function ApplicationForm({
                     )}
                   />
                 </FlashWrapper>
-                <FlashWrapper flash={flashFields.has('position')}>
+                <FlashWrapper flash={flashFields.has('position')} flashKey={flashKey}>
                   <FormField
                     control={form.control}
                     name="position"
@@ -654,7 +660,7 @@ export function ApplicationForm({
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-3">Economía</p>
                 <div className="flex items-end gap-3">
-                  <FlashWrapper flash={flashFields.has('salaryOffered')}>
+                  <FlashWrapper flash={flashFields.has('salaryOffered')} flashKey={flashKey}>
                     <FormField
                       control={form.control}
                       name="salaryOffered"
@@ -668,7 +674,7 @@ export function ApplicationForm({
                       )}
                     />
                   </FlashWrapper>
-                  <FlashWrapper flash={flashFields.has('salaryCurrency')}>
+                  <FlashWrapper flash={flashFields.has('salaryCurrency')} flashKey={flashKey}>
                     <FormField
                       control={form.control}
                       name="salaryCurrency"
@@ -720,7 +726,7 @@ export function ApplicationForm({
               <Separator className="my-5" />
 
               {/* ── Sección: Beneficios ────────────────────────────────── */}
-              <FlashWrapper flash={flashFields.has('benefits')}>
+              <FlashWrapper flash={flashFields.has('benefits')} flashKey={flashKey}>
                 <div className="space-y-2">
                   <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     {isShimmering ? <Shimmer as="span" className="text-xs font-medium" duration={1.5}>Beneficios</Shimmer> : 'Beneficios'}
