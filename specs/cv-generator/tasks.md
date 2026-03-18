@@ -32,11 +32,11 @@
   - Archivos: `hooks/use-cvs.ts`
   - Depende de: Task 20
 
-- [ ] Task 22: Botón "Editar" en página Mis CVs
+- [x] Task 22: Botón "Editar" en página Mis CVs
   - Scope: Agregar botón "Editar" con icono Pencil y `<Link href={/cv-generator?editId=${cv.id}}>` entre los botones "Ver" y "PDF". Mismo estilo ghost/sm/h-8.
   - Archivos: `app/(app)/cvs/page.tsx`
 
-- [ ] Task 23: Auto-save en RxDB (protección contra recargas accidentales)
+- [x] Task 23: Auto-save en RxDB (protección contra recargas accidentales)
   - Scope: **Nuevo CV** — al montar: `getDraft()` y restaurar si existe; al primer cambio en `jobOfferText`: `createDraft()`; `useEffect` sobre `draftCv` con debounce 1s → `updateCV(draftId, ...)`; al guardar: `patch(draftId, { isDraft: false })`; al navegar fuera sin guardar: `deleteDraft(draftId)`. **Editar CV** — `useEffect` sobre `draftCv` con debounce 1s → `updateCV(editId, { cvData, updatedAt })`; al recargar: `getCvById(editId)` restaura estado. Indicador sutil "Guardado automáticamente".
   - Archivos: `app/(app)/cv-generator/page.tsx`, `hooks/use-cvs.ts`
   - Depende de: Task 21

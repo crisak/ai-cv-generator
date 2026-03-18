@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { StepJobOffer } from '@/components/cv-generator/step-job-offer'
 import { StepGoals } from '@/components/cv-generator/step-goals'
@@ -42,7 +43,9 @@ export default function CvGeneratorPage() {
   const { cvData } = useExperience()
   const { applications, updateApplication } = useApplications()
   const { settings } = useSettings()
-  const { saveCV } = useCvs()
+  const { saveCV, updateCV, getDraft, createDraft, deleteDraft } = useCvs()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('editId')
 
   const [step, setStep] = useState<Step>(1)
   const [jobOfferText, setJobOfferText] = useState('')
@@ -58,6 +61,14 @@ export default function CvGeneratorPage() {
   const [optimizedCv, setOptimizedCv] = useState<CvData | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [savedCvId, setSavedCvId] = useState<string | null>(null)
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saved'>('idle')
+
+  // Ref to track draft id for new-CV auto-save (avoids stale closure)
+  const draftIdRef = useRef<string | null>(null)
+  // Ref to know if we saved intentionally (so unmount cleanup skips deleteDraft)
+  const savedIntentionallyRef = useRef(false)
+  // Ref to debounce timer
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Initialize selections + draftCv when cvData loads
   useEffect(() => {
@@ -70,10 +81,97 @@ export default function CvGeneratorPage() {
     }
   }, [cvData, selections])
 
+  // NEW CV: On mount, check for an existing draft and restore it
+  useEffect(() => {
+    if (editId) return
+    let cancelled = false
+    getDraft().then((existing) => {
+      if (cancelled || !existing) return
+      draftIdRef.current = existing.id
+      try {
+        const restoredCv = JSON.parse(existing.cvData) as CvData
+        setJobOfferText(existing.jobOfferText ?? '')
+        setDraftCv(restoredCv)
+        if (existing.jobOfferText) setStep(2)
+      } catch {
+        // malformed draft — ignore
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId])
+
+  // NEW CV: Cleanup — delete draft on unmount if not saved intentionally
+  useEffect(() => {
+    if (editId) return
+    return () => {
+      if (!savedIntentionallyRef.current && draftIdRef.current) {
+        deleteDraft(draftIdRef.current)
+      }
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId])
+
+  // NEW CV: Auto-save draftCv with debounce 1s
+  useEffect(() => {
+    if (editId) return
+    if (!draftCv || !draftIdRef.current) return
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      if (!draftIdRef.current) return
+      await updateCV(draftIdRef.current, {
+        cvData: draftCv,
+        jobOfferText,
+        isDraft: true,
+      })
+      setAutoSaveStatus('saved')
+      setTimeout(() => setAutoSaveStatus('idle'), 2000)
+    }, 1000)
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftCv, editId])
+
+  // EDIT CV: Auto-save draftCv changes with debounce 1s
+  useEffect(() => {
+    if (!editId) return
+    if (!draftCv) return
+
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    autoSaveTimerRef.current = setTimeout(async () => {
+      await updateCV(editId, { cvData: draftCv })
+      setAutoSaveStatus('saved')
+      setTimeout(() => setAutoSaveStatus('idle'), 2000)
+    }, 1000)
+
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftCv, editId])
+
   async function handleStepOneNext() {
     if (!cvData) return
     setIsAnalyzing(true)
     setStep(2)
+
+    // Create draft when entering step 2 for a new CV (if not already created)
+    if (!editId && !draftIdRef.current) {
+      const draft = await createDraft({
+        jobTitle: 'Borrador',
+        company: '',
+        jobOfferText,
+        cvData,
+      })
+      if (draft) draftIdRef.current = draft.id
+    }
+
     const result = await suggestBullets(jobOfferText, cvData, settings)
     setSelections(result.selections)
     const { cv, ids } = buildDraftAndIds(cvData, result.selections)
@@ -216,17 +314,35 @@ export default function CvGeneratorPage() {
     if (!generatedCv) return
     setIsSaving(true)
     const app = applications.find((a) => a.id === applicationId)
-    const result = await saveCV({
-      applicationId: applicationId || undefined,
-      jobTitle: app?.position ?? 'Sin título',
-      company: app?.company ?? 'Sin empresa',
-      jobOfferText,
-      cvData: generatedCv,
-    })
-    if (result) {
-      setSavedCvId(result.id)
+
+    if (draftIdRef.current) {
+      // Finalize draft: patch isDraft → false with final metadata
+      await updateCV(draftIdRef.current, {
+        jobTitle: app?.position ?? 'Sin título',
+        company: app?.company ?? 'Sin empresa',
+        jobOfferText,
+        cvData: generatedCv,
+        isDraft: false,
+      })
+      savedIntentionallyRef.current = true
+      setSavedCvId(draftIdRef.current)
       if (applicationId) {
-        await updateApplication(applicationId, { cvId: result.id })
+        await updateApplication(applicationId, { cvId: draftIdRef.current })
+      }
+    } else {
+      const result = await saveCV({
+        applicationId: applicationId || undefined,
+        jobTitle: app?.position ?? 'Sin título',
+        company: app?.company ?? 'Sin empresa',
+        jobOfferText,
+        cvData: generatedCv,
+      })
+      if (result) {
+        savedIntentionallyRef.current = true
+        setSavedCvId(result.id)
+        if (applicationId) {
+          await updateApplication(applicationId, { cvId: result.id })
+        }
       }
     }
     setIsSaving(false)
@@ -247,11 +363,18 @@ export default function CvGeneratorPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Generar CV</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {editId ? 'Editar CV' : 'Generar CV'}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Genera un CV optimizado para ATS basado en tu experiencia real
+            {editId
+              ? 'Edita y actualiza tu CV guardado'
+              : 'Genera un CV optimizado para ATS basado en tu experiencia real'}
           </p>
         </div>
+        {autoSaveStatus === 'saved' && (
+          <span className="text-xs text-muted-foreground mt-1">Guardado automáticamente</span>
+        )}
       </div>
 
       {/* Step indicator */}

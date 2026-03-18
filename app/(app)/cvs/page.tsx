@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Eye, Trash2, FileText, ExternalLink } from 'lucide-react'
+import { Download, Eye, Trash2, FileText, ExternalLink, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useCvs } from '@/hooks/use-cvs'
 import { Button } from '@/components/ui/button'
@@ -122,6 +122,17 @@ export default function CvsPage() {
                 >
                   <Eye className="h-3.5 w-3.5" />
                   Ver
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1.5 text-xs"
+                  asChild
+                >
+                  <Link href={`/cv-generator?editId=${cv.id}`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Editar
+                  </Link>
                 </Button>
                 <Button
                   variant="ghost"
