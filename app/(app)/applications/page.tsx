@@ -130,10 +130,6 @@ export default function ApplicationsPage() {
     }
   }
 
-  async function handleStatusChange(id: string, status: ApplicationStatus) {
-    await updateApplication(id, { status })
-  }
-
   if (isLoading) {
     return (
       <div className="space-y-6 p-6">
@@ -294,7 +290,6 @@ export default function ApplicationsPage() {
         applications={filtered}
         onEdit={handleEdit}
         onDelete={deleteApplication}
-        onStatusChange={handleStatusChange}
         onToggleFavorite={toggleFavorite}
       />
 

@@ -38,6 +38,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { TimelineView } from '@/components/applications/timeline-view'
+import { BenefitList } from '@/components/applications/benefit-list'
 import { TimelineEntryForm } from '@/components/applications/timeline-entry-form'
 import { CvViewer } from '@/components/cv/cv-viewer'
 import {
@@ -51,25 +52,6 @@ import { cn } from '@/lib/utils'
 
 const SOURCES = ['LinkedIn', 'Computrabajo', 'GetOnBoard', 'Indeed', 'Referido', 'Otro']
 const CURRENCIES = ['COP', 'USD', 'EUR']
-
-// Pipeline stages in order — the signature element of this page
-const PIPELINE_STAGES: { key: ApplicationStatus; label: string }[] = [
-  { key: 'pending', label: 'Aplicado' },
-  { key: 'phone_screen', label: 'Llamada' },
-  { key: 'technical', label: 'Técnica' },
-  { key: 'hr_interview', label: 'RRHH' },
-  { key: 'offer', label: 'Oferta' },
-  { key: 'accepted', label: 'Aceptado' },
-]
-
-const STAGE_INDEX: Partial<Record<ApplicationStatus, number>> = {
-  pending: 0,
-  phone_screen: 1,
-  technical: 2,
-  hr_interview: 3,
-  offer: 4,
-  accepted: 5,
-}
 
 function formatSalary(amount: number, currency: string) {
   if (!amount) return null
@@ -86,77 +68,6 @@ function daysSince(isoDate: string) {
   if (days === 0) return 'Hoy'
   if (days === 1) return '1 día'
   return `${days} días`
-}
-
-function PipelineIndicator({ status }: { status: ApplicationStatus }) {
-  const isTerminal = status === 'rejected' || status === 'withdrawn'
-  const currentIdx = STAGE_INDEX[status] ?? -1
-
-  return (
-    <div className="flex items-start">
-      {PIPELINE_STAGES.map((stage, idx) => {
-        const isPast = !isTerminal && idx < currentIdx
-        const isCurrent = !isTerminal && idx === currentIdx
-
-        return (
-          <div key={stage.key} className="flex items-start">
-            {idx > 0 && (
-              <div
-                className={cn(
-                  'h-px w-5 mt-[5px] mx-0.5 shrink-0',
-                  isPast || (isCurrent && idx > 0 && !isTerminal && idx <= currentIdx)
-                    ? 'bg-primary/50'
-                    : 'bg-border/60',
-                )}
-              />
-            )}
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <div
-                className={cn(
-                  'h-2.5 w-2.5 rounded-full transition-all',
-                  isPast && 'bg-primary',
-                  isCurrent && 'bg-primary ring-[3px] ring-primary/20 ring-offset-1 ring-offset-card',
-                  !isPast && !isCurrent && 'bg-border',
-                )}
-              />
-              <span
-                className={cn(
-                  'text-[9px] font-medium whitespace-nowrap leading-none',
-                  isCurrent && 'text-primary font-semibold',
-                  isPast && 'text-muted-foreground',
-                  !isPast && !isCurrent && 'text-muted-foreground/40',
-                )}
-              >
-                {stage.label}
-              </span>
-            </div>
-          </div>
-        )
-      })}
-
-      {isTerminal && (
-        <div className="flex items-start">
-          <div className="h-px w-5 mt-[5px] mx-0.5 bg-border/60 shrink-0" />
-          <div className="flex flex-col items-center gap-1 shrink-0">
-            <div
-              className={cn(
-                'h-2.5 w-2.5 rounded-full',
-                status === 'rejected' ? 'bg-red-500' : 'bg-gray-400',
-              )}
-            />
-            <span
-              className={cn(
-                'text-[9px] font-medium leading-none',
-                status === 'rejected' ? 'text-red-500' : 'text-gray-400',
-              )}
-            >
-              {status === 'rejected' ? 'Rechazado' : 'Retirado'}
-            </span>
-          </div>
-        </div>
-      )}
-    </div>
-  )
 }
 
 export default function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -185,7 +96,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [status, setStatus] = useState<ApplicationStatus>('pending')
   const [salaryOffered, setSalaryOffered] = useState('')
   const [salaryCurrency, setSalaryCurrency] = useState('COP')
-  const [benefits, setBenefits] = useState('')
+  const [benefits, setBenefits] = useState<string[]>([])
   const [appliedAt, setAppliedAt] = useState('')
   const [responseDate, setResponseDate] = useState('')
   const [nextSteps, setNextSteps] = useState('')
@@ -205,7 +116,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       setStatus(app.status)
       setSalaryOffered(app.salaryOffered ? String(app.salaryOffered) : '')
       setSalaryCurrency(app.salaryCurrency || 'COP')
-      setBenefits(app.benefits?.join(', ') ?? '')
+      setBenefits(app.benefits ?? [])
       setAppliedAt(app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : '')
       setResponseDate(app.responseDate ? new Date(app.responseDate).toISOString().split('T')[0] : '')
       setNextSteps(app.nextSteps ?? '')
@@ -223,7 +134,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       status,
       salaryOffered: salaryOffered ? parseFloat(salaryOffered) : 0,
       salaryCurrency,
-      benefits: benefits.split(',').map((b) => b.trim()).filter(Boolean),
+      benefits,
       appliedAt: appliedAt ? new Date(appliedAt).toISOString() : '',
       responseDate: responseDate ? new Date(responseDate).toISOString() : '',
       nextSteps,
@@ -243,7 +154,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     setStatus(app.status)
     setSalaryOffered(app.salaryOffered ? String(app.salaryOffered) : '')
     setSalaryCurrency(app.salaryCurrency || 'COP')
-    setBenefits(app.benefits?.join(', ') ?? '')
+    setBenefits(app.benefits ?? [])
     setAppliedAt(app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : '')
     setResponseDate(app.responseDate ? new Date(app.responseDate).toISOString().split('T')[0] : '')
     setNextSteps(app.nextSteps ?? '')
@@ -388,13 +299,6 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               </button>
             </div>
           </div>
-
-          {/* Pipeline indicator — the signature element */}
-          {!isEditing && (
-            <div className="px-6 py-4 border-t border-border/40 bg-muted/20">
-              <PipelineIndicator status={app.status} />
-            </div>
-          )}
 
           {/* Quick stats bar */}
           {!isEditing && (salary || daysAgo || app.appliedAt) && (
@@ -544,12 +448,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground font-medium">Beneficios</Label>
                 {isEditing ? (
-                  <Input
-                    value={benefits}
-                    onChange={(e) => setBenefits(e.target.value)}
-                    placeholder="Separados por coma: remoto, seguro médico, bonos"
-                    className="h-8 text-sm"
-                  />
+                  <BenefitList value={benefits} onChange={setBenefits} />
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {app.benefits?.length > 0

@@ -24,18 +24,18 @@
   - Scope: Después de que `parseJobOffer()` auto-rellena campos, aplicar animación "Double Flash" (shimmer breve) en cada campo actualizado. Usar componente Shimmer de ai-elements + framer-motion para la animación.
   - Depende de: Task 9, cross-cutting Task 1 y 2
 
-- [ ] Task 11: Rediseño de Beneficios — Lista con CRUD (reemplaza tags)
+- [x] Task 11: Rediseño de Beneficios — Lista con CRUD (reemplaza tags)
   - Scope: Crear `components/applications/benefit-list.tsx` con controles de agregar, editar, eliminar. Max-height con scroll o accordion similar al campo "Oferta laboral". Aplicar mismo diseño en formulario de creación y en página de detalle `[id]/page.tsx`.
   - Depende de: nada
 
-- [ ] Task 12: Tooltips de ayuda en campos del formulario
+- [x] Task 12: Tooltips de ayuda en campos del formulario
   - Scope: Agregar icono de ayuda (?) con tooltip en 4 campos de `application-form.tsx`: Fecha respuesta, Fecha postulación, Beneficios, Estado. Texto de ayuda estático que orienta al usuario sobre qué ingresar en cada campo.
   - Depende de: nada
 
-- [ ] Task 13: Estado solo lectura en tabla de postulaciones
+- [x] Task 13: Estado solo lectura en tabla de postulaciones
   - Scope: En `applications-table.tsx`, quitar el dropdown inline que permite cambiar el estado. El campo estado se muestra como badge de solo lectura en la vista de lista. El estado solo se edita desde el formulario de edición o la página de detalle.
   - Depende de: nada
 
-- [ ] Task 14: Eliminar timeline header estático en página de detalle
+- [x] Task 14: Eliminar timeline header estático en página de detalle
   - Scope: En `app/(app)/applications/[id]/page.tsx`, eliminar el header con los pasos estáticos ("Aplicado", "Llamada", "Técnica", "RRHH", "Oferta", "Aceptado") que no aporta valor funcional.
   - Depende de: nada
