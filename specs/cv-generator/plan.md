@@ -21,24 +21,42 @@ cv-generator/page.tsx (wizard 3 pasos)
         → CvViewer (renderizado ATS)
         → Descargar PDF / Guardar en RxDB
 
-cvs/page.tsx (viewer)
+cvs/page.tsx (viewer + edit entry point)
   → Lista de CVs guardados
   → CvViewer para visualización
+  → Botón "Editar" → /cv-generator?editId=xxx
+
+cv-generator/page.tsx (modo edición)
+  → Detecta ?editId=xxx en URL
+  → Carga CV guardado via getCvById()
+  → Reconstruye selections comparando bullets guardados vs experiencia
+  → Inicia en Step 2 directamente
+  → Guardar → updateCV() en lugar de saveCV()
 ```
 
 ## Modelo de datos (RxDB)
 
-Collection: `cvs`
+Collection: `cvs` (schema v1)
 
 ```typescript
 {
   id: string
   applicationId?: string     // vínculo a postulación
-  jobOffer: string           // texto de la oferta
-  cv: CvData                 // CV generado (json-schema-cv-generator)
+  jobTitle: string           // título del puesto
+  company: string            // empresa
+  jobOfferText: string       // texto completo de la oferta (para re-optimización IA)
+  cvData: string             // CV generado (JSON stringified CvData)
+  isDraft: boolean           // true = borrador en progreso, false = CV definitivo
   createdAt: string
+  updatedAt: string          // fecha de última edición (auto-save)
 }
 ```
+
+## Auto-save
+
+- **Nuevo CV**: Al primer cambio en `jobOfferText` se crea un doc `isDraft: true` en RxDB. Cada cambio en `draftCv` hace `patch()` con debounce 1s. Al guardar → `isDraft: false`. Al navegar fuera sin guardar → `deleteDraft()`.
+- **Editar CV existente**: Los cambios de `draftCv` hacen `patch()` directo al CvDocument con debounce 1s. Al recargar → `getCvById(editId)` ya tiene el estado más reciente.
+- La lista de "Mis CVs" filtra `isDraft: false` para no mostrar borradores.
 
 ## Integración con IA
 
