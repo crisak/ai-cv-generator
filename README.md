@@ -101,6 +101,10 @@ Instrucciones de instalación y configuración en [`docs/SETUP.md`](docs/SETUP.m
 
 ---
 
+## Contribuir
+
+¡Las contribuciones son bienvenidas! Consulta la [guía de contribución](CONTRIBUTING.md) para más detalles.
+
 ## Licencia
 
-MIT License
+Este proyecto está bajo la licencia [Mozilla Public License 2.0 (MPL-2.0)](LICENSE).

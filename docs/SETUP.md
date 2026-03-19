@@ -77,9 +77,10 @@ OPENAI_API_KEY=sk-...
 ## Estructura del Proyecto
 
 ```
-middleware.ts                          — Protección de rutas (Clerk, Edge Runtime)
+proxy.ts                               — Protección de rutas (Clerk, Edge Runtime)
 
 app/
+  page.tsx                             — Landing page pública (ruta /)
   (auth)/
     login/[[...sign-in]]/              — Página de login (Clerk)
     sign-up/[[...sign-up]]/            — Página de registro (Clerk)
@@ -98,6 +99,7 @@ components/
   cv-generator/                        — Componentes del generador (steps, preview, toolbar)
   cv/                                  — Render del CV en formato ATS
   experience/                          — Formularios del editor de experiencia
+  landing/                             — Componentes del landing page (hero, benefits, screenshots, etc.)
   layout/
     sidebar.tsx                        — Sidebar con navegación y dropdown de usuario
   ui/                                  — Componentes shadcn/ui customizados
@@ -249,22 +251,7 @@ Asegúrate de que cualquier lectura de `useTheme()` esté protegida con el guard
 
 ## Contribuir
 
-1. Fork el repositorio
-2. Crea una rama: `git checkout -b feature/nombre-feature`
-3. Formatea antes de commitear: `pnpm format`
-4. Commit semántico: `git commit -m "feat: descripción clara"`
-5. Abre un Pull Request
-
-### Convenciones de commit
-
-```
-feat:     Nueva funcionalidad
-fix:      Corrección de bug
-refactor: Refactoring sin cambio de comportamiento
-style:    Cambios de formato/estilo
-docs:     Documentación
-chore:    Configuración, dependencias
-```
+Consulta la [guía de contribución](../CONTRIBUTING.md) para instrucciones detalladas sobre cómo contribuir al proyecto.
 
 ---
 
@@ -283,4 +270,5 @@ chore:    Configuración, dependencias
 | BD local      | RxDB (IndexedDB)      | 15                     |
 | Testing       | Vitest                | configurado, sin tests |
 | Linting       | ESLint + Prettier     | latest                 |
-| Animaciones   | framer-motion         | solo features nuevas   |
+| Animaciones   | framer-motion + GSAP  | solo features nuevas   |
+| Licencia      | MPL-2.0               | —                      |
