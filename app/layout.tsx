@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import { ClerkProvider } from '@clerk/nextjs'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
+import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -76,8 +77,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             enableSystem
             disableTransitionOnChange
           >
-            {children}
-            <Toaster />
+            <SmoothScrollProvider>
+              {children}
+              <Toaster />
+            </SmoothScrollProvider>
           </ThemeProvider>
         </body>
       </html>
