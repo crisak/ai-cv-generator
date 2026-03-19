@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
-import { Moon, Sun } from 'lucide-react'
+import { Moon, Sun, LogIn, UserPlus } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -79,11 +79,17 @@ export function LandingHeader({ isAuthenticated }: { isAuthenticated: boolean })
           ) : (
             <div className="flex items-center gap-2">
               <Button asChild variant="ghost" size="sm">
-                <Link href="/login">Iniciar sesión</Link>
+                <Link href="/login" className="flex items-center gap-1.5">
+                  <LogIn className="h-3.5 w-3.5" />
+                  Iniciar sesión
+                </Link>
               </Button>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button asChild size="sm">
-                  <Link href="/sign-up">Registrarse</Link>
+                  <Link href="/sign-up" className="flex items-center gap-1.5">
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Registrarse
+                  </Link>
                 </Button>
               </motion.div>
             </div>

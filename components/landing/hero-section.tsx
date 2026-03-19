@@ -56,7 +56,7 @@ export function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
 
       {/* Grid pattern overlay */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
+        className="pointer-events-none absolute inset-0 opacity-[0.04] dark:opacity-[0.06]"
         style={{
           backgroundImage:
             'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)',

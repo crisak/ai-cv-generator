@@ -6,7 +6,6 @@ import { ScreenshotsSection } from '@/components/landing/screenshots-section'
 import { HowItWorksSection } from '@/components/landing/how-it-works-section'
 import { InspirationSection } from '@/components/landing/inspiration-section'
 import { FeaturesSection } from '@/components/landing/features-section'
-import { ContributingSection } from '@/components/landing/contributing-section'
 import { LandingFooter } from '@/components/landing/landing-footer'
 import { ScrollProgress } from '@/components/landing/scroll-progress'
 import { FloatingCta } from '@/components/landing/floating-cta'
@@ -26,7 +25,6 @@ export default async function LandingPage() {
         <HowItWorksSection />
         <InspirationSection />
         <FeaturesSection />
-        <ContributingSection />
       </main>
       <LandingFooter />
       <FloatingCta isAuthenticated={isAuthenticated} />
