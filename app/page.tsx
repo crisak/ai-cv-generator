@@ -1,4 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
+import { SmoothScrollProvider } from '@/components/smooth-scroll-provider'
 import { LandingHeader } from '@/components/landing/landing-header'
 import { HeroSection } from '@/components/landing/hero-section'
 import { BenefitsSection } from '@/components/landing/benefits-section'
@@ -15,6 +16,7 @@ export default async function LandingPage() {
   const isAuthenticated = !!userId
 
   return (
+    <SmoothScrollProvider>
     <div className="min-h-screen bg-background">
       <ScrollProgress />
       <LandingHeader isAuthenticated={isAuthenticated} />
@@ -29,5 +31,6 @@ export default async function LandingPage() {
       <LandingFooter />
       <FloatingCta isAuthenticated={isAuthenticated} />
     </div>
+    </SmoothScrollProvider>
   )
 }
