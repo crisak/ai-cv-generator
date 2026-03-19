@@ -122,6 +122,7 @@ function VideoPlayer({ src, title }: { src: string; title: string }) {
         onClick={togglePlay}
         whileHover={{ scale: 1.15 }}
         whileTap={{ scale: 0.85 }}
+        aria-label={playing ? 'Pausar video' : 'Reproducir video'}
         className="absolute bottom-4 right-4 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-border/50 bg-background/80 shadow-lg backdrop-blur-md transition-colors hover:bg-background"
       >
         <AnimatePresence mode="wait" initial={false}>
@@ -192,8 +193,8 @@ export function ScreenshotsSection() {
         </motion.div>
 
         {/* Slide dots */}
-        <div className="mb-6 flex justify-end gap-2 px-1">
-          {steps.map((_, i) => (
+        <div className="mb-6 flex justify-end gap-1 px-1">
+          {steps.map((step, i) => (
             <motion.button
               key={i}
               onClick={() => goTo(i)}
@@ -201,12 +202,19 @@ export function ScreenshotsSection() {
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               whileHover={{ scale: 1.3 }}
               whileTap={{ scale: 0.9 }}
-              className={`h-2 cursor-pointer rounded-full transition-colors duration-300 ${
-                activeIndex === i
-                  ? 'w-6 bg-primary'
-                  : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
-              }`}
-            />
+              aria-label={`Ver ${step.title}`}
+              aria-current={activeIndex === i ? 'true' : undefined}
+              className="flex cursor-pointer items-center justify-center p-2"
+            >
+              <motion.span
+                layout
+                className={`block h-2 rounded-full transition-colors duration-300 ${
+                  activeIndex === i
+                    ? 'w-6 bg-primary'
+                    : 'w-2 bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
+              />
+            </motion.button>
           ))}
         </div>
 

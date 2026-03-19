@@ -50,6 +50,7 @@ export function LandingHeader({ isAuthenticated }: { isAuthenticated: boolean })
               whileTap={{ scale: 0.9, rotate: 180 }}
               transition={{ type: 'spring', stiffness: 300, damping: 15 }}
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <AnimatePresence mode="wait" initial={false}>
