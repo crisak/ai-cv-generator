@@ -6,10 +6,10 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │                         BROWSER                                  │
 │                                                                  │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────┐   │
-│  │   Auth   │  │Dashboard │  │Experience│  │ CV Generator  │   │
-│  │  (Clerk) │  │  Apps    │  │  Editor  │  │  (3 steps)   │   │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬───────┘   │
+│  ┌────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐│
+│  │Landing │ │   Auth   │ │Dashboard │ │Experience│ │CV Generator│
+│  │ Page   │ │  (Clerk) │ │  Apps    │ │  Editor  │ │ (3 steps)││
+│  └────┬───┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘│
 │       │              │              │               │            │
 │       │         ┌────┴──────────────┴───────────────┤            │
 │       │         │         RxDB (IndexedDB)          │            │
@@ -29,7 +29,7 @@
 │            NEXT.JS SERVER                  │
 │                                            │
 │  ┌──────────────┐  ┌───────────────────┐  │
-│  │ middleware.ts │  │ /api/ai/parse     │  │
+│  │  proxy.ts    │  │ /api/ai/parse     │  │
 │  │ (Clerk Edge) │  │ (AI provider call)│  │
 │  └──────────────┘  └────────┬──────────┘  │
 │                              │             │
@@ -71,9 +71,10 @@
 
 ## Flujos principales
 
-### Login
+### Landing → Login
 ```
-/ → middleware.ts → no auth → redirect /login → Clerk → /applications
+/ → Landing Page (pública) → CTA "Comenzar ahora" → /sign-up → Clerk → /applications
+/ → Landing Page (autenticado) → CTA "Ir a la app" → /applications
 ```
 
 ### Generar CV

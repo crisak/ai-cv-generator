@@ -41,3 +41,7 @@ memory/
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+
+# Playwright
+.playwright-cli
