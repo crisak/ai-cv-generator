@@ -11,7 +11,9 @@ interface ParseRequest {
   mode?: 'extract' | 'clean'
 }
 
-const EXTRACT_PROMPT = (jobOffer: string) => `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
+const EXTRACT_PROMPT = (
+  jobOffer: string
+) => `Analiza esta oferta laboral y extrae la información clave. Responde SOLO con un JSON válido sin explicaciones.
 
 Campos a extraer:
 - company: nombre de la empresa (string)
@@ -19,6 +21,9 @@ Campos a extraer:
 - salaryOffered: salario numérico si se menciona (number, sin texto)
 - salaryCurrency: moneda del salario si se menciona: COP, USD o EUR (string)
 - benefits: lista de beneficios mencionados (array de strings cortos)
+- source: fuente de la oferta como LinkedIn, Computrabajo, GetOnBoard, Indeed, etc. (string)
+- workModality: modalidad de trabajo: "remote" si es remoto, "hybrid" si es híbrido, "onsite" si es presencial (string)
+- offerPublishedAt: fecha de publicación de la oferta en formato YYYY-MM-DD si se menciona (string)
 
 Oferta laboral:
 ${jobOffer.substring(0, 4000)}
@@ -26,7 +31,9 @@ ${jobOffer.substring(0, 4000)}
 JSON:`
 
 // mode=clean: convert raw scraped text to clean markdown preserving the FULL original job offer
-const CLEAN_PROMPT = (raw: string) => `Eres un conversor de texto a markdown para ofertas laborales. Se te dará texto extraído de una página web (puede incluir navegación, cookies, scripts, publicidad, etc.).
+const CLEAN_PROMPT = (
+  raw: string
+) => `Eres un conversor de texto a markdown para ofertas laborales. Se te dará texto extraído de una página web (puede incluir navegación, cookies, scripts, publicidad, etc.).
 
 Tu tarea:
 1. Identifica si el texto contiene UNA oferta laboral concreta (no una lista de ofertas, no un portal genérico, no una página de login, no un captcha).
@@ -65,11 +72,17 @@ export async function POST(request: NextRequest) {
     }
 
     if (!apiKey) {
-      return NextResponse.json({ error: 'AI service not configured.', code: 'NO_API_KEY' }, { status: 503 })
+      return NextResponse.json(
+        { error: 'AI service not configured.', code: 'NO_API_KEY' },
+        { status: 503 }
+      )
     }
 
     if (!SUPPORTED.includes(model as AIProviderName)) {
-      return NextResponse.json({ error: 'Model not yet implemented', code: 'NOT_IMPLEMENTED' }, { status: 501 })
+      return NextResponse.json(
+        { error: 'Model not yet implemented', code: 'NOT_IMPLEMENTED' },
+        { status: 501 }
+      )
     }
 
     const provider = AIProviderFactory.create(model as AIProviderName)
@@ -98,7 +111,10 @@ export async function POST(request: NextRequest) {
 
     const parsed = parseAIJson(result.text)
     if (!parsed) {
-      return NextResponse.json({ error: 'Invalid response format from AI', code: 'INVALID_FORMAT' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Invalid response format from AI', code: 'INVALID_FORMAT' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ success: true, data: parsed })

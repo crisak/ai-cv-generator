@@ -61,6 +61,7 @@ type FlashField =
   | 'salaryCurrency'
   | 'benefits'
   | 'source'
+  | 'workModality'
 
 // Domains known to block scraping
 const UNSUPPORTED_DOMAINS = [
@@ -322,6 +323,17 @@ export function ApplicationForm({
         form.setValue('benefits', validBenefits)
         updated.push('benefits')
       }
+    }
+    if (isValid(result.source)) {
+      form.setValue('source', result.source, { shouldValidate: true })
+      updated.push('source')
+    }
+    if (result.workModality && ['hybrid', 'onsite', 'remote'].includes(result.workModality)) {
+      form.setValue('workModality', result.workModality)
+      updated.push('workModality')
+    }
+    if (isValid(result.offerPublishedAt)) {
+      form.setValue('offerPublishedAt', result.offerPublishedAt)
     }
 
     const hasUsefulData = !!(result.company || result.position)

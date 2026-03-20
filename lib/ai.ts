@@ -7,6 +7,8 @@ export interface ParsedJobOffer {
   salaryCurrency?: string
   benefits?: string[]
   source?: string
+  workModality?: 'hybrid' | 'onsite' | 'remote'
+  offerPublishedAt?: string
 }
 
 // ── Regex-based fallback extraction ──────────────────────────────────────────
@@ -62,9 +64,20 @@ function extractWithRegex(text: string): ParsedJobOffer {
 
   // Extract benefits from common patterns
   const benefitKeywords = [
-    'trabajo remoto', 'remote', 'home office', 'híbrido', 'flexible',
-    'seguro médico', 'health insurance', 'dental', 'vacaciones',
-    'bonos', 'stock', 'opciones', 'capacitación', 'educación',
+    'trabajo remoto',
+    'remote',
+    'home office',
+    'híbrido',
+    'flexible',
+    'seguro médico',
+    'health insurance',
+    'dental',
+    'vacaciones',
+    'bonos',
+    'stock',
+    'opciones',
+    'capacitación',
+    'educación',
   ]
   const benefits = benefitKeywords.filter((kw) => text.toLowerCase().includes(kw.toLowerCase()))
 
