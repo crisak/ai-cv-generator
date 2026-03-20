@@ -68,15 +68,15 @@ export function HowItWorksSection() {
             {steps.map((step, i) => (
               <motion.div
                 key={step.number}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -50 : 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-80px' }}
                 transition={{
                   duration: 0.7,
                   delay: 0.1,
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className={`relative flex flex-col items-center gap-8 lg:flex-row ${
+                className={`relative flex flex-col items-center gap-6 lg:flex-row lg:gap-8 ${
                   i % 2 === 1 ? 'lg:flex-row-reverse' : ''
                 }`}
               >

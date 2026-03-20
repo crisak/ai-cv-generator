@@ -1,0 +1,7 @@
+allowBuilds:
+  '@clerk/shared': true
+  esbuild: true
+  protobufjs: true
+  rxdb: true
+  sharp: true
+  unrs-resolver: true
