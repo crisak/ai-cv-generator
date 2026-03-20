@@ -101,10 +101,24 @@ export function HowItWorksSection() {
                   </motion.div>
                 </div>
 
-                {/* Dot on the connecting line */}
-                <div className="relative z-10 hidden shrink-0 lg:block">
-                  <div className="h-4 w-4 rounded-full border-2 border-primary/60 bg-background" />
-                </div>
+                {/* Step number circle — desktop only */}
+                <motion.div
+                  whileInView={{ scale: [0.5, 1.15, 1] }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  className="relative z-10 hidden shrink-0 lg:block"
+                >
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-background bg-primary text-xl font-bold text-primary-foreground shadow-lg shadow-primary/25">
+                    {step.number}
+                  </div>
+                  <motion.div
+                    initial={{ scale: 1, opacity: 0.5 }}
+                    whileInView={{ scale: [1, 1.5], opacity: [0.3, 0] }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+                    className="absolute inset-0 rounded-full bg-primary"
+                  />
+                </motion.div>
 
                 {/* Spacer for alternating layout */}
                 <div className="hidden flex-1 lg:block" />
