@@ -101,20 +101,10 @@ export function HowItWorksSection() {
                   </motion.div>
                 </div>
 
-                {/* Step marker */}
-                <motion.div
-                  whileInView={{ scale: [0.7, 1.05, 1] }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                  className="relative z-10 shrink-0"
-                >
-                  <div className="flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full border-2 border-primary/40 bg-background shadow-md shadow-primary/10">
-                    <step.icon className="h-5 w-5 text-primary" />
-                    <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-                      {step.number}
-                    </span>
-                  </div>
-                </motion.div>
+                {/* Dot on the connecting line */}
+                <div className="relative z-10 hidden shrink-0 lg:block">
+                  <div className="h-4 w-4 rounded-full border-2 border-primary/60 bg-background" />
+                </div>
 
                 {/* Spacer for alternating layout */}
                 <div className="hidden flex-1 lg:block" />
