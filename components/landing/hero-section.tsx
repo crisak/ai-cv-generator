@@ -49,9 +49,9 @@ export function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
         style={{ y: backgroundY }}
         className="pointer-events-none absolute inset-0"
       >
-        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute -right-40 top-20 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl sm:-left-40 sm:-top-40 sm:h-96 sm:w-96" />
+        <div className="absolute -right-20 top-10 h-56 w-56 rounded-full bg-primary/5 blur-3xl sm:-right-40 sm:top-20 sm:h-80 sm:w-80" />
+        <div className="absolute bottom-0 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-primary/8 blur-3xl sm:h-64 sm:w-64" />
       </motion.div>
 
       {/* Grid pattern overlay */}
@@ -66,7 +66,7 @@ export function HeroSection({ isAuthenticated }: { isAuthenticated: boolean }) {
 
       <motion.div
         style={{ opacity: textOpacity, y: textY }}
-        className="relative mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32 lg:py-40"
+        className="relative mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-28 lg:py-40"
       >
         <motion.div
           variants={staggerChildren}

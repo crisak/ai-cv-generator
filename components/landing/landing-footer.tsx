@@ -31,7 +31,7 @@ export function LandingFooter() {
             <span>AI CV Generator &copy; {new Date().getFullYear()} · MPL-2.0</span>
           </motion.div>
 
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
+          <nav className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground sm:flex-nowrap sm:gap-6">
             <motion.a
               href="https://github.com/crisak/ai-cv-generator"
               target="_blank"
@@ -42,7 +42,7 @@ export function LandingFooter() {
               <Github className="h-4 w-4" />
               GitHub
             </motion.a>
-            <Separator orientation="vertical" className="h-4" />
+            <Separator orientation="vertical" className="hidden h-4 sm:block" />
             <Link href="/login" className="transition-colors hover:text-foreground">
               Iniciar sesión
             </Link>

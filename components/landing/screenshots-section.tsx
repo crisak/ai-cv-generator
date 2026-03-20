@@ -38,6 +38,7 @@ const steps = [
     id: 'dashboard',
     icon: LayoutDashboard,
     title: 'Dashboard de postulaciones',
+    shortTitle: 'Dashboard',
     description:
       'Visualiza y organiza todas tus postulaciones. Filtra por estado, empresa, salario y más.',
     video: '/videos/dashboard.mp4',
@@ -46,6 +47,7 @@ const steps = [
     id: 'step1',
     icon: ClipboardPaste,
     title: 'Paso 1: Pega la oferta',
+    shortTitle: 'Paso 1',
     description:
       'Copia el texto de la oferta o ingresa la URL. La IA analiza los requisitos automáticamente.',
     video: '/videos/step1.mp4',
@@ -54,6 +56,7 @@ const steps = [
     id: 'step2',
     icon: SlidersHorizontal,
     title: 'Paso 2: Revisa los objetivos',
+    shortTitle: 'Paso 2',
     description:
       'La IA propone logros basados en tu experiencia. Acepta, edita o descarta cada uno en tiempo real.',
     video: '/videos/step2.mp4',
@@ -62,6 +65,7 @@ const steps = [
     id: 'step3',
     icon: Download,
     title: 'Paso 3: Descarga el CV',
+    shortTitle: 'Paso 3',
     description:
       'Previsualiza el CV optimizado y descárgalo como PDF de una página listo para enviar.',
     video: '/videos/step3.mp4',
@@ -70,6 +74,7 @@ const steps = [
     id: 'experience',
     icon: FileText,
     title: 'Editor de experiencia',
+    shortTitle: 'Experiencia',
     description:
       'Centraliza tu historial laboral, educación y habilidades. La fuente de verdad para todos tus CVs.',
     video: '/videos/experience.mp4',
@@ -192,8 +197,8 @@ export function ScreenshotsSection() {
           </p>
         </motion.div>
 
-        {/* Slide dots */}
-        <div className="mb-6 flex justify-end gap-1 px-1">
+        {/* Slide dots — visible only on desktop alongside accordion */}
+        <div className="mb-6 hidden justify-end gap-1 px-1 lg:flex">
           {steps.map((step, i) => (
             <motion.button
               key={i}
@@ -218,15 +223,37 @@ export function ScreenshotsSection() {
           ))}
         </div>
 
-        {/* Main layout: left accordion + right video */}
+        {/* Mobile/tablet: horizontal scrollable pills */}
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-2 lg:hidden">
+          {steps.map((step, i) => {
+            const isActive = activeIndex === i
+            return (
+              <motion.button
+                key={step.id}
+                onClick={() => goTo(i)}
+                whileTap={{ scale: 0.95 }}
+                className={`flex shrink-0 cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isActive
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border/50 text-muted-foreground hover:border-border hover:text-foreground'
+                }`}
+              >
+                <step.icon className="h-3.5 w-3.5" />
+                {step.shortTitle}
+              </motion.button>
+            )
+          })}
+        </div>
+
+        {/* Main layout: left accordion (desktop) + right video */}
         <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-          {/* Left: accordion list */}
-          <div className="flex flex-row gap-2 overflow-x-auto pb-2 lg:flex-col lg:gap-0 lg:overflow-x-visible lg:pb-0">
+          {/* Left: accordion list — desktop only */}
+          <div className="hidden lg:flex lg:flex-col lg:gap-0">
             {steps.map((step, i) => {
               const isActive = activeIndex === i
               const isLast = i === steps.length - 1
               return (
-                <div key={step.id} className="min-w-[220px] shrink-0 lg:min-w-0">
+                <div key={step.id}>
                   <motion.button
                     onClick={() => goTo(i)}
                     className="flex w-full cursor-pointer items-center justify-between gap-3 py-4 text-left"
@@ -252,10 +279,7 @@ export function ScreenshotsSection() {
                         {step.title}
                       </span>
                     </div>
-                    <motion.div
-                      animate={{ rotate: isActive ? 0 : 0 }}
-                      className="text-muted-foreground"
-                    >
+                    <motion.div className="text-muted-foreground">
                       {isActive ? (
                         <Minus className="h-4 w-4 text-primary" />
                       ) : (
@@ -284,10 +308,7 @@ export function ScreenshotsSection() {
                     )}
                   </AnimatePresence>
 
-                  {/* Separator */}
-                  {!isLast && (
-                    <div className="hidden border-b border-border/50 lg:block" />
-                  )}
+                  {!isLast && <div className="border-b border-border/50" />}
                 </div>
               )
             })}
@@ -338,6 +359,13 @@ export function ScreenshotsSection() {
                 ease: 'easeInOut',
               }}
             />
+
+            {/* Active step description — mobile only */}
+            <div className="mb-3 lg:hidden">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {steps[activeIndex].description}
+              </p>
+            </div>
 
             {/* Glassmorphism panel */}
             <div className="relative rounded-2xl border border-border/40 bg-card/40 p-3 shadow-xl shadow-primary/5 backdrop-blur-md sm:p-4">

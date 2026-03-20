@@ -37,7 +37,7 @@ export function LandingHeader({ isAuthenticated }: { isAuthenticated: boolean })
               className="h-8 w-8"
             />
           </motion.div>
-          <span className="font-semibold tracking-tight transition-colors group-hover:text-primary">
+          <span className="hidden font-semibold tracking-tight transition-colors group-hover:text-primary xs:inline">
             AI CV Generator
           </span>
         </Link>
@@ -78,18 +78,23 @@ export function LandingHeader({ isAuthenticated }: { isAuthenticated: boolean })
               </Button>
             </motion.div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Button asChild variant="ghost" size="sm">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button asChild variant="ghost" size="sm" className="hidden xs:flex">
                 <Link href="/login" className="flex items-center gap-1.5">
                   <LogIn className="h-3.5 w-3.5" />
-                  Iniciar sesión
+                  <span className="hidden sm:inline">Iniciar sesión</span>
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm" className="flex xs:hidden">
+                <Link href="/login" aria-label="Iniciar sesión">
+                  <LogIn className="h-4 w-4" />
                 </Link>
               </Button>
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button asChild size="sm">
                   <Link href="/sign-up" className="flex items-center gap-1.5">
                     <UserPlus className="h-3.5 w-3.5" />
-                    Registrarse
+                    <span className="hidden xs:inline">Registrarse</span>
                   </Link>
                 </Button>
               </motion.div>

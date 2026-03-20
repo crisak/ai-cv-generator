@@ -4,6 +4,9 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  /* Extra-small breakpoint (phones < 480px) */
+  --breakpoint-xs: 480px;
+
   /* Facebook Blue palette */
   --color-fb-blue-50: #E7F0FD;
   --color-fb-blue-100: #C8DCFB;
