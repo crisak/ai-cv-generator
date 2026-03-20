@@ -39,3 +39,29 @@
 - [x] Task 14: Eliminar timeline header estático en página de detalle
   - Scope: En `app/(app)/applications/[id]/page.tsx`, eliminar el header con los pasos estáticos ("Aplicado", "Llamada", "Técnica", "RRHH", "Oferta", "Aceptado") que no aporta valor funcional.
   - Depende de: nada
+
+## Tareas pendientes (v2.1)
+
+- [ ] Task 15: Schema v3 — agregar `url`, `workModality`, `offerPublishedAt` + migración
+  - Scope: En `lib/db/schemas.ts`, agregar 3 nuevos campos a `ApplicationDocument` interface y al `applicationSchema` (bump version 2→3). Campos: `url` (string), `workModality` (string, enum: hybrid/onsite/remote), `offerPublishedAt` (string). No agregar a `required`. En `lib/db/index.ts`, agregar migration strategy `3` que inicializa los 3 campos con string vacío. En `types/cv.ts`, agregar tipo `WorkModality` y mapa `WORK_MODALITY_LABELS` (Híbrido, Presencial, Remoto).
+  - Depende de: nada
+
+- [ ] Task 16: Remover auto-timeline al crear + hardcode status `pending`
+  - Scope: En `hooks/use-applications.ts`, cambiar `createApplication()` para que `timeline` sea `[]` en lugar de `initialTimeline`. Eliminar la variable `initialTimeline`. En `components/applications/application-form.tsx`, ocultar el campo `status` cuando `isEditing === false`. Setear default value de `status` a `'pending'` siempre en modo creación.
+  - Depende de: Task 15
+
+- [ ] Task 17: Renombrar "Nueva postulación" → "Registrar oferta"
+  - Scope: En `app/(app)/applications/page.tsx`, cambiar texto del botón principal. En `components/applications/application-form.tsx`, cambiar título del Sheet y texto del botón submit en modo creación. En `components/applications/applications-table.tsx`, cambiar texto del empty state.
+  - Depende de: nada
+
+- [ ] Task 18: Source a texto libre + nuevos campos en formulario
+  - Scope: En `components/applications/application-form.tsx`: (1) Reemplazar el `Select` de `source` por un `Input` de texto libre con placeholder "ej. LinkedIn, Computrabajo, Referido...". Agregar `source` a `FlashField` para que la IA pueda animarlo. (2) Agregar campo `url` al schema Zod y al formulario (Input en sección detalles). Cuando el usuario usa la URL para scraping, también guardarla en este campo. (3) Agregar campo `workModality` al schema Zod y al formulario (Select con opciones de `WORK_MODALITY_LABELS`). (4) Agregar campo `offerPublishedAt` al schema Zod y al formulario (Input date en sección fechas). Actualizar `defaultValues` para incluir los nuevos campos.
+  - Depende de: Task 15
+
+- [ ] Task 19: Formulario wizard 3 pasos con barra de progreso
+  - Scope: Refactorizar `components/applications/application-form.tsx` para transformar el formulario en un wizard de 3 pasos (solo en modo creación; en edición se muestra todo directo). Paso 1: URL input + "Analizar con IA" + botón "Saltar" (la URL es opcional). Paso 2: Textarea para pegar oferta + "Analizar con IA". Paso 3: Formulario completo de detalles con todos los campos + botón "Registrar oferta". Agregar barra de progreso en la parte superior con 3 pasos clickeables para navegación libre. Botones "Anterior"/"Siguiente" en el footer. Auto-advance al paso 3 cuando la IA extrae exitosamente. Eliminar el componente Tabs actual (reemplazado por los pasos). Preservar comportamiento de Flash/Shimmer en paso 3.
+  - Depende de: Task 16, Task 17, Task 18
+
+- [ ] Task 20: Vista detalle — nuevos campos + modal oferta laboral
+  - Scope: En `app/(app)/applications/[id]/page.tsx`: (1) Mostrar `url` como link clickeable con icono `ExternalLink` (abre en nueva pestaña). (2) Mostrar `workModality` como badge con label del mapa `WORK_MODALITY_LABELS`. (3) Mostrar `offerPublishedAt` como fecha formateada + indicador de días desde publicación. (4) Cambiar `source` de Select a Input en modo edición. (5) Agregar botón "Ver oferta original" que abre un `Dialog` (shadcn) con el contenido de `jobOfferText` renderizado con `whitespace-pre-wrap`. Solo mostrar el botón si `jobOfferText` no está vacío. (6) Agregar los nuevos campos al estado editable y a `handleSave()`.
+  - Depende de: Task 15, Task 18

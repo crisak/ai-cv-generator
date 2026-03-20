@@ -1,20 +1,21 @@
 # Feature: Applications Dashboard
 
-**Estado**: ✅ Implementado (MVP)
+**Estado**: 🔶 v2.1 en progreso
 
 ---
 
 ## Problema
 
-El usuario necesita centralizar el tracking de todas sus postulaciones laborales en un solo lugar, con metadatos editables para tomar mejores decisiones (salario, beneficios, ranking, estado).
+El usuario necesita centralizar el tracking de todas sus ofertas laborales en un solo lugar, con metadatos editables para tomar mejores decisiones (salario, beneficios, estado). El usuario puede registrar ofertas sin necesariamente haberse postulado, lo que permite guardar oportunidades para evaluarlas antes de aplicar.
 
 ## Goals
 
-- Vista centralizada de postulaciones ordenadas por fecha
-- CRUD completo de postulaciones
+- Vista centralizada de ofertas laborales ordenadas por fecha
+- CRUD completo de ofertas con campos enriquecidos (URL, modalidad, fecha publicación)
+- Formulario wizard por pasos con extracción IA desde URL
 - Campos editables (salario, beneficios, estado, etc.)
-- Enlace directo al CV generado para cada postulación
-- Timeline de seguimiento por postulación
+- Enlace directo al CV generado para cada oferta
+- Timeline de seguimiento manual por oferta
 
 ## User Stories
 
@@ -74,17 +75,52 @@ hooks/use-applications.ts
 
 | ID | Requerimiento | Estado |
 |----|--------------|--------|
-| FR7 | Extracción de oferta por URL via Cloudflare Browser Rendering `/markdown` API | ⬜ Pendiente |
-| FR8 | Endpoint `POST /api/scrape` para URL-to-markdown (server-side) | ⬜ Pendiente |
-| FR9 | UI tabs/toggle: "Texto plano" vs "URL" en formulario de creación | ⬜ Pendiente |
-| FR10 | Animación Double Flash/Shimmer en campos auto-rellenados por IA | ⬜ Pendiente |
-| FR11 | Rediseño de Beneficios: lista con CRUD (reemplaza tags actuales) | ⬜ Pendiente |
-| FR12 | Tooltips de ayuda en campos: Fecha respuesta, Fecha postulación, Beneficios, Estado | ⬜ Pendiente |
-| FR13 | Estado solo lectura en tabla de postulaciones (quitar dropdown inline) | ⬜ Pendiente |
-| FR14 | Eliminar timeline header estático en página de detalle | ⬜ Pendiente |
+| FR7 | Extracción de oferta por URL via Cloudflare Browser Rendering `/markdown` API | ✅ |
+| FR8 | Endpoint `POST /api/scrape` para URL-to-markdown (server-side) | ✅ |
+| FR9 | UI tabs/toggle: "Texto plano" vs "URL" en formulario de creación | ✅ |
+| FR10 | Animación Double Flash/Shimmer en campos auto-rellenados por IA | ✅ |
+| FR11 | Rediseño de Beneficios: lista con CRUD (reemplaza tags actuales) | ✅ |
+| FR12 | Tooltips de ayuda en campos: Fecha respuesta, Fecha postulación, Beneficios, Estado | ✅ |
+| FR13 | Estado solo lectura en tabla de postulaciones (quitar dropdown inline) | ✅ |
+| FR14 | Eliminar timeline header estático en página de detalle | ✅ |
 
 ### Requerimientos no funcionales (v2)
 
 - Variables de entorno: `CF_ACCOUNT_ID`, `CF_API_TOKEN` para Cloudflare Browser Rendering
 - Error handling: si la URL no puede procesarse, mostrar toast sugiriendo copiar-pegar como alternativa
 - Animaciones con framer-motion (dependencia cross-cutting)
+
+---
+
+## v2.1 — Mejoras de formulario y modelo de datos
+
+### User Stories
+
+- Como usuario, puedo registrar una oferta laboral sin necesidad de postularme, para guardarla y evaluarla después
+- Como usuario, puedo guardar la URL de la oferta laboral para tener referencia directa a la publicación original
+- Como usuario, veo un formulario wizard por pasos (URL → Texto → Detalles) que me guía en el registro de la oferta
+- Como usuario, puedo registrar la modalidad de trabajo (Híbrido, Presencial, Remoto) de cada oferta
+- Como usuario, puedo registrar la fecha de publicación de la oferta para saber cuánto tiempo lleva activa
+- Como usuario, puedo escribir manualmente el nombre de la fuente/plataforma en lugar de elegir de una lista predefinida
+- Como usuario, al registrar una oferta nueva el timeline empieza vacío hasta que yo manualmente registre una acción
+- Como usuario, puedo ver la oferta laboral completa en un modal desde la vista de detalle
+
+### Requerimientos funcionales (v2.1)
+
+| ID | Requerimiento | Estado |
+|----|--------------|--------|
+| FR15 | Nuevos campos en modelo de datos: `url`, `workModality`, `offerPublishedAt` (schema v3) | ⬜ Pendiente |
+| FR16 | Formulario wizard 3 pasos con barra de progreso (URL → Texto → Detalles) | ⬜ Pendiente |
+| FR17 | Campo `source` como texto libre (Input) en lugar de Select con opciones fijas | ⬜ Pendiente |
+| FR18 | Campo `status` oculto al crear (siempre `pending`), solo visible/editable en modo edición | ⬜ Pendiente |
+| FR19 | Timeline vacío al crear oferta (sin auto-entry "Postulado") | ⬜ Pendiente |
+| FR20 | Renombrar botón "Nueva postulación" → "Registrar oferta" en todo el módulo | ⬜ Pendiente |
+| FR21 | Mostrar nuevos campos (`url`, `workModality`, `offerPublishedAt`) en vista de detalle | ⬜ Pendiente |
+| FR22 | Modal/Dialog para ver oferta laboral completa (`jobOfferText`) en página de detalle | ⬜ Pendiente |
+
+### Requerimientos no funcionales (v2.1)
+
+- Schema RxDB bump a v3 con migración v2→v3 (defaults vacíos para nuevos campos)
+- Tipo `WorkModality` y labels en `types/cv.ts`
+- Wizard solo en modo creación; en modo edición se muestra el formulario completo directo
+- Navegación libre entre pasos del wizard (el usuario puede ir a cualquier paso)
