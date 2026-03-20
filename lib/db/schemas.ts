@@ -35,6 +35,9 @@ export interface ApplicationDocument {
   nextSteps: string
   notes: string
   cvId: string
+  url: string
+  workModality: string
+  offerPublishedAt: string
   createdAt: string
   updatedAt: string
 }
@@ -66,7 +69,7 @@ export interface ExperienceDocument {
 }
 
 export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
-  version: 2,
+  version: 3,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -126,6 +129,9 @@ export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
     nextSteps: { type: 'string' },
     notes: { type: 'string' },
     cvId: { type: 'string' },
+    url: { type: 'string' },
+    workModality: { type: 'string' },
+    offerPublishedAt: { type: 'string' },
     createdAt: { type: 'string' },
     updatedAt: { type: 'string' },
   },
