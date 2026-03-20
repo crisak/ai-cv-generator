@@ -64,16 +64,6 @@ export function useApplications() {
     async (input: ApplicationInput) => {
       if (!db) return null
       const now = new Date().toISOString()
-      const initialTimeline: TimelineEntry[] = [
-        {
-          id: uuidv4(),
-          status: input.status,
-          title: STATUS_LABELS[input.status] ?? 'Postulación registrada',
-          date: now,
-          notes: 'Postulación registrada',
-          files: [],
-        },
-      ]
       const doc = await db.applications.insert({
         id: uuidv4(),
         cvId: '',
@@ -81,7 +71,7 @@ export function useApplications() {
         workModality: '',
         offerPublishedAt: '',
         ...input,
-        timeline: input.timeline ?? initialTimeline,
+        timeline: [],
         createdAt: now,
         updatedAt: now,
       })

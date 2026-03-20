@@ -23,10 +23,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import type { ApplicationDocument } from '@/lib/db/schemas'
-import {
-  APPLICATION_STATUS_LABELS,
-  APPLICATION_STATUS_COLORS,
-} from '@/types/cv'
+import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from '@/types/cv'
 import { cn } from '@/lib/utils'
 
 interface ApplicationsTableProps {
@@ -64,9 +61,9 @@ export function ApplicationsTable({
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="mb-3 text-4xl">📋</div>
-        <h3 className="mb-1 font-semibold">Sin postulaciones aún</h3>
-        <p className="text-sm text-muted-foreground">
-          Crea tu primera postulación haciendo clic en &quot;Nueva postulación&quot;
+        <h3 className="mb-1 font-semibold">Sin ofertas registradas</h3>
+        <p className="text-muted-foreground text-sm">
+          Registra tu primera oferta haciendo clic en &quot;Registrar oferta&quot;
         </p>
       </div>
     )
@@ -74,7 +71,7 @@ export function ApplicationsTable({
 
   return (
     <>
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="border-border overflow-hidden rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
@@ -91,7 +88,7 @@ export function ApplicationsTable({
             {applications.map((app) => (
               <TableRow key={app.id} className="group">
                 {/* Favorite */}
-                <TableCell className="pl-4 pr-2">
+                <TableCell className="pr-2 pl-4">
                   <button
                     type="button"
                     onClick={() => onToggleFavorite(app.id)}
@@ -111,8 +108,8 @@ export function ApplicationsTable({
                 {/* Company */}
                 <TableCell>
                   <div>
-                    <p className="font-medium leading-snug">{app.company}</p>
-                    <p className="text-xs text-muted-foreground">{app.source}</p>
+                    <p className="leading-snug font-medium">{app.company}</p>
+                    <p className="text-muted-foreground text-xs">{app.source}</p>
                   </div>
                 </TableCell>
 
@@ -120,7 +117,7 @@ export function ApplicationsTable({
                 <TableCell>
                   <p className="text-sm">{app.position}</p>
                   {app.nextSteps && (
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground max-w-[220px]">
+                    <p className="text-muted-foreground mt-0.5 max-w-[220px] truncate text-xs">
                       → {app.nextSteps}
                     </p>
                   )}
@@ -129,13 +126,13 @@ export function ApplicationsTable({
                       {app.benefits.slice(0, 3).map((b) => (
                         <span
                           key={b}
-                          className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                          className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-[10px]"
                         >
                           {b}
                         </span>
                       ))}
                       {app.benefits.length > 3 && (
-                        <span className="text-[10px] text-muted-foreground">
+                        <span className="text-muted-foreground text-[10px]">
                           +{app.benefits.length - 3}
                         </span>
                       )}
@@ -171,7 +168,7 @@ export function ApplicationsTable({
                           })
                         : '—'}
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {app.createdAt &&
                         formatDistanceToNow(new Date(app.createdAt), {
                           addSuffix: true,
@@ -219,7 +216,6 @@ export function ApplicationsTable({
           </TableBody>
         </Table>
       </div>
-
     </>
   )
 }

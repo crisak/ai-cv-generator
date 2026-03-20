@@ -46,11 +46,11 @@
   - Scope: En `lib/db/schemas.ts`, agregar 3 nuevos campos a `ApplicationDocument` interface y al `applicationSchema` (bump version 2→3). Campos: `url` (string), `workModality` (string, enum: hybrid/onsite/remote), `offerPublishedAt` (string). No agregar a `required`. En `lib/db/index.ts`, agregar migration strategy `3` que inicializa los 3 campos con string vacío. En `types/cv.ts`, agregar tipo `WorkModality` y mapa `WORK_MODALITY_LABELS` (Híbrido, Presencial, Remoto).
   - Depende de: nada
 
-- [ ] Task 16: Remover auto-timeline al crear + hardcode status `pending`
-  - Scope: En `hooks/use-applications.ts`, cambiar `createApplication()` para que `timeline` sea `[]` en lugar de `initialTimeline`. Eliminar la variable `initialTimeline`. En `components/applications/application-form.tsx`, ocultar el campo `status` cuando `isEditing === false`. Setear default value de `status` a `'pending'` siempre en modo creación.
+- [x] Task 16: Remover auto-timeline al crear + hardcode status `pending`
+  - Scope: En `hooks/use-applications.ts`, cambiar `createApplication()` para que `timeline` sea `[]` en lugar de `initialTimeline`. Eliminar la variable `initialTimeline`. En `components/applications/application-form.tsx`, ocultar el campo `status` cuando `isEditing === false`. Setear default value de `status` to `'pending'` siempre en modo creación.
   - Depende de: Task 15
 
-- [ ] Task 17: Renombrar "Nueva postulación" → "Registrar oferta"
+- [x] Task 17: Renombrar "Nueva postulación" → "Registrar oferta"
   - Scope: En `app/(app)/applications/page.tsx`, cambiar texto del botón principal. En `components/applications/application-form.tsx`, cambiar título del Sheet y texto del botón submit en modo creación. En `components/applications/applications-table.tsx`, cambiar texto del empty state.
   - Depende de: nada
 
