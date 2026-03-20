@@ -459,7 +459,7 @@ export function ApplicationForm({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
         <SheetHeader className="border-border shrink-0 border-b px-6 py-4">
-          <SheetTitle>{isEditing ? 'Editar postulación' : 'Nueva postulación'}</SheetTitle>
+          <SheetTitle>{isEditing ? 'Editar postulación' : 'Registrar oferta'}</SheetTitle>
           <SheetDescription>
             {isEditing
               ? 'Actualiza los datos de esta postulación'
@@ -715,7 +715,67 @@ export function ApplicationForm({
                     )}
                   />
                 </FlashWrapper>
-                <div className="grid grid-cols-2 gap-4">
+                {isEditing ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="source"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Fuente</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {SOURCES.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <span className="flex items-center gap-1">
+                              Estado
+                              <span className="group relative inline-flex">
+                                <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
+                                <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
+                                  Refleja el paso actual del proceso. Actualízalo desde aquí o en la
+                                  página de detalle.
+                                </span>
+                              </span>
+                            </span>
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.entries(APPLICATION_STATUS_LABELS).map(([v, l]) => (
+                                <SelectItem key={v} value={v}>
+                                  {l}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ) : (
                   <FormField
                     control={form.control}
                     name="source"
@@ -739,41 +799,7 @@ export function ApplicationForm({
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          <span className="flex items-center gap-1">
-                            Estado
-                            <span className="group relative inline-flex">
-                              <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
-                              <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
-                                Refleja el paso actual del proceso. Actualízalo desde aquí o en la
-                                página de detalle.
-                              </span>
-                            </span>
-                          </span>
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {Object.entries(APPLICATION_STATUS_LABELS).map(([v, l]) => (
-                              <SelectItem key={v} value={v}>
-                                {l}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                )}
               </div>
 
               <Separator className="my-5" />
@@ -1042,7 +1068,7 @@ export function ApplicationForm({
               onClick={form.handleSubmit(handleSubmit)}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isEditing ? 'Guardar cambios' : 'Crear postulación'}
+              {isEditing ? 'Guardar cambios' : 'Registrar oferta'}
             </Button>
           </div>
         </div>

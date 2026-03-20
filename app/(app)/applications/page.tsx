@@ -36,8 +36,14 @@ function StatCard({ label, value, color }: { label: string; value: number; color
 }
 
 export default function ApplicationsPage() {
-  const { applications, isLoading, createApplication, updateApplication, deleteApplication, toggleFavorite } =
-    useApplications()
+  const {
+    applications,
+    isLoading,
+    createApplication,
+    updateApplication,
+    deleteApplication,
+    toggleFavorite,
+  } = useApplications()
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingApp, setEditingApp] = useState<ApplicationDocument | undefined>()
 
@@ -68,8 +74,7 @@ export default function ApplicationsPage() {
     [applications]
   )
   const uniqueBenefits = useMemo(
-    () =>
-      [...new Set(applications.flatMap((a) => a.benefits ?? []).filter(Boolean))].sort(),
+    () => [...new Set(applications.flatMap((a) => a.benefits ?? []).filter(Boolean))].sort(),
     [applications]
   )
 
@@ -85,11 +90,27 @@ export default function ApplicationsPage() {
         const matchCurrency = currencyFilter === 'all' || app.salaryCurrency === currencyFilter
         const matchSalary = !minSalary || app.salaryOffered >= parseFloat(minSalary)
         const matchCompany = companyFilter === 'all' || app.company === companyFilter
-        const matchBenefit =
-          benefitFilter === 'all' || (app.benefits ?? []).includes(benefitFilter)
-        return matchSearch && matchStatus && matchFavorite && matchCurrency && matchSalary && matchCompany && matchBenefit
+        const matchBenefit = benefitFilter === 'all' || (app.benefits ?? []).includes(benefitFilter)
+        return (
+          matchSearch &&
+          matchStatus &&
+          matchFavorite &&
+          matchCurrency &&
+          matchSalary &&
+          matchCompany &&
+          matchBenefit
+        )
       }),
-    [applications, search, statusFilter, onlyFavorites, currencyFilter, minSalary, companyFilter, benefitFilter]
+    [
+      applications,
+      search,
+      statusFilter,
+      onlyFavorites,
+      currencyFilter,
+      minSalary,
+      companyFilter,
+      benefitFilter,
+    ]
   )
 
   const activeFilterCount = [
@@ -149,48 +170,62 @@ export default function ApplicationsPage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Postulaciones</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Gestiona y sigue el estado de tus postulaciones laborales
           </p>
         </div>
         <Button onClick={() => setIsFormOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" />
-          Nueva postulación
+          Registrar oferta
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="Total" value={stats.total} />
-        <StatCard label="En proceso" value={stats.active} color="text-blue-600 dark:text-blue-400" />
-        <StatCard label="Ofertas recibidas" value={stats.offers} color="text-green-600 dark:text-green-400" />
-        <StatCard label="Aceptadas" value={stats.accepted} color="text-emerald-600 dark:text-emerald-400" />
+        <StatCard
+          label="En proceso"
+          value={stats.active}
+          color="text-blue-600 dark:text-blue-400"
+        />
+        <StatCard
+          label="Ofertas recibidas"
+          value={stats.offers}
+          color="text-green-600 dark:text-green-400"
+        />
+        <StatCard
+          label="Aceptadas"
+          value={stats.accepted}
+          color="text-emerald-600 dark:text-emerald-400"
+        />
       </div>
 
       {/* Filters */}
       <div className="space-y-2">
         {/* Row 1: Search + Status + Favorites */}
         <div className="flex flex-wrap gap-2">
-          <div className="relative flex-1 min-w-[200px] max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative max-w-xs min-w-[200px] flex-1">
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="Buscar empresa o cargo..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 h-9"
+              className="h-9 pl-9"
             />
           </div>
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[170px] h-9">
-              <BarChart2 className="mr-2 h-4 w-4 text-muted-foreground" />
+            <SelectTrigger className="h-9 w-[170px]">
+              <BarChart2 className="text-muted-foreground mr-2 h-4 w-4" />
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos los estados</SelectItem>
               {Object.entries(APPLICATION_STATUS_LABELS).map(([value, label]) => (
                 <SelectItem key={value} value={value}>
-                  <span className={`text-xs font-medium ${APPLICATION_STATUS_COLORS[value as ApplicationStatus]}`}>
+                  <span
+                    className={`text-xs font-medium ${APPLICATION_STATUS_COLORS[value as ApplicationStatus]}`}
+                  >
                     {label}
                   </span>
                 </SelectItem>
@@ -201,7 +236,7 @@ export default function ApplicationsPage() {
           <button
             type="button"
             onClick={() => setOnlyFavorites(!onlyFavorites)}
-            className={`flex items-center gap-1.5 rounded-md border px-3 h-9 text-sm transition-colors ${
+            className={`flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm transition-colors ${
               onlyFavorites
                 ? 'border-red-400/60 bg-red-500/10 text-red-600 dark:text-red-400'
                 : 'border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40'
@@ -215,7 +250,7 @@ export default function ApplicationsPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="flex items-center gap-1 rounded-md border border-border/60 px-3 h-9 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              className="border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/40 flex h-9 items-center gap-1 rounded-md border px-3 text-xs transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               Limpiar
@@ -230,20 +265,22 @@ export default function ApplicationsPage() {
         <div className="flex flex-wrap gap-2">
           {uniqueCompanies.length > 0 && (
             <Select value={companyFilter} onValueChange={setCompanyFilter}>
-              <SelectTrigger className="w-[160px] h-8 text-xs">
+              <SelectTrigger className="h-8 w-[160px] text-xs">
                 <SelectValue placeholder="Empresa" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas las empresas</SelectItem>
                 {uniqueCompanies.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           )}
 
           <Select value={currencyFilter} onValueChange={setCurrencyFilter}>
-            <SelectTrigger className="w-[100px] h-8 text-xs">
+            <SelectTrigger className="h-8 w-[100px] text-xs">
               <SelectValue placeholder="Moneda" />
             </SelectTrigger>
             <SelectContent>
@@ -259,18 +296,20 @@ export default function ApplicationsPage() {
             placeholder="Salario mínimo"
             value={minSalary}
             onChange={(e) => setMinSalary(e.target.value)}
-            className="w-[140px] h-8 text-xs"
+            className="h-8 w-[140px] text-xs"
           />
 
           {uniqueBenefits.length > 0 && (
             <Select value={benefitFilter} onValueChange={setBenefitFilter}>
-              <SelectTrigger className="w-[170px] h-8 text-xs">
+              <SelectTrigger className="h-8 w-[170px] text-xs">
                 <SelectValue placeholder="Beneficio" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los beneficios</SelectItem>
                 {uniqueBenefits.map((b) => (
-                  <SelectItem key={b} value={b}>{b}</SelectItem>
+                  <SelectItem key={b} value={b}>
+                    {b}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -280,7 +319,7 @@ export default function ApplicationsPage() {
 
       {/* Results count */}
       {activeFilterCount > 0 && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {filtered.length} de {applications.length} postulaciones
         </p>
       )}
