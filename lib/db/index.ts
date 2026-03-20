@@ -53,9 +53,7 @@ export async function getDatabase(userId: string): Promise<AppDatabase> {
           1: (oldDoc: Record<string, unknown>) => ({
             ...oldDoc,
             isFavorite: false,
-            benefits: oldDoc.benefits
-              ? [oldDoc.benefits as string].filter(Boolean)
-              : [],
+            benefits: oldDoc.benefits ? [oldDoc.benefits as string].filter(Boolean) : [],
             jobOfferText: '',
             timeline: [
               {
@@ -79,6 +77,13 @@ export async function getDatabase(userId: string): Promise<AppDatabase> {
               })),
             }
           },
+          // v2 → v3: add url, workModality, offerPublishedAt
+          3: (oldDoc: Record<string, unknown>) => ({
+            ...oldDoc,
+            url: '',
+            workModality: '',
+            offerPublishedAt: '',
+          }),
         },
       },
       cvs: {

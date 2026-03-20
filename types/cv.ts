@@ -123,3 +123,13 @@ export const AI_MODEL_LABELS: Record<AIModel, string> = {
   grok: 'Grok (xAI)',
   deepseek: 'DeepSeek',
 }
+
+// ── Work Modality ──────────────────────────────────────────────────────────────
+
+export type WorkModality = 'hybrid' | 'onsite' | 'remote'
+
+export const WORK_MODALITY_LABELS: Record<WorkModality, string> = {
+  hybrid: 'Híbrido',
+  onsite: 'Presencial',
+  remote: 'Remoto',
+}

@@ -42,7 +42,7 @@
 
 ## Tareas pendientes (v2.1)
 
-- [ ] Task 15: Schema v3 — agregar `url`, `workModality`, `offerPublishedAt` + migración
+- [x] Task 15: Schema v3 — agregar `url`, `workModality`, `offerPublishedAt` + migración
   - Scope: En `lib/db/schemas.ts`, agregar 3 nuevos campos a `ApplicationDocument` interface y al `applicationSchema` (bump version 2→3). Campos: `url` (string), `workModality` (string, enum: hybrid/onsite/remote), `offerPublishedAt` (string). No agregar a `required`. En `lib/db/index.ts`, agregar migration strategy `3` que inicializa los 3 campos con string vacío. En `types/cv.ts`, agregar tipo `WorkModality` y mapa `WORK_MODALITY_LABELS` (Híbrido, Presencial, Remoto).
   - Depende de: nada
 

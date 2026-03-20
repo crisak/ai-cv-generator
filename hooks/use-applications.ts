@@ -8,7 +8,14 @@ import type { ApplicationStatus } from '@/types/cv'
 
 export type ApplicationInput = Omit<
   ApplicationDocument,
-  'id' | 'createdAt' | 'updatedAt' | 'cvId' | 'timeline'
+  | 'id'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'cvId'
+  | 'timeline'
+  | 'url'
+  | 'workModality'
+  | 'offerPublishedAt'
 > & {
   cvId?: string
   timeline?: TimelineEntry[]
@@ -42,10 +49,13 @@ export function useApplications() {
   useEffect(() => {
     if (!db) return
 
-    const sub = db.applications.find().sort({ createdAt: 'desc' }).$.subscribe((docs) => {
-      setApplications(docs.map((d) => d.toJSON() as ApplicationDocument))
-      setIsLoading(false)
-    })
+    const sub = db.applications
+      .find()
+      .sort({ createdAt: 'desc' })
+      .$.subscribe((docs) => {
+        setApplications(docs.map((d) => d.toJSON() as ApplicationDocument))
+        setIsLoading(false)
+      })
 
     return () => sub.unsubscribe()
   }, [db])
@@ -67,6 +77,9 @@ export function useApplications() {
       const doc = await db.applications.insert({
         id: uuidv4(),
         cvId: '',
+        url: '',
+        workModality: '',
+        offerPublishedAt: '',
         ...input,
         timeline: input.timeline ?? initialTimeline,
         createdAt: now,
