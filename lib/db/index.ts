@@ -84,6 +84,11 @@ export async function getDatabase(userId: string): Promise<AppDatabase> {
             workModality: '',
             offerPublishedAt: '',
           }),
+          // v3 → v4: remove responseDate (now handled by timeline)
+          4: (oldDoc: Record<string, unknown>) => {
+            const { responseDate, ...rest } = oldDoc
+            return rest
+          },
         },
       },
       cvs: {

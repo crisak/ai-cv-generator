@@ -130,7 +130,7 @@ function FlashWrapper({
   flashKey: number
   children: React.ReactNode
 }) {
-  if (!flash) return <div className="rounded-md">{children}</div>
+  if (!flash) return <>{children}</>
   return (
     <motion.div
       key={flashKey}
@@ -185,7 +185,6 @@ const schema = z.object({
   benefits: z.array(z.string()),
   appliedAt: z.string(),
   offerPublishedAt: z.string(),
-  responseDate: z.string(),
   nextSteps: z.string(),
   notes: z.string(),
 })
@@ -240,7 +239,6 @@ export function ApplicationForm({
       benefits: [],
       appliedAt: new Date().toISOString().split('T')[0],
       offerPublishedAt: '',
-      responseDate: '',
       nextSteps: '',
       notes: '',
     },
@@ -271,7 +269,6 @@ export function ApplicationForm({
         appliedAt: defaultValues.appliedAt?.split('T')[0] ?? new Date().toISOString().split('T')[0],
         offerPublishedAt:
           ((defaultValues as Record<string, unknown>).offerPublishedAt as string) ?? '',
-        responseDate: defaultValues.responseDate ?? '',
         nextSteps: defaultValues.nextSteps ?? '',
         notes: defaultValues.notes ?? '',
       })
@@ -977,7 +974,7 @@ export function ApplicationForm({
               <Separator className="my-5" />
 
               {/* ── Sección: Fechas ────────────────────────────────────── */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="offerPublishedAt"
@@ -1002,29 +999,6 @@ export function ApplicationForm({
                             <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
                             <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
                               Día en que enviaste tu candidatura a esta oferta.
-                            </span>
-                          </span>
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="responseDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <span className="flex items-center gap-1">
-                          Fecha respuesta
-                          <span className="group relative inline-flex">
-                            <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
-                            <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
-                              Fecha en que la empresa te dio una respuesta (positiva o negativa).
-                              Déjala vacía si aún esperas.
                             </span>
                           </span>
                         </span>

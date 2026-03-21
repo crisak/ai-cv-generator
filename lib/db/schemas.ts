@@ -31,7 +31,6 @@ export interface ApplicationDocument {
   jobOfferText: string
   timeline: TimelineEntry[]
   appliedAt: string
-  responseDate: string
   nextSteps: string
   notes: string
   cvId: string
@@ -69,7 +68,7 @@ export interface ExperienceDocument {
 }
 
 export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
-  version: 3,
+  version: 4,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -125,7 +124,6 @@ export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
       },
     },
     appliedAt: { type: 'string' },
-    responseDate: { type: 'string' },
     nextSteps: { type: 'string' },
     notes: { type: 'string' },
     cvId: { type: 'string' },
