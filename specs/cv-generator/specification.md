@@ -119,9 +119,9 @@ Click "Optimizar con IA"
 
 | ID | Requerimiento | Estado |
 |----|--------------|--------|
-| FR19 | Col 1: Botón toggle para colapsar/expandir todas las secciones simultáneamente | ⬜ Pendiente |
-| FR20 | Col 1: Panel colapsable para ceder espacio al CV borrador | ⬜ Pendiente |
-| FR21 | Col 1→2: Sincronización automática — al seleccionar bullets cuya experiencia no está en el borrador, crear la entrada completa (empresa, puesto, fechas) en col 2 | ⬜ Pendiente |
+| FR19 | Col 1: Botón toggle para colapsar/expandir todas las secciones simultáneamente | ✅ |
+| FR20 | Col 1: Panel colapsable para ceder espacio al CV borrador | ✅ |
+| FR21 | Col 1→2: Sincronización automática — al seleccionar bullets cuya experiencia no está en el borrador, crear la entrada completa (empresa, puesto, fechas) en col 2 | ✅ |
 | FR22 | Col 2: Drag & Drop de bullets entre secciones (incluye cross-section) | ⬜ Pendiente |
 | FR23 | Col 2: Drag & Drop de pills/tags en campo Habilidades > Técnicas | ⬜ Pendiente |
 | FR24 | Col 2: Respuesta IA en sección Habilidades > Técnicas mostrada como pills editables (agregar/borrar individual), no como textarea | ⬜ Pendiente |

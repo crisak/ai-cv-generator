@@ -278,6 +278,27 @@ function CvGeneratorContent() {
       bullets: diffSection(lead.id, lead.bullets),
     }))
 
+    // FR21: Add sections from cvData that aren't in draftCv yet but have newly selected bullets
+    const draftExpIds = new Set(draftCv.experience.map((e) => e.id))
+    for (const exp of cvData.experience) {
+      if (draftExpIds.has(exp.id)) continue
+      const newSel = (newSelections[exp.id] ?? []).filter((b) => b.selected)
+      if (newSel.length > 0) {
+        nextIds[exp.id] = newSel.map((b) => b.id)
+        nextExp.push({ ...exp, bullets: newSel.map((b) => b.text) })
+      }
+    }
+
+    const draftLeadIds = new Set(draftCv.leadership.map((l) => l.id))
+    for (const lead of cvData.leadership) {
+      if (draftLeadIds.has(lead.id)) continue
+      const newSel = (newSelections[lead.id] ?? []).filter((b) => b.selected)
+      if (newSel.length > 0) {
+        nextIds[lead.id] = newSel.map((b) => b.id)
+        nextLead.push({ ...lead, bullets: newSel.map((b) => b.text) })
+      }
+    }
+
     setDraftBulletIds(nextIds)
     setDraftCv({ ...draftCv, experience: nextExp, leadership: nextLead })
   }
