@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search, Briefcase, Users, Link2 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search, Briefcase, Users, Link2, ChevronsUpDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
@@ -86,6 +86,26 @@ export function StepGoals({
   const [optimizeContextOpen, setOptimizeContextOpen] = useState(false)
   const [optimizeMessage, setOptimizeMessage] = useState('')
   const [hoveredBulletId, setHoveredBulletId] = useState<string | null>(null)
+  const [col1Collapsed, setCol1Collapsed] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+
+  const allSectionIds = [
+    ...cvData.experience.map((e) => e.id),
+    ...cvData.leadership.map((l) => l.id),
+  ].filter((id) => (selections[id] ?? []).length > 0)
+
+  const allSectionsCollapsed = allSectionIds.length > 0 && allSectionIds.every((id) => collapsedSections[id])
+
+  const toggleAllSections = useCallback(() => {
+    const nextState = !allSectionsCollapsed
+    const next: Record<string, boolean> = {}
+    allSectionIds.forEach((id) => { next[id] = nextState })
+    setCollapsedSections(next)
+  }, [allSectionsCollapsed, allSectionIds])
+
+  const setSectionCollapsed = useCallback((id: string, collapsed: boolean) => {
+    setCollapsedSections((prev) => ({ ...prev, [id]: collapsed }))
+  }, [])
 
   const totalSelected = Object.values(selections).reduce(
     (sum, bullets) => sum + bullets.filter((b) => b.selected).length,
@@ -249,15 +269,21 @@ export function StepGoals({
       </div>
 
       {/* 3-column layout */}
-      <div className="grid grid-cols-[300px_1fr_300px] gap-4 h-[calc(100vh-280px)]">
+      <div className={cn(
+        'grid gap-4 h-[calc(100vh-280px)] transition-[grid-template-columns] duration-300 ease-in-out',
+        col1Collapsed ? 'grid-cols-[0px_1fr_300px]' : 'grid-cols-[300px_1fr_300px]'
+      )}>
 
         {/* Column 1: Bullets checklist */}
-        <div className="flex flex-col gap-2 min-h-0">
+        <div className={cn(
+          'flex flex-col gap-2 min-h-0 transition-opacity duration-300',
+          col1Collapsed ? 'opacity-0 overflow-hidden pointer-events-none' : 'opacity-100'
+        )}>
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{totalSelected}</span> bullets seleccionados
             </p>
-            <div className="flex gap-1.5">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
@@ -285,6 +311,16 @@ export function StepGoals({
               >
                 Ninguno
               </button>
+              <span className="text-muted-foreground/40 text-[10px]">·</span>
+              <Tooltip label={allSectionsCollapsed ? 'Expandir todas las secciones' : 'Colapsar todas las secciones'}>
+                <button
+                  type="button"
+                  onClick={toggleAllSections}
+                  className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ChevronsUpDown className="h-3.5 w-3.5" />
+                </button>
+              </Tooltip>
             </div>
           </div>
 
@@ -363,6 +399,8 @@ export function StepGoals({
                   activeBulletId={hoveredBulletId}
                   onBulletHover={setHoveredBulletId}
                   onBulletLeave={() => setHoveredBulletId(null)}
+                  collapsed={!!collapsedSections[section.id]}
+                  onCollapsedChange={(c) => setSectionCollapsed(section.id, c)}
                 />
               )
             })}
@@ -391,6 +429,8 @@ export function StepGoals({
                   activeBulletId={hoveredBulletId}
                   onBulletHover={setHoveredBulletId}
                   onBulletLeave={() => setHoveredBulletId(null)}
+                  collapsed={!!collapsedSections[section.id]}
+                  onCollapsedChange={(c) => setSectionCollapsed(section.id, c)}
                 />
               )
             })}
@@ -401,8 +441,18 @@ export function StepGoals({
           </Button>
         </div>
 
-        {/* Column 2: Editable CV preview */}
-        <div className="min-h-0 overflow-y-auto rounded-md border border-border/40">
+        {/* Column 2: Editable CV preview — with collapse toggle */}
+        <div className="min-h-0 flex gap-0 relative">
+          <Tooltip label={col1Collapsed ? 'Mostrar experiencia' : 'Ocultar experiencia'}>
+            <button
+              type="button"
+              onClick={() => setCol1Collapsed(!col1Collapsed)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex items-center justify-center h-8 w-5 rounded-md border border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-sm"
+            >
+              {col1Collapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+            </button>
+          </Tooltip>
+          <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-border/40">
           <CvEditor
             draftCv={draftCv}
             jobOfferText={jobOfferText}
@@ -417,6 +467,7 @@ export function StepGoals({
             onBulletHover={setHoveredBulletId}
             onBulletLeave={() => setHoveredBulletId(null)}
           />
+          </div>
         </div>
 
         {/* Column 3: Match analysis — fills height internally */}
@@ -643,6 +694,8 @@ function SectionGroup({
   activeBulletId,
   onBulletHover,
   onBulletLeave,
+  collapsed,
+  onCollapsedChange,
 }: {
   header: string
   subheader: string
@@ -654,8 +707,9 @@ function SectionGroup({
   activeBulletId?: string | null
   onBulletHover?: (id: string) => void
   onBulletLeave?: () => void
+  collapsed: boolean
+  onCollapsedChange: (collapsed: boolean) => void
 }) {
-  const [collapsed, setCollapsed] = useState(false)
 
   function toggle(i: number) {
     const next = [...bullets]
@@ -667,7 +721,7 @@ function SectionGroup({
     <div className="border-b border-border/40 last:border-0">
       <div
         className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors sticky top-7 z-10 bg-card border-b border-border/30"
-        onClick={() => setCollapsed(!collapsed)}
+        onClick={() => onCollapsedChange(!collapsed)}
       >
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">

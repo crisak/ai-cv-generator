@@ -51,3 +51,31 @@
 - [ ] Task 19: Shimmer loading animation durante generación IA
   - Scope: Agregar componente Shimmer de ai-elements durante `suggestBullets()`, `generateCv()`, `optimizeCv()`. Efecto shimmer en borde de cv-editor durante generación. Reemplazar estados de loading existentes (spinner/skeleton) con Shimmer.
   - Depende de: cross-cutting Task 2 (ai-elements)
+
+## Tareas pendientes — v3
+
+- [ ] Task 25: FR19+FR20 — Toggle all y columna 1 colapsable
+  - Scope: Agregar botón "Colapsar todo / Expandir todo" en el header de col 1 que controla el estado open de todos los accordions. Agregar botón chevron lateral para colapsar/mostrar toda la columna 1; ajustar grid de 3 cols para ceder espacio a col 2 al colapsar. Implementar transición CSS animada.
+  - Archivos: `components/cv-generator/step-goals.tsx`
+  - Spec: FR19, FR20
+
+- [ ] Task 26: FR21 — Fix bug sincronización Col 1→2 (experiencia faltante en borrador)
+  - Scope: En la función que reconstruye `draftCv` a partir de `selections`, verificar si la experiencia padre ya existe en `draftCv.experience`. Si no existe, insertarla completa (empresa, puesto, fechas) antes de agregar el bullet. Esto corrige el bug donde bullets seleccionados en col 1 no aparecen en col 2 cuando la entrada de experiencia no estaba en el borrador.
+  - Archivos: `lib/ai-cv.ts`, `app/(app)/cv-generator/page.tsx`
+  - Spec: FR21
+
+- [ ] Task 27: FR22+FR23 — Drag & Drop de bullets y skills (Col 2)
+  - Scope: Instalar `@dnd-kit/core` y `@dnd-kit/sortable` si no están presentes. Hacer cada bullet del CV editor draggable con handle visual, permitiendo reordenar dentro de la misma sección y mover entre secciones (cross-section drop). Hacer las pills de Habilidades > Técnicas draggable para reordenar por relevancia. Persistir el nuevo orden en `draftCv`.
+  - Archivos: `components/cv-generator/cv-editor.tsx`
+  - Spec: FR22, FR23
+
+- [ ] Task 28: FR24+FR25 — Skills IA como pills + mejorar prompt
+  - Scope: Dos cambios en una tarea: (1) Mejorar el prompt en `lib/ai-cv.ts` para extracción de skills técnicas — extraer solo de la oferta, no de la experiencia del usuario. (2) Cambiar la respuesta de la IA en el campo Habilidades > Técnicas: parsear la lista de skills devuelta y renderizarla como pills editables (agregar/borrar individual) en lugar de un textarea plano. Al confirmar, fusionar con `draftCv.skills.technical`.
+  - Archivos: `lib/ai-cv.ts`, `components/cv-generator/cv-editor.tsx`
+  - Spec: FR24, FR25
+
+- [ ] Task 29: FR26 — Refactorizar Chat IA con ai-elements
+  - Scope: Reemplazar la UI de `ai-chat.tsx` con componentes ai-elements (`<Conversation>`, `<Message>`, `<PromptInput>`). Preservar toda la lógica de negocio (historial, envío de mensajes, contexto del CV). Agregar sugerencias de prompts frecuentes que se muestran cuando `messages.length === 0` (chips clicables que pre-rellenan el input).
+  - Archivos: `components/cv-generator/ai-chat.tsx`
+  - Depende de: cross-cutting Task 2 (ai-elements)
+  - Spec: FR26
