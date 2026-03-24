@@ -98,8 +98,46 @@ Click "Optimizar con IA"
 
 | ID | Requerimiento | Estado |
 |----|--------------|--------|
-| FR14 | Unificar diseño de página con otros dominios (content width, títulos, spacing) | ⬜ Pendiente |
+| FR14 | Unificar diseño de página con otros dominios (content width, títulos, spacing) | ✅ |
 | FR15 | Shimmer loading animation durante generación IA usando ai-elements Shimmer | ⬜ Pendiente |
+
+---
+
+## Post-MVP (v3)
+
+### User Stories
+
+- Como usuario, puedo colapsar y expandir todos los toggles de la columna 1 con un solo botón
+- Como usuario, puedo colapsar la columna 1 entera para darle más espacio al CV borrador
+- Como usuario, al seleccionar bullets de la columna 1 cuya experiencia no existe aún en el borrador, esta aparece automáticamente en la columna 2 con todos sus datos (empresa, puesto, fechas)
+- Como usuario, puedo reordenar bullets entre secciones con Drag & Drop en la columna 2
+- Como usuario, puedo reordenar las skills técnicas con Drag & Drop en la columna 2
+- Como usuario, cuando la IA sugiere habilidades técnicas, la respuesta se muestra como pills editables (no como textarea)
+- Como usuario, el chat de IA tiene un estilo visual mejorado con ai-elements y sugerencias de prompts al iniciar conversación
+
+### Requerimientos funcionales (v3)
+
+| ID | Requerimiento | Estado |
+|----|--------------|--------|
+| FR19 | Col 1: Botón toggle para colapsar/expandir todas las secciones simultáneamente | ⬜ Pendiente |
+| FR20 | Col 1: Panel colapsable para ceder espacio al CV borrador | ⬜ Pendiente |
+| FR21 | Col 1→2: Sincronización automática — al seleccionar bullets cuya experiencia no está en el borrador, crear la entrada completa (empresa, puesto, fechas) en col 2 | ⬜ Pendiente |
+| FR22 | Col 2: Drag & Drop de bullets entre secciones (incluye cross-section) | ⬜ Pendiente |
+| FR23 | Col 2: Drag & Drop de pills/tags en campo Habilidades > Técnicas | ⬜ Pendiente |
+| FR24 | Col 2: Respuesta IA en sección Habilidades > Técnicas mostrada como pills editables (agregar/borrar individual), no como textarea | ⬜ Pendiente |
+| FR25 | Col 2: Mejorar prompt de extracción de skills técnicas — extraer exclusivamente de la oferta laboral, sin mezclar con la experiencia del usuario | ⬜ Pendiente |
+| FR26 | Chat IA: Refactorizar UI usando ai-elements (estilo de respuesta + sugerencias de prompts al iniciar conversación), preservando toda la lógica de negocio actual | ⬜ Pendiente |
+
+### Reglas de negocio (v3)
+
+**FR21 — Sincronización Col 1→2:**
+- Cuando el usuario selecciona un bullet de la columna 1 y la experiencia padre (empresa + puesto + fechas) no existe en `draftCv`, se debe insertar automáticamente esa entrada de experiencia completa en `draftCv` con el bullet seleccionado.
+- El comportamiento actual (bug): los bullets quedan marcados visualmente en col 1 pero no aparecen en col 2.
+- Comportamiento correcto: col 2 refleja siempre el estado real de selección.
+
+**FR25 — Prompt skills técnicas:**
+- El prompt actual mezcla la experiencia del usuario con la oferta. Debe ignorar la experiencia del usuario y extraer únicamente las habilidades mencionadas o implícitas en la oferta laboral.
+- Ejemplo de instrucción al modelo: "Extrae las habilidades técnicas requeridas exclusivamente de la oferta laboral. No incluyas habilidades que solo estén en mi experiencia pero no sean relevantes para esta oferta."
 
 ---
 

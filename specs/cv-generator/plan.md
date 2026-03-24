@@ -135,3 +135,139 @@ Reemplazar estados de loading actuales (spinner/skeleton) con Shimmer de ai-elem
 | `components/cv-generator/cv-editor.tsx` | Shimmer border durante generación IA |
 | `components/cv-generator/step-goals.tsx` | Shimmer en columnas durante llamadas IA |
 | `components/cv-generator/step-job-offer.tsx` | Shimmer durante parsing |
+
+---
+
+## Mejoras v3
+
+### FR19 — Toggle colapsar/expandir todos (Col 1)
+
+Un botón en el header de la columna 1 alterna entre "Colapsar todo" y "Expandir todo", controlando el estado `open` de todos los accordions/toggles de sección simultáneamente.
+
+```
+Col 1 header
+  ├── [Colapsar todo / Expandir todo]  ← botón toggle
+  └── Lista de secciones colapsables
+```
+
+Archivos: `components/cv-generator/step-goals.tsx`
+
+---
+
+### FR20 — Columna 1 colapsable
+
+La columna 1 puede ocultarse/mostrarse con un botón (chevron lateral). Cuando está oculta, el grid se ajusta para dar más espacio al CV borrador (col 2).
+
+```
+Grid colapsado:  grid-cols-[0px_1fr_300px]  (o variante con transition)
+Grid expandido:  grid-cols-[300px_1fr_300px]
+```
+
+- Implementar con `useState(isCol1Open)` en `step-goals.tsx`
+- Usar transición CSS (`transition-all duration-300`) para animar el colapso
+- El botón de abrir/cerrar queda visible siempre (fuera del área colapsada)
+
+Archivos: `components/cv-generator/step-goals.tsx`
+
+---
+
+### FR21 — Sincronización Col 1→2 (bug + mejora)
+
+**Causa del bug**: Al seleccionar un bullet en col 1, `toggleBullet()` actualiza `selections` pero `draftCv` no se reconstruye para incluir la experiencia padre si esta no existía previamente.
+
+**Solución**: En la función que construye/actualiza `draftCv` a partir de `selections`, verificar si la entrada de experiencia (empresa, puesto, fechas) ya existe. Si no existe, insertarla completa antes de agregar el bullet.
+
+```
+toggleBullet(experienceId, bulletIndex)
+  → selections updated
+  → rebuildDraftCv(selections, fullExperience, draftCv)
+        → para cada (experienceId, bullets[]):
+            if experienceId NOT in draftCv.experience:
+              insert full experience entry (company, role, dates)
+            add/remove bullet
+```
+
+Archivos: `app/(app)/cv-generator/page.tsx`, `lib/ai-cv.ts`
+
+---
+
+### FR22 — Drag & Drop de bullets (Col 2)
+
+Los bullets del CV borrador (col 2) deben poder reordenarse con D&D, incluyendo mover un bullet de una sección a otra (cross-section).
+
+- Usar `@dnd-kit/core` + `@dnd-kit/sortable` (ya disponible en el ecosistema Next.js/shadcn)
+- Cada bullet es un `<SortableItem>` con handle de drag
+- El drop entre secciones actualiza `draftCv` moviendo el bullet al array de la sección destino
+- Visual: cursor `grab`, indicador de posición durante drag
+
+Archivos: `components/cv-generator/cv-editor.tsx`
+
+---
+
+### FR23 — Drag & Drop de skills técnicas (Col 2)
+
+Las pills/tags de Habilidades > Técnicas deben poder reordenarse con D&D para comunicar relevancia (primeras = más importantes).
+
+- Mismo enfoque que FR22: `@dnd-kit/sortable`
+- El orden se persiste en `draftCv.skills.technical[]`
+
+Archivos: `components/cv-generator/cv-editor.tsx`
+
+---
+
+### FR24 — Respuesta IA de skills como pills editables
+
+Cuando la IA responde a una sugerencia de Habilidades > Técnicas, en lugar de mostrar un `textarea` con texto libre, renderizar la respuesta como pills interactivas:
+
+- Parsear la respuesta IA (lista de skills) → array de strings
+- Mostrar cada skill como pill con botón "×" para borrar
+- Permitir añadir skills adicionales (input + Enter)
+- Al confirmar, fusionar las pills aceptadas con `draftCv.skills.technical`
+
+Archivos: `components/cv-generator/cv-editor.tsx`, `lib/ai-cv.ts`
+
+---
+
+### FR25 — Mejora de prompt para skills técnicas
+
+El prompt actual en `lib/ai-cv.ts` para sugerencia de skills incluye la experiencia del usuario, lo que hace que la IA devuelva skills propias en lugar de las requeridas por la oferta.
+
+**Prompt corregido** (patrón):
+```
+Dado el siguiente texto de oferta laboral, extrae ÚNICAMENTE las habilidades técnicas
+que son mencionadas o claramente requeridas por la oferta.
+NO incluyas habilidades que no aparezcan en la oferta, aunque el candidato las tenga.
+Devuelve una lista de skills, una por línea, sin numeración.
+
+Oferta:
+{jobOfferText}
+```
+
+Archivos: `lib/ai-cv.ts`
+
+---
+
+### FR26 — Refactorizar Chat IA con ai-elements
+
+Reemplazar la UI actual del chat (`components/cv-generator/ai-chat.tsx`) con los componentes de ai-elements, preservando toda la lógica de negocio.
+
+**Componentes a usar:**
+- `<Conversation>` / `<Message>` — para el historial de mensajes
+- `<PromptInput>` — para el campo de escritura
+- Sugerencias de prompts al iniciar conversación (cuando `messages.length === 0`): chips con prompts frecuentes (ej: "Optimiza mis bullets para esta oferta", "¿Qué keywords me faltan?", "Mejora mi resumen profesional")
+
+**Regla**: No perder ninguna funcionalidad existente; solo cambiar la capa de presentación.
+
+Archivos: `components/cv-generator/ai-chat.tsx`
+
+---
+
+### Archivos a modificar (v3)
+
+| Archivo | Cambio |
+|---------|--------|
+| `components/cv-generator/step-goals.tsx` | FR19 toggle all, FR20 col 1 colapsable |
+| `components/cv-generator/cv-editor.tsx` | FR22 D&D bullets, FR23 D&D skills, FR24 pills IA |
+| `components/cv-generator/ai-chat.tsx` | FR26 ui con ai-elements |
+| `lib/ai-cv.ts` | FR21 rebuildDraftCv, FR24 parser respuesta IA, FR25 prompt skills |
+| `app/(app)/cv-generator/page.tsx` | FR21 toggleBullet fix |
