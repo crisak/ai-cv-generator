@@ -40,6 +40,7 @@ interface StepGoalsProps {
   onBulletAdded?: (sectionId: string) => void
   onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
   onSectionDeleted?: (sectionId: string) => void
+  onBulletMoved?: (fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) => void
   onContinue: () => void
   onOptimize: (msg: string) => void
   onOptimizeConfirm: (cv: CvData) => void
@@ -62,6 +63,7 @@ export function StepGoals({
   onBulletAdded,
   onBulletDeleted,
   onSectionDeleted,
+  onBulletMoved,
   onContinue,
   onOptimize,
   onOptimizeConfirm,
@@ -462,6 +464,7 @@ export function StepGoals({
             onBulletAdded={onBulletAdded}
             onBulletDeleted={onBulletDeleted}
             onSectionDeleted={onSectionDeleted}
+            onBulletMoved={onBulletMoved}
             draftBulletIds={draftBulletIds}
             hoveredBulletId={hoveredBulletId}
             onBulletHover={setHoveredBulletId}

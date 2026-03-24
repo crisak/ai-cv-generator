@@ -317,6 +317,28 @@ function CvGeneratorContent() {
     }))
   }
 
+  function handleBulletMoved(fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) {
+    setDraftBulletIds((prev) => {
+      const next = { ...prev }
+      if (fromSectionId === toSectionId) {
+        // Same section: reorder IDs to match reordered bullets
+        const ids = [...(next[fromSectionId] ?? [])]
+        const [moved] = ids.splice(fromIndex, 1)
+        ids.splice(toIndex, 0, moved)
+        next[fromSectionId] = ids
+      } else {
+        // Cross-section: move ID from source to destination
+        const srcIds = [...(next[fromSectionId] ?? [])]
+        const dstIds = [...(next[toSectionId] ?? [])]
+        const [movedId] = srcIds.splice(fromIndex, 1)
+        dstIds.splice(toIndex, 0, movedId)
+        next[fromSectionId] = srcIds
+        next[toSectionId] = dstIds
+      }
+      return next
+    })
+  }
+
   function handleSectionDeleted(sectionId: string) {
     setSelections((prev) => {
       if (!prev[sectionId]) return prev
@@ -524,6 +546,7 @@ function CvGeneratorContent() {
             onBulletAdded={handleBulletAdded}
             onBulletDeleted={handleBulletDeleted}
             onSectionDeleted={handleSectionDeleted}
+            onBulletMoved={handleBulletMoved}
             onContinue={handleUseDraft}
             onOptimize={handleOptimize}
             onOptimizeConfirm={handleOptimizeConfirm}

@@ -12,6 +12,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -20,6 +21,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -35,6 +37,7 @@ interface CvEditorProps {
   onBulletAdded?: (sectionId: string) => void
   onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
   onSectionDeleted?: (sectionId: string) => void
+  onBulletMoved?: (fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) => void
   draftBulletIds?: Record<string, string[]>
   hoveredBulletId?: string | null
   onBulletHover?: (id: string) => void
@@ -62,9 +65,10 @@ function estimatePageLength(cv: CvData): number {
 function SortableTag({ id, tag, onRemove }: { id: string; tag: string; onRemove: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
   }
 
   return (
@@ -159,7 +163,7 @@ function TagsField({
         {action}
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
-        <SortableContext items={tagIds} strategy={verticalListSortingStrategy}>
+        <SortableContext items={tagIds} strategy={rectSortingStrategy}>
           <div
             className={cn(
               'flex flex-wrap gap-1.5 rounded-md border bg-muted/10 px-2 py-1.5 cursor-text transition-colors',
@@ -1014,7 +1018,7 @@ function CvSection({ title, action, children }: { title: string; action?: React.
 
 // ── CvEditor main ─────────────────────────────────────────────────────────────
 
-export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange, onBulletAdded, onBulletDeleted, onSectionDeleted, draftBulletIds, hoveredBulletId, onBulletHover, onBulletLeave }: CvEditorProps) {
+export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange, onBulletAdded, onBulletDeleted, onSectionDeleted, onBulletMoved, draftBulletIds, hoveredBulletId, onBulletHover, onBulletLeave }: CvEditorProps) {
   const [skillsAiOpen, setSkillsAiOpen] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const pages = estimatePageLength(draftCv)
@@ -1032,54 +1036,90 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     return { sectionId: match[1], bulletIndex: Number(match[2]) }
   }
 
+  // Track the original position of the dragged bullet (before any cross-section moves)
+  const dragOriginRef = useRef<{ sectionId: string; bulletIndex: number } | null>(null)
+
   function handleBulletDragStart(event: DragStartEvent) {
     setActiveDragId(event.active.id as string)
+    const parsed = parseBulletId(event.active.id as string)
+    dragOriginRef.current = parsed
   }
 
-  function handleBulletDragEnd(event: DragEndEvent) {
-    setActiveDragId(null)
+  function applyBulletChange(
+    sectionId: string,
+    newBullets: string[],
+    exp: ExperienceItem[],
+    lead: LeadershipItem[]
+  ): { experience: ExperienceItem[]; leadership: LeadershipItem[] } {
+    return {
+      experience: exp.map((s) => (s.id === sectionId ? { ...s, bullets: newBullets } : s)),
+      leadership: lead.map((s) => (s.id === sectionId ? { ...s, bullets: newBullets } : s)),
+    }
+  }
+
+  // Live cross-section move during drag (provides visual feedback)
+  function handleBulletDragOver(event: DragOverEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
     const from = parseBulletId(active.id as string)
     const to = parseBulletId(over.id as string)
-    if (!from || !to) return
+    if (!from || !to || from.sectionId === to.sectionId) return
 
-    // Find the source and destination sections across experience + leadership
     const allSections = [...draftCv.experience, ...draftCv.leadership]
     const srcSection = allSections.find((s) => s.id === from.sectionId)
     const dstSection = allSections.find((s) => s.id === to.sectionId)
     if (!srcSection || !dstSection) return
 
-    function applyBulletChange(
-      sectionId: string,
-      newBullets: string[],
-      exp: ExperienceItem[],
-      lead: LeadershipItem[]
-    ): { experience: ExperienceItem[]; leadership: LeadershipItem[] } {
-      return {
-        experience: exp.map((s) => (s.id === sectionId ? { ...s, bullets: newBullets } : s)),
-        leadership: lead.map((s) => (s.id === sectionId ? { ...s, bullets: newBullets } : s)),
-      }
+    const bulletText = srcSection.bullets[from.bulletIndex]
+    if (bulletText === undefined) return
+
+    const srcBullets = srcSection.bullets.filter((_, i) => i !== from.bulletIndex)
+    const dstBullets = [...dstSection.bullets]
+    dstBullets.splice(to.bulletIndex, 0, bulletText)
+
+    let { experience, leadership } = applyBulletChange(from.sectionId, srcBullets, draftCv.experience, draftCv.leadership)
+    ;({ experience, leadership } = applyBulletChange(to.sectionId, dstBullets, experience, leadership))
+    onChange({ ...draftCv, experience, leadership })
+  }
+
+  function handleBulletDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveDragId(null)
+
+    if (!over || active.id === over.id) {
+      dragOriginRef.current = null
+      return
+    }
+
+    const from = parseBulletId(active.id as string)
+    const to = parseBulletId(over.id as string)
+    if (!from || !to) {
+      dragOriginRef.current = null
+      return
     }
 
     if (from.sectionId === to.sectionId) {
       // Same section: reorder
+      const allSections = [...draftCv.experience, ...draftCv.leadership]
+      const srcSection = allSections.find((s) => s.id === from.sectionId)
+      if (!srcSection) { dragOriginRef.current = null; return }
       const reordered = arrayMove(srcSection.bullets, from.bulletIndex, to.bulletIndex)
       const updated = applyBulletChange(from.sectionId, reordered, draftCv.experience, draftCv.leadership)
       onChange({ ...draftCv, ...updated })
-    } else {
-      // Cross-section: move bullet from src to dst
-      const bulletText = srcSection.bullets[from.bulletIndex]
-      if (bulletText === undefined) return
-      const srcBullets = srcSection.bullets.filter((_, i) => i !== from.bulletIndex)
-      const dstBullets = [...dstSection.bullets]
-      dstBullets.splice(to.bulletIndex, 0, bulletText)
 
-      let { experience, leadership } = applyBulletChange(from.sectionId, srcBullets, draftCv.experience, draftCv.leadership)
-      ;({ experience, leadership } = applyBulletChange(to.sectionId, dstBullets, experience, leadership))
-      onChange({ ...draftCv, experience, leadership })
+      // Notify parent about same-section reorder for bullet ID tracking
+      if (dragOriginRef.current) {
+        onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
+      }
+    } else {
+      // Cross-section was already applied in onDragOver — just notify parent for ID tracking
+      if (dragOriginRef.current) {
+        onBulletMoved?.(dragOriginRef.current.sectionId, dragOriginRef.current.bulletIndex, to.sectionId, to.bulletIndex)
+      }
     }
+
+    dragOriginRef.current = null
   }
 
   // Find the text for the currently dragged bullet (for DragOverlay)
@@ -1169,6 +1209,7 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
         sensors={bulletSensors}
         collisionDetection={closestCenter}
         onDragStart={handleBulletDragStart}
+        onDragOver={handleBulletDragOver}
         onDragEnd={handleBulletDragEnd}
       >
         {/* Experience */}
