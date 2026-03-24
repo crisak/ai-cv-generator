@@ -311,6 +311,20 @@ function CvGeneratorContent() {
   }
 
   function handleBulletDeleted(sectionId: string, bulletIndex: number) {
+    // Deselect the corresponding bullet in col 1
+    const bulletId = draftBulletIds[sectionId]?.[bulletIndex]
+    if (bulletId && !bulletId.startsWith('manual-')) {
+      setSelections((prev) => {
+        const sectionBullets = prev[sectionId]
+        if (!sectionBullets) return prev
+        return {
+          ...prev,
+          [sectionId]: sectionBullets.map((b) =>
+            b.id === bulletId ? { ...b, selected: false } : b
+          ),
+        }
+      })
+    }
     setDraftBulletIds((prev) => ({
       ...prev,
       [sectionId]: (prev[sectionId] ?? []).filter((_, i) => i !== bulletIndex),

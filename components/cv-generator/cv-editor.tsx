@@ -12,7 +12,6 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-  type DragOverEvent,
   DragOverlay,
   type DragStartEvent,
 } from '@dnd-kit/core'
@@ -1057,32 +1056,6 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     }
   }
 
-  // Live cross-section move during drag (provides visual feedback)
-  function handleBulletDragOver(event: DragOverEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    const from = parseBulletId(active.id as string)
-    const to = parseBulletId(over.id as string)
-    if (!from || !to || from.sectionId === to.sectionId) return
-
-    const allSections = [...draftCv.experience, ...draftCv.leadership]
-    const srcSection = allSections.find((s) => s.id === from.sectionId)
-    const dstSection = allSections.find((s) => s.id === to.sectionId)
-    if (!srcSection || !dstSection) return
-
-    const bulletText = srcSection.bullets[from.bulletIndex]
-    if (bulletText === undefined) return
-
-    const srcBullets = srcSection.bullets.filter((_, i) => i !== from.bulletIndex)
-    const dstBullets = [...dstSection.bullets]
-    dstBullets.splice(to.bulletIndex, 0, bulletText)
-
-    let { experience, leadership } = applyBulletChange(from.sectionId, srcBullets, draftCv.experience, draftCv.leadership)
-    ;({ experience, leadership } = applyBulletChange(to.sectionId, dstBullets, experience, leadership))
-    onChange({ ...draftCv, experience, leadership })
-  }
-
   function handleBulletDragEnd(event: DragEndEvent) {
     const { active, over } = event
     setActiveDragId(null)
@@ -1099,24 +1072,33 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
       return
     }
 
+    const allSections = [...draftCv.experience, ...draftCv.leadership]
+
     if (from.sectionId === to.sectionId) {
       // Same section: reorder
-      const allSections = [...draftCv.experience, ...draftCv.leadership]
       const srcSection = allSections.find((s) => s.id === from.sectionId)
       if (!srcSection) { dragOriginRef.current = null; return }
       const reordered = arrayMove(srcSection.bullets, from.bulletIndex, to.bulletIndex)
       const updated = applyBulletChange(from.sectionId, reordered, draftCv.experience, draftCv.leadership)
       onChange({ ...draftCv, ...updated })
-
-      // Notify parent about same-section reorder for bullet ID tracking
-      if (dragOriginRef.current) {
-        onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
-      }
+      onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
     } else {
-      // Cross-section was already applied in onDragOver — just notify parent for ID tracking
-      if (dragOriginRef.current) {
-        onBulletMoved?.(dragOriginRef.current.sectionId, dragOriginRef.current.bulletIndex, to.sectionId, to.bulletIndex)
-      }
+      // Cross-section: move bullet from source to destination
+      const srcSection = allSections.find((s) => s.id === from.sectionId)
+      const dstSection = allSections.find((s) => s.id === to.sectionId)
+      if (!srcSection || !dstSection) { dragOriginRef.current = null; return }
+
+      const bulletText = srcSection.bullets[from.bulletIndex]
+      if (bulletText === undefined) { dragOriginRef.current = null; return }
+
+      const srcBullets = srcSection.bullets.filter((_, i) => i !== from.bulletIndex)
+      const dstBullets = [...dstSection.bullets]
+      dstBullets.splice(to.bulletIndex, 0, bulletText)
+
+      let { experience, leadership } = applyBulletChange(from.sectionId, srcBullets, draftCv.experience, draftCv.leadership)
+      ;({ experience, leadership } = applyBulletChange(to.sectionId, dstBullets, experience, leadership))
+      onChange({ ...draftCv, experience, leadership })
+      onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
     }
 
     dragOriginRef.current = null
@@ -1209,7 +1191,6 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
         sensors={bulletSensors}
         collisionDetection={closestCenter}
         onDragStart={handleBulletDragStart}
-        onDragOver={handleBulletDragOver}
         onDragEnd={handleBulletDragEnd}
       >
         {/* Experience */}
