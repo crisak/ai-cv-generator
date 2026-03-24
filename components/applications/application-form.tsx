@@ -48,13 +48,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BenefitList } from './benefit-list'
 import { ApplicationTimeline } from './application-timeline'
 import type { ApplicationDocument } from '@/lib/db/schemas'
-import { APPLICATION_STATUS_LABELS } from '@/types/cv'
+import { APPLICATION_STATUS_LABELS, WORK_MODALITY_LABELS } from '@/types/cv'
 import { parseJobOffer } from '@/lib/ai'
 import { useSettings } from '@/hooks/use-settings'
 import { cn } from '@/lib/utils'
 import { Shimmer } from '@/components/ai-elements/shimmer'
 
-type FlashField = 'company' | 'position' | 'salaryOffered' | 'salaryCurrency' | 'benefits'
+type FlashField =
+  | 'company'
+  | 'position'
+  | 'salaryOffered'
+  | 'salaryCurrency'
+  | 'benefits'
+  | 'source'
+  | 'workModality'
+  | 'url'
+  | 'offerPublishedAt'
 
 // Domains known to block scraping
 const UNSUPPORTED_DOMAINS = [
@@ -123,7 +132,7 @@ function FlashWrapper({
   flashKey: number
   children: React.ReactNode
 }) {
-  if (!flash) return <div className="rounded-md">{children}</div>
+  if (!flash) return <>{children}</>
   return (
     <motion.div
       key={flashKey}
@@ -159,7 +168,9 @@ const schema = z.object({
   jobOfferText: z.string(),
   company: z.string().min(1, 'La empresa es requerida'),
   position: z.string().min(1, 'El cargo es requerido'),
-  source: z.string().min(1, 'La fuente es requerida'),
+  source: z.string(),
+  url: z.string(),
+  workModality: z.string(),
   status: z.enum([
     'pending',
     'phone_screen',
@@ -175,14 +186,13 @@ const schema = z.object({
   isFavorite: z.boolean(),
   benefits: z.array(z.string()),
   appliedAt: z.string(),
-  responseDate: z.string(),
+  offerPublishedAt: z.string(),
   nextSteps: z.string(),
   notes: z.string(),
 })
 
 type FormData = z.infer<typeof schema>
 
-const SOURCES = ['LinkedIn', 'Computrabajo', 'GetOnBoard', 'Indeed', 'Referido', 'Otro']
 const CURRENCIES = ['COP', 'USD', 'EUR']
 
 interface ApplicationFormProps {
@@ -221,14 +231,16 @@ export function ApplicationForm({
       jobOfferText: '',
       company: '',
       position: '',
-      source: 'LinkedIn',
+      source: '',
+      url: '',
+      workModality: '',
       status: 'pending',
       salaryOffered: 0,
       salaryCurrency: 'COP',
       isFavorite: false,
       benefits: [],
       appliedAt: new Date().toISOString().split('T')[0],
-      responseDate: '',
+      offerPublishedAt: '',
       nextSteps: '',
       notes: '',
     },
@@ -248,14 +260,17 @@ export function ApplicationForm({
         jobOfferText: defaultValues.jobOfferText ?? '',
         company: defaultValues.company ?? '',
         position: defaultValues.position ?? '',
-        source: defaultValues.source ?? 'LinkedIn',
+        source: defaultValues.source ?? '',
+        url: ((defaultValues as Record<string, unknown>).url as string) ?? '',
+        workModality: ((defaultValues as Record<string, unknown>).workModality as string) ?? '',
         status: defaultValues.status ?? 'pending',
         salaryOffered: defaultValues.salaryOffered ?? 0,
         salaryCurrency: defaultValues.salaryCurrency ?? 'COP',
         isFavorite: defaultValues.isFavorite ?? false,
         benefits: defaultValues.benefits ?? [],
         appliedAt: defaultValues.appliedAt?.split('T')[0] ?? new Date().toISOString().split('T')[0],
-        responseDate: defaultValues.responseDate ?? '',
+        offerPublishedAt:
+          ((defaultValues as Record<string, unknown>).offerPublishedAt as string) ?? '',
         nextSteps: defaultValues.nextSteps ?? '',
         notes: defaultValues.notes ?? '',
       })
@@ -307,6 +322,18 @@ export function ApplicationForm({
         form.setValue('benefits', validBenefits)
         updated.push('benefits')
       }
+    }
+    if (isValid(result.source)) {
+      form.setValue('source', result.source, { shouldValidate: true })
+      updated.push('source')
+    }
+    if (result.workModality && ['hybrid', 'onsite', 'remote'].includes(result.workModality)) {
+      form.setValue('workModality', result.workModality)
+      updated.push('workModality')
+    }
+    if (isValid(result.offerPublishedAt)) {
+      form.setValue('offerPublishedAt', result.offerPublishedAt)
+      updated.push('offerPublishedAt')
     }
 
     const hasUsefulData = !!(result.company || result.position)
@@ -421,10 +448,12 @@ export function ApplicationForm({
         }
 
         // Step 3: Set cleaned markdown in the text field and extract fields
+        form.setValue('url', trimmedUrl)
         form.setValue('jobOfferText', cleanData.markdown)
         await applyParseResult(cleanData.markdown)
       } else {
         // No AI: just put the raw text and use regex extraction
+        form.setValue('url', trimmedUrl)
         form.setValue('jobOfferText', scrapeData.raw)
         await applyParseResult(scrapeData.raw)
       }
@@ -679,6 +708,8 @@ export function ApplicationForm({
                 )}
               </div>
 
+              <Separator className="my-5" />
+
               {/* ── Sección: Detalles ───────────────────────────────────── */}
               <div className="space-y-4">
                 <FlashWrapper flash={flashFields.has('company')} flashKey={flashKey}>
@@ -717,29 +748,25 @@ export function ApplicationForm({
                 </FlashWrapper>
                 {isEditing ? (
                   <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="source"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Fuente</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
+                    <FlashWrapper flash={flashFields.has('source')} flashKey={flashKey}>
+                      <FormField
+                        control={form.control}
+                        name="source"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>
+                              <ShimmerLabel active={isShimmering}>Fuente</ShimmerLabel>
+                            </FormLabel>
                             <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
+                              <Input
+                                placeholder="ej. LinkedIn, Computrabajo, Referido..."
+                                {...field}
+                              />
                             </FormControl>
-                            <SelectContent>
-                              {SOURCES.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
+                          </FormItem>
+                        )}
+                      />
+                    </FlashWrapper>
                     <FormField
                       control={form.control}
                       name="status"
@@ -776,30 +803,75 @@ export function ApplicationForm({
                     />
                   </div>
                 ) : (
-                  <FormField
-                    control={form.control}
-                    name="source"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fuente</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                  <FlashWrapper flash={flashFields.has('source')} flashKey={flashKey}>
+                    <FormField
+                      control={form.control}
+                      name="source"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <ShimmerLabel active={isShimmering}>Fuente</ShimmerLabel>
+                          </FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
+                            <Input
+                              placeholder="ej. LinkedIn, Computrabajo, Referido..."
+                              {...field}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            {SOURCES.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
+                        </FormItem>
+                      )}
+                    />
+                  </FlashWrapper>
                 )}
+                <div className="grid grid-cols-2 gap-4">
+                  <FlashWrapper flash={flashFields.has('url')} flashKey={flashKey}>
+                    <FormField
+                      control={form.control}
+                      name="url"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <ShimmerLabel active={isShimmering}>URL de la oferta</ShimmerLabel>
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="url"
+                              placeholder="https://empresa.com/careers/..."
+                              {...field}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </FlashWrapper>
+                  <FlashWrapper flash={flashFields.has('workModality')} flashKey={flashKey}>
+                    <FormField
+                      control={form.control}
+                      name="workModality"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            <ShimmerLabel active={isShimmering}>Modalidad</ShimmerLabel>
+                          </FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecciona..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {Object.entries(WORK_MODALITY_LABELS).map(([v, l]) => (
+                                <SelectItem key={v} value={v}>
+                                  {l}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )}
+                    />
+                  </FlashWrapper>
+                </div>
               </div>
 
               <Separator className="my-5" />
@@ -913,52 +985,37 @@ export function ApplicationForm({
               <Separator className="my-5" />
 
               {/* ── Sección: Fechas ────────────────────────────────────── */}
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="appliedAt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <span className="flex items-center gap-1">
-                          Fecha postulación
-                          <span className="group relative inline-flex">
-                            <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
-                            <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
-                              Día en que enviaste tu candidatura a esta oferta.
-                            </span>
-                          </span>
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="responseDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        <span className="flex items-center gap-1">
-                          Fecha respuesta
-                          <span className="group relative inline-flex">
-                            <HelpCircle className="text-muted-foreground/60 h-3.5 w-3.5 cursor-help" />
-                            <span className="bg-popover text-popover-foreground ring-border pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md px-3 py-2 text-xs font-normal shadow-md ring-1 group-hover:block">
-                              Fecha en que la empresa te dio una respuesta (positiva o negativa).
-                              Déjala vacía si aún esperas.
-                            </span>
-                          </span>
-                        </span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+              <div className="grid grid-cols-1 gap-4">
+                <FlashWrapper flash={flashFields.has('offerPublishedAt')} flashKey={flashKey}>
+                  <FormField
+                    control={form.control}
+                    name="offerPublishedAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          <ShimmerLabel active={isShimmering}>Fecha publicación</ShimmerLabel>
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </FlashWrapper>
+                {isEditing && (
+                  <FormField
+                    control={form.control}
+                    name="appliedAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha postulación</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
               </div>
 
               <Separator className="my-5" />
@@ -977,26 +1034,8 @@ export function ApplicationForm({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Notas</FormLabel>
-                      <FormControl>
-                        <textarea
-                          {...field}
-                          rows={2}
-                          placeholder="Observaciones sobre la empresa, proceso, cultura..."
-                          className="border-input bg-background placeholder:text-muted-foreground focus:ring-ring w-full resize-none rounded-md border px-3 py-2 text-sm outline-none focus:ring-1"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
               </div>
 
-              {/* ── Sección: CV asociado ───────────────────────────────── */}
               <Separator className="my-5" />
               <div className="border-border/70 rounded-lg border border-dashed p-4">
                 <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wider uppercase">

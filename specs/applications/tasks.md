@@ -54,7 +54,7 @@
   - Scope: En `app/(app)/applications/page.tsx`, cambiar texto del botón principal. En `components/applications/application-form.tsx`, cambiar título del Sheet y texto del botón submit en modo creación. En `components/applications/applications-table.tsx`, cambiar texto del empty state.
   - Depende de: nada
 
-- [ ] Task 18: Source a texto libre + nuevos campos en formulario
+- [x] Task 18: Source a texto libre + nuevos campos en formulario
   - Scope: En `components/applications/application-form.tsx`: (1) Reemplazar el `Select` de `source` por un `Input` de texto libre con placeholder "ej. LinkedIn, Computrabajo, Referido...". Agregar `source` a `FlashField` para que la IA pueda animarlo. (2) Agregar campo `url` al schema Zod y al formulario (Input en sección detalles). Cuando el usuario usa la URL para scraping, también guardarla en este campo. (3) Agregar campo `workModality` al schema Zod y al formulario (Select con opciones de `WORK_MODALITY_LABELS`). (4) Agregar campo `offerPublishedAt` al schema Zod y al formulario (Input date en sección fechas). Actualizar `defaultValues` para incluir los nuevos campos.
   - Depende de: Task 15
 
