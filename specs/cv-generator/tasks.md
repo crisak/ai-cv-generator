@@ -54,12 +54,12 @@
 
 ## Tareas pendientes — v3
 
-- [ ] Task 25: FR19+FR20 — Toggle all y columna 1 colapsable
+- [x] Task 25: FR19+FR20 — Toggle all y columna 1 colapsable
   - Scope: Agregar botón "Colapsar todo / Expandir todo" en el header de col 1 que controla el estado open de todos los accordions. Agregar botón chevron lateral para colapsar/mostrar toda la columna 1; ajustar grid de 3 cols para ceder espacio a col 2 al colapsar. Implementar transición CSS animada.
   - Archivos: `components/cv-generator/step-goals.tsx`
   - Spec: FR19, FR20
 
-- [ ] Task 26: FR21 — Fix bug sincronización Col 1→2 (experiencia faltante en borrador)
+- [x] Task 26: FR21 — Fix bug sincronización Col 1→2 (experiencia faltante en borrador)
   - Scope: En la función que reconstruye `draftCv` a partir de `selections`, verificar si la experiencia padre ya existe en `draftCv.experience`. Si no existe, insertarla completa (empresa, puesto, fechas) antes de agregar el bullet. Esto corrige el bug donde bullets seleccionados en col 1 no aparecen en col 2 cuando la entrada de experiencia no estaba en el borrador.
   - Archivos: `lib/ai-cv.ts`, `app/(app)/cv-generator/page.tsx`
   - Spec: FR21
