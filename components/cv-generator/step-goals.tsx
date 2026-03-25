@@ -701,7 +701,7 @@ export function StepGoals({
               Chat con IA — Asistente de CV
             </SheetTitle>
           </SheetHeader>
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex-1" onMouseDown={(e) => e.stopPropagation()}>
             <ResizablePanelGroup direction="horizontal">
               <ResizablePanel defaultSize={0} minSize={0} maxSize={40} collapsible></ResizablePanel>
               <ResizableHandle withHandle className="w-1" />
