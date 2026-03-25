@@ -89,29 +89,52 @@ Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}
 
 export async function improveSkills(
   jobOffer: string,
+  currentSkills: string,
   instruction: string,
   settings: SettingsDocument | null
 ): Promise<string | null> {
   if (!settings?.aiApiKey) return null
 
-  const prompt = `Eres un experto en CVs ATS. Extrae las habilidades técnicas requeridas exclusivamente de la oferta laboral.
+  const capitalize = (s: string): string => {
+    const trimmed = s.trim()
+    if (!trimmed) return trimmed
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+  }
+
+  const parseSkills = (text: string): string[] => {
+    return text
+      .split(/[,;·|]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
+
+  const currentSkillsList = parseSkills(currentSkills)
+  const existingSkillsStr =
+    currentSkillsList.length > 0
+      ? `HABILIDADES ACTUALES DEL CANDIDATO (NO REPETIR): ${currentSkillsList.join(', ')}`
+      : 'HABILIDADES ACTUALES DEL CANDIDATO: (ninguna aún)'
+
+  const prompt = `Eres un experto en CVs ATS. Analiza la oferta laboral y sugiere nuevas habilidades técnicas que complementen el perfil del candidato.
 
 OFERTA LABORAL:
 ${jobOffer.substring(0, 3000)}
 
+${existingSkillsStr}
+
 INSTRUCCIÓN DEL CANDIDATO: ${instruction}
 
 REGLAS:
-- Extrae ÚNICAMENTE las habilidades técnicas mencionadas o implícitas en la oferta laboral
-- No incluyas habilidades que solo estén en la experiencia del candidato pero no sean relevantes para esta oferta
-- Si la oferta menciona "JavaScript, React, Node.js", incluye esas tecnologías
-- Si la oferta pide "experiencia en bases de datos SQL", incluye "SQL" como skill
+- Analiza la oferta laboral y detecta habilidades técnicas mencionadas o implícitas
+- NO repitas ninguna de las habilidades que el candidato YA tiene listadas arriba
+- Sugiere ÚNICAMENTE habilidades nuevas que estén en la oferta pero no en las actuales del candidato
+- Si la oferta menciona "JavaScript, React, Node.js" y el candidato ya tiene "React", sugiere solo "JavaScript, Node.js"
 - Ordena de mayor a menor relevancia para la oferta (las más solicitadas primero)
+- Cada skill debe empezar con mayúscula
 - Sin duplicados, sin categorías ni prefijos, solo los nombres de las habilidades
 - Formato: separado por comas
 - Si la instrucción pide mínimo N skills, asegúrate de cumplirlo
 
-Responde SOLO con JSON: {"skills": "skill1, skill2, skill3, ..."}`
+Responde SOLO con JSON: {"skills": "Skill1, Skill2, Skill3, ..."}`
 
   try {
     const result = await callProxy(
@@ -123,7 +146,10 @@ Responde SOLO con JSON: {"skills": "skill1, skill2, skill3, ..."}`
     const match = result.match(/\{[\s\S]*\}/)
     if (!match) return null
     const parsed = JSON.parse(match[0]) as { skills?: unknown }
-    return typeof parsed.skills === 'string' && parsed.skills.trim() ? parsed.skills.trim() : null
+    if (typeof parsed.skills !== 'string' || !parsed.skills.trim()) return null
+
+    const skills = parseSkills(parsed.skills).map(capitalize)
+    return skills.length > 0 ? skills.join(', ') : null
   } catch {
     return null
   }

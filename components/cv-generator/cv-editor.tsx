@@ -509,7 +509,7 @@ function SkillsAiPopover({
       return
     }
     setMode('loading')
-    const suggested = await improveSkills(jobOfferText, instruction, settings)
+    const suggested = await improveSkills(jobOfferText, currentSkills, instruction, settings)
     if (suggested) {
       setResult(parseSkills(suggested))
       setMode('result')
