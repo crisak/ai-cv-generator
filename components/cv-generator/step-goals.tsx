@@ -29,7 +29,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import { MatchAnalysis } from './match-analysis'
 import { CvEditor } from './cv-editor'
 import { AiChat } from './ai-chat'
@@ -102,6 +101,9 @@ export function StepGoals({
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [chatStyle, setChatStyle] = useState<ChatStyle>('normal')
+  const [chatWidth, setChatWidth] = useState(480)
+  const [isChatResizing, setIsChatResizing] = useState(false)
+  const chatWidthStartRef = useRef({ x: 0, width: 0 })
   const [offerOpen, setOfferOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [offerSearch, setOfferSearch] = useState('')
@@ -117,6 +119,38 @@ export function StepGoals({
   const [hoveredBulletId, setHoveredBulletId] = useState<string | null>(null)
   const [col1Collapsed, setCol1Collapsed] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+
+  const handleChatResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsChatResizing(true)
+      chatWidthStartRef.current = { x: e.clientX, width: chatWidth }
+    },
+    [chatWidth]
+  )
+
+  useEffect(() => {
+    if (!isChatResizing) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = e.clientX - chatWidthStartRef.current.x
+      const newWidth = Math.min(900, Math.max(400, chatWidthStartRef.current.width - delta))
+      setChatWidth(newWidth)
+    }
+
+    const handleMouseUp = () => {
+      setIsChatResizing(false)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [isChatResizing])
 
   const allSectionIds = [
     ...cvData.experience.map((e) => e.id),
@@ -694,33 +728,46 @@ export function StepGoals({
 
       {/* Chat Sheet */}
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
-        <SheetContent side="right" className="flex w-[90vw] max-w-[900px] flex-col p-0">
+        <SheetContent
+          side="right"
+          className="flex flex-col overflow-hidden p-0"
+          style={{ width: chatWidth }}
+        >
+          {/* Resize Handle - left edge */}
+          <div
+            className="absolute top-0 left-0 z-50 flex h-full w-1 cursor-ew-resize items-center justify-center"
+            onMouseDown={handleChatResizeStart}
+          >
+            <div
+              className={cn(
+                'h-full w-0.5 rounded-full transition-all duration-150',
+                isChatResizing
+                  ? 'bg-primary opacity-100'
+                  : 'group-hover/resize:bg-primary/50 bg-transparent'
+              )}
+              style={{ opacity: isChatResizing ? 1 : undefined }}
+            />
+          </div>
           <SheetHeader className="border-border/50 shrink-0 border-b px-5 pt-5 pb-4">
             <SheetTitle className="flex items-center gap-2 text-sm">
               <MessageSquare className="text-primary h-4 w-4" />
               Chat con IA — Asistente de CV
             </SheetTitle>
           </SheetHeader>
-          <div className="min-h-0 flex-1" onMouseDown={(e) => e.stopPropagation()}>
-            <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel defaultSize={0} minSize={0} maxSize={40} collapsible></ResizablePanel>
-              <ResizableHandle withHandle className="w-1" />
-              <ResizablePanel defaultSize={100} minSize={60}>
-                <AiChat
-                  draftCv={draftCv}
-                  jobOfferText={jobOfferText}
-                  settings={settings}
-                  messages={chatMessages}
-                  onMessagesChange={setChatMessages}
-                  input={chatInput}
-                  onInputChange={setChatInput}
-                  isLoading={chatLoading}
-                  onLoadingChange={setChatLoading}
-                  style={chatStyle}
-                  onStyleChange={setChatStyle}
-                />
-              </ResizablePanel>
-            </ResizablePanelGroup>
+          <div className="min-h-0 flex-1">
+            <AiChat
+              draftCv={draftCv}
+              jobOfferText={jobOfferText}
+              settings={settings}
+              messages={chatMessages}
+              onMessagesChange={setChatMessages}
+              input={chatInput}
+              onInputChange={setChatInput}
+              isLoading={chatLoading}
+              onLoadingChange={setChatLoading}
+              style={chatStyle}
+              onStyleChange={setChatStyle}
+            />
           </div>
         </SheetContent>
       </Sheet>
