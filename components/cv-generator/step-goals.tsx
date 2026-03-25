@@ -731,7 +731,7 @@ export function StepGoals({
         <SheetContent
           side="right"
           className="flex flex-col overflow-hidden p-0"
-          style={{ width: chatWidth }}
+          style={{ width: chatWidth, maxWidth: '95vw' }}
         >
           {/* Resize Handle - left edge */}
           <div
