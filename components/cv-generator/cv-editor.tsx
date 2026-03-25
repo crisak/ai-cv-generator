@@ -504,6 +504,10 @@ function SkillsAiPopover({
 
   async function handleSubmit() {
     if (!instruction.trim()) return
+    if (!jobOfferText.trim()) {
+      setInstruction('Ingresa primero la oferta laboral en el Step 1')
+      return
+    }
     setMode('loading')
     const suggested = await improveSkills(jobOfferText, instruction, settings)
     if (suggested) {
