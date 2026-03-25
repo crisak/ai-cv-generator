@@ -1252,7 +1252,7 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
         {/* Drag overlay for bullet being dragged */}
         <DragOverlay>
           {activeDragText ? (
-            <div className="rounded-md border border-primary/30 bg-card shadow-lg px-3 py-2 text-xs leading-relaxed max-w-sm opacity-90">
+            <div className="rounded-md border border-primary/30 bg-card shadow-lg px-3 py-2 text-xs leading-relaxed max-w-2xl opacity-90">
               {activeDragText}
             </div>
           ) : null}
