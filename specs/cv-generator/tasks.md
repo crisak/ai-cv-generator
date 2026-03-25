@@ -74,7 +74,7 @@
   - Archivos: `lib/ai-cv.ts`, `components/cv-generator/cv-editor.tsx`
   - Spec: FR24, FR25
 
-- [ ] Task 29: FR26 — Refactorizar Chat IA con ai-elements
+- [x] Task 29: FR26 — Refactorizar Chat IA con ai-elements
   - Scope: Reemplazar la UI de `ai-chat.tsx` con componentes ai-elements (`<Conversation>`, `<Message>`, `<PromptInput>`). Preservar toda la lógica de negocio (historial, envío de mensajes, contexto del CV). Agregar sugerencias de prompts frecuentes que se muestran cuando `messages.length === 0` (chips clicables que pre-rellenan el input).
   - Archivos: `components/cv-generator/ai-chat.tsx`
   - Depende de: cross-cutting Task 2 (ai-elements)
