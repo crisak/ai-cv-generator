@@ -1,9 +1,29 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Pencil, Check, X, Trash2, Plus, Sparkles, ChevronDown, ChevronUp, BookOpen, Link2 } from 'lucide-react'
+import { useState, useRef, useEffect, useId } from 'react'
+import { Pencil, Check, X, Trash2, Plus, Sparkles, ChevronDown, ChevronUp, BookOpen, Link2, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { improveBulletVariants, improveSkills, ATS_VERBS_RE } from '@/lib/ai-cv'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import type { CvData, ExperienceItem, LeadershipItem, EducationItem } from '@/types/experience'
 import type { SettingsDocument } from '@/lib/db/schemas'
 
@@ -16,6 +36,7 @@ interface CvEditorProps {
   onBulletAdded?: (sectionId: string) => void
   onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
   onSectionDeleted?: (sectionId: string) => void
+  onBulletMoved?: (fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) => void
   draftBulletIds?: Record<string, string[]>
   hoveredBulletId?: string | null
   onBulletHover?: (id: string) => void
@@ -38,6 +59,43 @@ function estimatePageLength(cv: CvData): number {
   return Math.max(1, chars / 1800)
 }
 
+// ── Sortable tag pill ────────────────────────────────────────────────────────
+
+function SortableTag({ id, tag, onRemove }: { id: string; tag: string; onRemove: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  }
+
+  return (
+    <span
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] font-medium text-primary leading-none select-none"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        className="cursor-grab active:cursor-grabbing text-primary/40 hover:text-primary/70 transition-colors -ml-0.5"
+      >
+        <GripVertical className="h-2.5 w-2.5" />
+      </button>
+      {tag}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onRemove() }}
+        className="text-primary/50 hover:text-primary transition-colors ml-0.5"
+      >
+        <X className="h-2.5 w-2.5" />
+      </button>
+    </span>
+  )
+}
+
 // ── Skills tags field ─────────────────────────────────────────────────────────
 
 function TagsField({
@@ -54,10 +112,18 @@ function TagsField({
   const [newTag, setNewTag] = useState('')
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const dndId = useId()
 
   const tags = value
     ? value.split(/[,;·|]+/).map((s) => s.trim()).filter(Boolean)
     : []
+
+  const tagIds = tags.map((_, i) => `${dndId}-tag-${i}`)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   function removeTag(idx: number) {
     onChange(tags.filter((_, i) => i !== idx).join(', '))
@@ -80,46 +146,47 @@ function TagsField({
     }
   }
 
+  function handleTagDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = tagIds.indexOf(active.id as string)
+    const newIndex = tagIds.indexOf(over.id as string)
+    if (oldIndex === -1 || newIndex === -1) return
+    onChange(arrayMove(tags, oldIndex, newIndex).join(', '))
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
         <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
         {action}
       </div>
-      <div
-        className={cn(
-          'flex flex-wrap gap-1.5 rounded-md border bg-muted/10 px-2 py-1.5 cursor-text transition-colors',
-          focused ? 'border-ring ring-1 ring-ring' : 'border-border/50'
-        )}
-        onClick={() => inputRef.current?.focus()}
-      >
-        {tags.map((tag, i) => (
-          <span
-            key={i}
-            className="flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] font-medium text-primary leading-none"
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
+        <SortableContext items={tagIds} strategy={rectSortingStrategy}>
+          <div
+            className={cn(
+              'flex flex-wrap gap-1.5 rounded-md border bg-muted/10 px-2 py-1.5 cursor-text transition-colors',
+              focused ? 'border-ring ring-1 ring-ring' : 'border-border/50'
+            )}
+            onClick={() => inputRef.current?.focus()}
           >
-            {tag}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); removeTag(i) }}
-              className="text-primary/50 hover:text-primary transition-colors ml-0.5"
-            >
-              <X className="h-2.5 w-2.5" />
-            </button>
-          </span>
-        ))}
-        <input
-          ref={inputRef}
-          type="text"
-          value={newTag}
-          onChange={(e) => setNewTag(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => { commitTag(); setFocused(false) }}
-          onFocus={() => setFocused(true)}
-          placeholder={tags.length === 0 ? 'Escribe y presiona Enter o coma…' : '+'}
-          className="flex-1 min-w-[80px] bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground/40"
-        />
-      </div>
+            {tags.map((tag, i) => (
+              <SortableTag key={tagIds[i]} id={tagIds[i]} tag={tag} onRemove={() => removeTag(i)} />
+            ))}
+            <input
+              ref={inputRef}
+              type="text"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={() => { commitTag(); setFocused(false) }}
+              onFocus={() => setFocused(true)}
+              placeholder={tags.length === 0 ? 'Escribe y presiona Enter o coma…' : '+'}
+              className="flex-1 min-w-[80px] bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground/40"
+            />
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   )
 }
@@ -466,6 +533,30 @@ function SkillsAiPopover({
   )
 }
 
+// ── Sortable bullet wrapper ──────────────────────────────────────────────────
+
+function SortableBulletRow({
+  sortableId,
+  ...props
+}: {
+  sortableId: string
+} & Parameters<typeof BulletRow>[0]) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortableId })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 50 : undefined,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <BulletRow {...props} dragHandleProps={{ ...attributes, ...listeners }} />
+    </div>
+  )
+}
+
 // ── Bullet row with edit/AI/delete ────────────────────────────────────────────
 
 function BulletRow({
@@ -478,6 +569,7 @@ function BulletRow({
   isLinked,
   onHover,
   onLeave,
+  dragHandleProps,
 }: {
   text: string
   jobOfferText: string
@@ -488,6 +580,7 @@ function BulletRow({
   isLinked?: boolean
   onHover?: () => void
   onLeave?: () => void
+  dragHandleProps?: Record<string, unknown>
 }) {
   const [editing, setEditing] = useState(false)
   const [editText, setEditText] = useState(text)
@@ -559,6 +652,15 @@ function BulletRow({
 
       {/* Content — relative so it sits above background layer */}
       <div className={cn('relative flex gap-2 items-start py-1.5 transition-all duration-200', aiOpen && 'pl-2.5')}>
+        {dragHandleProps && (
+          <button
+            type="button"
+            {...dragHandleProps}
+            className="mt-1 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors touch-none"
+          >
+            <GripVertical className="h-3.5 w-3.5" />
+          </button>
+        )}
         <div
           className={cn(
             'mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 transition-colors duration-200',
@@ -746,23 +848,29 @@ function RoleSection({
 
       {!collapsed && !headerEditing && (
         <div className="px-3 pb-2 border-t border-border/30 divide-y divide-border/20">
-          {item.bullets.map((b, i) => {
-            const bid = bulletIds?.[i]
-            return (
-              <BulletRow
-                key={i}
-                text={b}
-                jobOfferText={jobOfferText}
-                settings={settings}
-                onUpdate={(t) => updateBullet(i, t)}
-                onDelete={() => deleteBullet(i)}
-                bulletId={bid}
-                isLinked={!!bid && hoveredBulletId === bid}
-                onHover={() => bid && onBulletHover?.(bid)}
-                onLeave={onBulletLeave}
-              />
-            )
-          })}
+          <SortableContext
+            items={item.bullets.map((_, i) => `${item.id}-bullet-${i}`)}
+            strategy={verticalListSortingStrategy}
+          >
+            {item.bullets.map((b, i) => {
+              const bid = bulletIds?.[i]
+              return (
+                <SortableBulletRow
+                  key={`${item.id}-bullet-${i}`}
+                  sortableId={`${item.id}-bullet-${i}`}
+                  text={b}
+                  jobOfferText={jobOfferText}
+                  settings={settings}
+                  onUpdate={(t) => updateBullet(i, t)}
+                  onDelete={() => deleteBullet(i)}
+                  bulletId={bid}
+                  isLinked={!!bid && hoveredBulletId === bid}
+                  onHover={() => bid && onBulletHover?.(bid)}
+                  onLeave={onBulletLeave}
+                />
+              )
+            })}
+          </SortableContext>
           <div className="pt-1.5">
             <button
               type="button"
@@ -909,10 +1017,101 @@ function CvSection({ title, action, children }: { title: string; action?: React.
 
 // ── CvEditor main ─────────────────────────────────────────────────────────────
 
-export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange, onBulletAdded, onBulletDeleted, onSectionDeleted, draftBulletIds, hoveredBulletId, onBulletHover, onBulletLeave }: CvEditorProps) {
+export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange, onBulletAdded, onBulletDeleted, onSectionDeleted, onBulletMoved, draftBulletIds, hoveredBulletId, onBulletHover, onBulletLeave }: CvEditorProps) {
   const [skillsAiOpen, setSkillsAiOpen] = useState(false)
+  const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const pages = estimatePageLength(draftCv)
   const pageColor = pages > 2 ? 'text-red-500' : pages > 1.5 ? 'text-amber-500' : 'text-green-600 dark:text-green-400'
+
+  const bulletSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  // Parse sortable ID format: "{sectionId}-bullet-{index}"
+  function parseBulletId(id: string): { sectionId: string; bulletIndex: number } | null {
+    const match = id.match(/^(.+)-bullet-(\d+)$/)
+    if (!match) return null
+    return { sectionId: match[1], bulletIndex: Number(match[2]) }
+  }
+
+  // Track the original position of the dragged bullet (before any cross-section moves)
+  const dragOriginRef = useRef<{ sectionId: string; bulletIndex: number } | null>(null)
+
+  function handleBulletDragStart(event: DragStartEvent) {
+    setActiveDragId(event.active.id as string)
+    const parsed = parseBulletId(event.active.id as string)
+    dragOriginRef.current = parsed
+  }
+
+  function applyBulletChange(
+    sectionId: string,
+    newBullets: string[],
+    exp: ExperienceItem[],
+    lead: LeadershipItem[]
+  ): { experience: ExperienceItem[]; leadership: LeadershipItem[] } {
+    return {
+      experience: exp.map((s) => (s.id === sectionId ? { ...s, bullets: newBullets } : s)),
+      leadership: lead.map((s) => (s.id === sectionId ? { ...s, bullets: newBullets } : s)),
+    }
+  }
+
+  function handleBulletDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveDragId(null)
+
+    if (!over || active.id === over.id) {
+      dragOriginRef.current = null
+      return
+    }
+
+    const from = parseBulletId(active.id as string)
+    const to = parseBulletId(over.id as string)
+    if (!from || !to) {
+      dragOriginRef.current = null
+      return
+    }
+
+    const allSections = [...draftCv.experience, ...draftCv.leadership]
+
+    if (from.sectionId === to.sectionId) {
+      // Same section: reorder
+      const srcSection = allSections.find((s) => s.id === from.sectionId)
+      if (!srcSection) { dragOriginRef.current = null; return }
+      const reordered = arrayMove(srcSection.bullets, from.bulletIndex, to.bulletIndex)
+      const updated = applyBulletChange(from.sectionId, reordered, draftCv.experience, draftCv.leadership)
+      onChange({ ...draftCv, ...updated })
+      onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
+    } else {
+      // Cross-section: move bullet from source to destination
+      const srcSection = allSections.find((s) => s.id === from.sectionId)
+      const dstSection = allSections.find((s) => s.id === to.sectionId)
+      if (!srcSection || !dstSection) { dragOriginRef.current = null; return }
+
+      const bulletText = srcSection.bullets[from.bulletIndex]
+      if (bulletText === undefined) { dragOriginRef.current = null; return }
+
+      const srcBullets = srcSection.bullets.filter((_, i) => i !== from.bulletIndex)
+      const dstBullets = [...dstSection.bullets]
+      dstBullets.splice(to.bulletIndex, 0, bulletText)
+
+      let { experience, leadership } = applyBulletChange(from.sectionId, srcBullets, draftCv.experience, draftCv.leadership)
+      ;({ experience, leadership } = applyBulletChange(to.sectionId, dstBullets, experience, leadership))
+      onChange({ ...draftCv, experience, leadership })
+      onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
+    }
+
+    dragOriginRef.current = null
+  }
+
+  // Find the text for the currently dragged bullet (for DragOverlay)
+  const activeDragText = (() => {
+    if (!activeDragId) return null
+    const parsed = parseBulletId(activeDragId)
+    if (!parsed) return null
+    const section = [...draftCv.experience, ...draftCv.leadership].find((s) => s.id === parsed.sectionId)
+    return section?.bullets[parsed.bulletIndex] ?? null
+  })()
 
   function updateExperience(id: string, updated: ExperienceItem) {
     onChange({ ...draftCv, experience: draftCv.experience.map((e) => (e.id === id ? updated as ExperienceItem : e)) })
@@ -987,61 +1186,78 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
         <InlineField label="Teléfono" value={draftCv.basics.contact.phone} onSave={(v) => onChange({ ...draftCv, basics: { ...draftCv.basics, contact: { ...draftCv.basics.contact, phone: v } } })} />
       </div>
 
-      {/* Experience */}
-      {expWithBullets.length > 0 && (
-        <CvSection title="Experiencia Profesional">
-          {expWithBullets.sort((a, b) => a.order - b.order).map((exp) => (
-            <RoleSection
-              key={exp.id}
-              item={exp}
-              jobOfferText={jobOfferText}
-              settings={settings}
-              onUpdate={(u) => updateExperience(exp.id, u as ExperienceItem)}
-              onDelete={() => deleteExperience(exp.id)}
-              onBulletAdded={() => onBulletAdded?.(exp.id)}
-              onBulletDeleted={(idx) => onBulletDeleted?.(exp.id, idx)}
-              bulletIds={draftBulletIds?.[exp.id]}
-              hoveredBulletId={hoveredBulletId}
-              onBulletHover={onBulletHover}
-              onBulletLeave={onBulletLeave}
-            />
-          ))}
-        </CvSection>
-      )}
+      {/* Experience + Leadership — shared DndContext for cross-section bullet D&D */}
+      <DndContext
+        sensors={bulletSensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleBulletDragStart}
+        onDragEnd={handleBulletDragEnd}
+      >
+        {/* Experience */}
+        {expWithBullets.length > 0 && (
+          <CvSection title="Experiencia Profesional">
+            {expWithBullets.sort((a, b) => a.order - b.order).map((exp) => (
+              <RoleSection
+                key={exp.id}
+                item={exp}
+                jobOfferText={jobOfferText}
+                settings={settings}
+                onUpdate={(u) => updateExperience(exp.id, u as ExperienceItem)}
+                onDelete={() => deleteExperience(exp.id)}
+                onBulletAdded={() => onBulletAdded?.(exp.id)}
+                onBulletDeleted={(idx) => onBulletDeleted?.(exp.id, idx)}
+                bulletIds={draftBulletIds?.[exp.id]}
+                hoveredBulletId={hoveredBulletId}
+                onBulletHover={onBulletHover}
+                onBulletLeave={onBulletLeave}
+              />
+            ))}
+          </CvSection>
+        )}
 
-      {/* Leadership */}
-      {leadWithBullets.length > 0 && (
-        <CvSection
-          title="Liderazgo y Mentoría"
-          action={
-            <button
-              type="button"
-              onClick={clearLeadership}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
-              title="Eliminar sección completa"
-            >
-              <Trash2 className="h-3 w-3" /> Eliminar sección
-            </button>
-          }
-        >
-          {leadWithBullets.sort((a, b) => a.order - b.order).map((lead) => (
-            <RoleSection
-              key={lead.id}
-              item={lead}
-              jobOfferText={jobOfferText}
-              settings={settings}
-              onUpdate={(u) => updateLeadership(lead.id, u as LeadershipItem)}
-              onDelete={() => deleteLeadershipItem(lead.id)}
-              onBulletAdded={() => onBulletAdded?.(lead.id)}
-              onBulletDeleted={(idx) => onBulletDeleted?.(lead.id, idx)}
-              bulletIds={draftBulletIds?.[lead.id]}
-              hoveredBulletId={hoveredBulletId}
-              onBulletHover={onBulletHover}
-              onBulletLeave={onBulletLeave}
-            />
-          ))}
-        </CvSection>
-      )}
+        {/* Leadership */}
+        {leadWithBullets.length > 0 && (
+          <CvSection
+            title="Liderazgo y Mentoría"
+            action={
+              <button
+                type="button"
+                onClick={clearLeadership}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                title="Eliminar sección completa"
+              >
+                <Trash2 className="h-3 w-3" /> Eliminar sección
+              </button>
+            }
+          >
+            {leadWithBullets.sort((a, b) => a.order - b.order).map((lead) => (
+              <RoleSection
+                key={lead.id}
+                item={lead}
+                jobOfferText={jobOfferText}
+                settings={settings}
+                onUpdate={(u) => updateLeadership(lead.id, u as LeadershipItem)}
+                onDelete={() => deleteLeadershipItem(lead.id)}
+                onBulletAdded={() => onBulletAdded?.(lead.id)}
+                onBulletDeleted={(idx) => onBulletDeleted?.(lead.id, idx)}
+                bulletIds={draftBulletIds?.[lead.id]}
+                hoveredBulletId={hoveredBulletId}
+                onBulletHover={onBulletHover}
+                onBulletLeave={onBulletLeave}
+              />
+            ))}
+          </CvSection>
+        )}
+
+        {/* Drag overlay for bullet being dragged */}
+        <DragOverlay>
+          {activeDragText ? (
+            <div className="rounded-md border border-primary/30 bg-card shadow-lg px-3 py-2 text-xs leading-relaxed max-w-2xl opacity-90">
+              {activeDragText}
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* Education */}
       <CvSection

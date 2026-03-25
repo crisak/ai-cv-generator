@@ -122,8 +122,8 @@ Click "Optimizar con IA"
 | FR19 | Col 1: Botón toggle para colapsar/expandir todas las secciones simultáneamente | ✅ |
 | FR20 | Col 1: Panel colapsable para ceder espacio al CV borrador | ✅ |
 | FR21 | Col 1→2: Sincronización automática — al seleccionar bullets cuya experiencia no está en el borrador, crear la entrada completa (empresa, puesto, fechas) en col 2 | ✅ |
-| FR22 | Col 2: Drag & Drop de bullets entre secciones (incluye cross-section) | ⬜ Pendiente |
-| FR23 | Col 2: Drag & Drop de pills/tags en campo Habilidades > Técnicas | ⬜ Pendiente |
+| FR22 | Col 2: Drag & Drop de bullets entre secciones (incluye cross-section) | ✅ |
+| FR23 | Col 2: Drag & Drop de pills/tags en campo Habilidades > Técnicas | ✅ |
 | FR24 | Col 2: Respuesta IA en sección Habilidades > Técnicas mostrada como pills editables (agregar/borrar individual), no como textarea | ⬜ Pendiente |
 | FR25 | Col 2: Mejorar prompt de extracción de skills técnicas — extraer exclusivamente de la oferta laboral, sin mezclar con la experiencia del usuario | ⬜ Pendiente |
 | FR26 | Chat IA: Refactorizar UI usando ai-elements (estilo de respuesta + sugerencias de prompts al iniciar conversación), preservando toda la lógica de negocio actual | ⬜ Pendiente |

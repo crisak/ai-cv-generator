@@ -64,7 +64,7 @@
   - Archivos: `lib/ai-cv.ts`, `app/(app)/cv-generator/page.tsx`
   - Spec: FR21
 
-- [ ] Task 27: FR22+FR23 — Drag & Drop de bullets y skills (Col 2)
+- [x] Task 27: FR22+FR23 — Drag & Drop de bullets y skills (Col 2)
   - Scope: Instalar `@dnd-kit/core` y `@dnd-kit/sortable` si no están presentes. Hacer cada bullet del CV editor draggable con handle visual, permitiendo reordenar dentro de la misma sección y mover entre secciones (cross-section drop). Hacer las pills de Habilidades > Técnicas draggable para reordenar por relevancia. Persistir el nuevo orden en `draftCv`.
   - Archivos: `components/cv-generator/cv-editor.tsx`
   - Spec: FR22, FR23

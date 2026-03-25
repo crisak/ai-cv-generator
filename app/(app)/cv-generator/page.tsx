@@ -311,10 +311,46 @@ function CvGeneratorContent() {
   }
 
   function handleBulletDeleted(sectionId: string, bulletIndex: number) {
+    // Deselect the corresponding bullet in col 1
+    const bulletId = draftBulletIds[sectionId]?.[bulletIndex]
+    if (bulletId && !bulletId.startsWith('manual-')) {
+      setSelections((prev) => {
+        const sectionBullets = prev[sectionId]
+        if (!sectionBullets) return prev
+        return {
+          ...prev,
+          [sectionId]: sectionBullets.map((b) =>
+            b.id === bulletId ? { ...b, selected: false } : b
+          ),
+        }
+      })
+    }
     setDraftBulletIds((prev) => ({
       ...prev,
       [sectionId]: (prev[sectionId] ?? []).filter((_, i) => i !== bulletIndex),
     }))
+  }
+
+  function handleBulletMoved(fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) {
+    setDraftBulletIds((prev) => {
+      const next = { ...prev }
+      if (fromSectionId === toSectionId) {
+        // Same section: reorder IDs to match reordered bullets
+        const ids = [...(next[fromSectionId] ?? [])]
+        const [moved] = ids.splice(fromIndex, 1)
+        ids.splice(toIndex, 0, moved)
+        next[fromSectionId] = ids
+      } else {
+        // Cross-section: move ID from source to destination
+        const srcIds = [...(next[fromSectionId] ?? [])]
+        const dstIds = [...(next[toSectionId] ?? [])]
+        const [movedId] = srcIds.splice(fromIndex, 1)
+        dstIds.splice(toIndex, 0, movedId)
+        next[fromSectionId] = srcIds
+        next[toSectionId] = dstIds
+      }
+      return next
+    })
   }
 
   function handleSectionDeleted(sectionId: string) {
@@ -524,6 +560,7 @@ function CvGeneratorContent() {
             onBulletAdded={handleBulletAdded}
             onBulletDeleted={handleBulletDeleted}
             onSectionDeleted={handleSectionDeleted}
+            onBulletMoved={handleBulletMoved}
             onContinue={handleUseDraft}
             onOptimize={handleOptimize}
             onOptimizeConfirm={handleOptimizeConfirm}
