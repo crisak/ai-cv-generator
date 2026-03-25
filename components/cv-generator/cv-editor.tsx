@@ -1,7 +1,19 @@
 'use client'
 
 import { useState, useRef, useEffect, useId } from 'react'
-import { Pencil, Check, X, Trash2, Plus, Sparkles, ChevronDown, ChevronUp, BookOpen, Link2, GripVertical } from 'lucide-react'
+import {
+  Pencil,
+  Check,
+  X,
+  Trash2,
+  Plus,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
+  Link2,
+  GripVertical,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { improveBulletVariants, improveSkills, ATS_VERBS_RE } from '@/lib/ai-cv'
 import {
@@ -36,7 +48,12 @@ interface CvEditorProps {
   onBulletAdded?: (sectionId: string) => void
   onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
   onSectionDeleted?: (sectionId: string) => void
-  onBulletMoved?: (fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) => void
+  onBulletMoved?: (
+    fromSectionId: string,
+    fromIndex: number,
+    toSectionId: string,
+    toIndex: number
+  ) => void
   draftBulletIds?: Record<string, string[]>
   hoveredBulletId?: string | null
   onBulletHover?: (id: string) => void
@@ -53,16 +70,16 @@ function estimatePageLength(cv: CvData): number {
     cv.skills.technical,
     cv.skills.language,
     cv.skills.interests,
-  ]
-    .join(' ')
-    .length
+  ].join(' ').length
   return Math.max(1, chars / 1800)
 }
 
 // ── Sortable tag pill ────────────────────────────────────────────────────────
 
 function SortableTag({ id, tag, onRemove }: { id: string; tag: string; onRemove: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  })
   const style = {
     transform: CSS.Translate.toString(transform),
     transition,
@@ -74,21 +91,24 @@ function SortableTag({ id, tag, onRemove }: { id: string; tag: string; onRemove:
     <span
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-1 rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[11px] font-medium text-primary leading-none select-none"
+      className="bg-primary/10 border-primary/20 text-primary flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-none font-medium select-none"
     >
       <button
         type="button"
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing text-primary/40 hover:text-primary/70 transition-colors -ml-0.5"
+        className="text-primary/40 hover:text-primary/70 -ml-0.5 cursor-grab transition-colors active:cursor-grabbing"
       >
         <GripVertical className="h-2.5 w-2.5" />
       </button>
       {tag}
       <button
         type="button"
-        onClick={(e) => { e.stopPropagation(); onRemove() }}
-        className="text-primary/50 hover:text-primary transition-colors ml-0.5"
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove()
+        }}
+        className="text-primary/50 hover:text-primary ml-0.5 transition-colors"
       >
         <X className="h-2.5 w-2.5" />
       </button>
@@ -115,7 +135,10 @@ function TagsField({
   const dndId = useId()
 
   const tags = value
-    ? value.split(/[,;·|]+/).map((s) => s.trim()).filter(Boolean)
+    ? value
+        .split(/[,;·|]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
     : []
 
   const tagIds = tags.map((_, i) => `${dndId}-tag-${i}`)
@@ -157,16 +180,18 @@ function TagsField({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+      <div className="mb-1.5 flex items-center justify-between">
+        <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+          {label}
+        </p>
         {action}
       </div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTagDragEnd}>
         <SortableContext items={tagIds} strategy={rectSortingStrategy}>
           <div
             className={cn(
-              'flex flex-wrap gap-1.5 rounded-md border bg-muted/10 px-2 py-1.5 cursor-text transition-colors',
-              focused ? 'border-ring ring-1 ring-ring' : 'border-border/50'
+              'bg-muted/10 flex cursor-text flex-wrap gap-1.5 rounded-md border px-2 py-1.5 transition-colors',
+              focused ? 'border-ring ring-ring ring-1' : 'border-border/50'
             )}
             onClick={() => inputRef.current?.focus()}
           >
@@ -179,10 +204,13 @@ function TagsField({
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               onKeyDown={handleKeyDown}
-              onBlur={() => { commitTag(); setFocused(false) }}
+              onBlur={() => {
+                commitTag()
+                setFocused(false)
+              }}
               onFocus={() => setFocused(true)}
               placeholder={tags.length === 0 ? 'Escribe y presiona Enter o coma…' : '+'}
-              className="flex-1 min-w-[80px] bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground/40"
+              className="placeholder:text-muted-foreground/40 min-w-[80px] flex-1 bg-transparent text-[11px] focus:outline-none"
             />
           </div>
         </SortableContext>
@@ -215,13 +243,15 @@ function InlineField({
   if (editing) {
     return (
       <div className="space-y-1">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
+        <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+          {label}
+        </p>
         {multiline ? (
           <textarea
             autoFocus
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs resize-y min-h-[56px] focus:outline-none focus:ring-1 focus:ring-ring"
+            className="border-input bg-background focus:ring-ring min-h-[56px] w-full resize-y rounded border px-2 py-1.5 text-xs focus:ring-1 focus:outline-none"
           />
         ) : (
           <input
@@ -229,15 +259,29 @@ function InlineField({
             type="text"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
-            className="w-full rounded border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') save()
+              if (e.key === 'Escape') setEditing(false)
+            }}
+            className="border-input bg-background focus:ring-ring w-full rounded border px-2 py-1 text-xs focus:ring-1 focus:outline-none"
           />
         )}
         <div className="flex gap-1">
-          <button type="button" onClick={save} className="flex items-center gap-1 rounded bg-primary px-2 py-0.5 text-[10px] text-primary-foreground">
+          <button
+            type="button"
+            onClick={save}
+            className="bg-primary text-primary-foreground flex items-center gap-1 rounded px-2 py-0.5 text-[10px]"
+          >
             <Check className="h-2.5 w-2.5" /> Guardar
           </button>
-          <button type="button" onClick={() => { setDraft(value); setEditing(false) }} className="flex items-center gap-1 rounded border border-border/60 px-2 py-0.5 text-[10px] text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(value)
+              setEditing(false)
+            }}
+            className="border-border/60 text-muted-foreground flex items-center gap-1 rounded border px-2 py-0.5 text-[10px]"
+          >
             <X className="h-2.5 w-2.5" />
           </button>
         </div>
@@ -247,14 +291,21 @@ function InlineField({
 
   return (
     <div className="group flex items-start gap-1">
-      <div className="flex-1 min-w-0">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-xs text-foreground break-words">{value || <span className="text-muted-foreground/50 italic">vacío</span>}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+          {label}
+        </p>
+        <p className="text-foreground text-xs break-words">
+          {value || <span className="text-muted-foreground/50 italic">vacío</span>}
+        </p>
       </div>
       <button
         type="button"
-        onClick={() => { setDraft(value); setEditing(true) }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-muted-foreground hover:text-foreground"
+        onClick={() => {
+          setDraft(value)
+          setEditing(true)
+        }}
+        className="text-muted-foreground hover:text-foreground shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
       >
         <Pencil className="h-3 w-3" />
       </button>
@@ -307,10 +358,10 @@ function BulletAiPopover({
   }
 
   return (
-    <div className="absolute right-0 bottom-full mb-1.5 z-50 w-96 rounded-lg border border-border bg-popover shadow-lg text-xs">
+    <div className="border-border bg-popover absolute right-0 bottom-full z-50 mb-1.5 w-96 rounded-lg border text-xs shadow-lg">
       {/* Header with title + X close button */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
-        <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
+      <div className="border-border/40 flex items-center justify-between border-b px-3 py-2">
+        <p className="text-foreground text-[10px] font-semibold tracking-wide uppercase">
           {mode === 'variants' ? 'Elige la mejor versión' : 'Mejorar con IA'}
         </p>
         <button
@@ -324,14 +375,20 @@ function BulletAiPopover({
       </div>
 
       {mode === 'input' && (
-        <div className="p-3 space-y-2.5">
+        <div className="space-y-2.5 p-3">
           <textarea
             autoFocus
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } if (e.key === 'Escape') onClose() }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit()
+              }
+              if (e.key === 'Escape') onClose()
+            }}
             placeholder='Ej: "hazlo más conciso y agrega impacto cuantificable"'
-            className="w-full rounded border border-input bg-background px-2 py-1.5 text-[11px] resize-none min-h-[56px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+            className="border-input bg-background focus:ring-ring placeholder:text-muted-foreground/50 min-h-[56px] w-full resize-none rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
           />
           <div className="flex flex-wrap gap-1">
             {AI_BULLET_CHIPS.map((chip) => (
@@ -355,11 +412,15 @@ function BulletAiPopover({
               type="button"
               disabled={!instruction.trim()}
               onClick={handleSubmit}
-              className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1 rounded px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
             >
               <Sparkles className="h-3 w-3" /> Generar variantes
             </button>
-            <button type="button" onClick={onClose} className="rounded border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              type="button"
+              onClick={onClose}
+              className="border-border/60 text-muted-foreground hover:text-foreground rounded border px-2 py-1 text-[11px] transition-colors"
+            >
               Cancelar
             </button>
           </div>
@@ -367,31 +428,34 @@ function BulletAiPopover({
       )}
 
       {mode === 'loading' && (
-        <div className="flex items-center justify-center gap-2 p-6 text-muted-foreground">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="text-muted-foreground flex items-center justify-center gap-2 p-6">
+          <span className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
           <span className="text-[11px]">Generando variantes…</span>
         </div>
       )}
 
       {mode === 'variants' && (
-        <div className="p-3 space-y-2">
+        <div className="space-y-2 p-3">
           {variants.map((v, i) => (
             <button
               key={i}
               type="button"
-              onClick={() => { onUpdate(v); onClose() }}
-              className="w-full text-left rounded-md border border-border/50 bg-background hover:bg-muted/40 hover:border-primary/30 transition-colors p-2"
+              onClick={() => {
+                onUpdate(v)
+                onClose()
+              }}
+              className="border-border/50 bg-background hover:bg-muted/40 hover:border-primary/30 w-full rounded-md border p-2 text-left transition-colors"
             >
               <div className="flex items-start gap-1.5">
-                <span className="text-[10px] font-bold text-primary shrink-0 mt-0.5">{i + 1}</span>
-                <p className="text-[11px] leading-relaxed text-foreground">{v}</p>
+                <span className="text-primary mt-0.5 shrink-0 text-[10px] font-bold">{i + 1}</span>
+                <p className="text-foreground text-[11px] leading-relaxed">{v}</p>
               </div>
             </button>
           ))}
           <button
             type="button"
             onClick={() => setMode('input')}
-            className="w-full text-[10px] text-muted-foreground hover:text-foreground transition-colors text-center pt-0.5"
+            className="text-muted-foreground hover:text-foreground w-full pt-0.5 text-center text-[10px] transition-colors"
           >
             ← Reintentar con otras instrucciones
           </button>
@@ -427,41 +491,100 @@ function SkillsAiPopover({
 }) {
   const [mode, setMode] = useState<SkillsPopoverMode>('input')
   const [instruction, setInstruction] = useState('')
-  const [result, setResult] = useState('')
+  const [result, setResult] = useState<string[]>([])
+  const [newTag, setNewTag] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const parseSkills = (text: string): string[] => {
+    return text
+      .split(/[,;·|]+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+  }
 
   async function handleSubmit() {
     if (!instruction.trim()) return
+    if (!jobOfferText.trim()) {
+      setInstruction('Ingresa primero la oferta laboral en el Step 1')
+      return
+    }
     setMode('loading')
-    const suggested = await improveSkills(currentSkills, jobOfferText, instruction, settings)
+    const suggested = await improveSkills(jobOfferText, currentSkills, instruction, settings)
     if (suggested) {
-      setResult(suggested)
+      setResult(parseSkills(suggested))
       setMode('result')
     } else {
       setMode('input')
     }
   }
 
+  function removePill(idx: number) {
+    setResult(result.filter((_, i) => i !== idx))
+  }
+
+  function commitPill() {
+    const trimmed = newTag.trim().replace(/[,;]$/, '')
+    if (!trimmed) return
+    if (!result.includes(trimmed)) {
+      setResult([...result, trimmed])
+    }
+    setNewTag('')
+  }
+
+  function handlePillKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      commitPill()
+    }
+    if (e.key === 'Backspace' && !newTag && result.length > 0) {
+      removePill(result.length - 1)
+    }
+  }
+
+  function handleAccept() {
+    const existing = parseSkills(currentSkills)
+    const merged = [...existing]
+    result.forEach((skill) => {
+      if (!merged.some((s) => s.toLowerCase() === skill.toLowerCase())) {
+        merged.push(skill)
+      }
+    })
+    onUpdate(merged.join(', '))
+    onClose()
+  }
+
   return (
-    <div className="absolute right-0 bottom-full mb-1.5 z-50 w-96 rounded-lg border border-border bg-popover shadow-lg text-xs">
+    <div className="border-border bg-popover absolute right-0 bottom-full z-50 mb-1.5 w-96 rounded-lg border text-xs shadow-lg">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/40">
-        <p className="text-[10px] font-semibold text-foreground uppercase tracking-wide">
+      <div className="border-border/40 flex items-center justify-between border-b px-3 py-2">
+        <p className="text-foreground text-[10px] font-semibold tracking-wide uppercase">
           {mode === 'result' ? 'Habilidades sugeridas por IA' : 'Mejorar habilidades con IA'}
         </p>
-        <button type="button" onClick={onClose} className="text-muted-foreground/50 hover:text-foreground transition-colors" title="Cerrar">
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-muted-foreground/50 hover:text-foreground transition-colors"
+          title="Cerrar"
+        >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {mode === 'input' && (
-        <div className="p-3 space-y-2.5">
+        <div className="space-y-2.5 p-3">
           <textarea
             autoFocus
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit() } if (e.key === 'Escape') onClose() }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                handleSubmit()
+              }
+              if (e.key === 'Escape') onClose()
+            }}
             placeholder='Ej: "Extrae al menos 10 skills que hagan match con la oferta y agrega complementos"'
-            className="w-full rounded border border-input bg-background px-2 py-1.5 text-[11px] resize-none min-h-[56px] focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50"
+            className="border-input bg-background focus:ring-ring placeholder:text-muted-foreground/50 min-h-[56px] w-full resize-none rounded border px-2 py-1.5 text-[11px] focus:ring-1 focus:outline-none"
           />
           <div className="flex flex-wrap gap-1">
             {SKILLS_AI_CHIPS.map((chip) => (
@@ -485,11 +608,15 @@ function SkillsAiPopover({
               type="button"
               disabled={!instruction.trim()}
               onClick={handleSubmit}
-              className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] text-primary-foreground disabled:opacity-50 hover:bg-primary/90 transition-colors"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1 rounded px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
             >
               <Sparkles className="h-3 w-3" /> Generar sugerencia
             </button>
-            <button type="button" onClick={onClose} className="rounded border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              type="button"
+              onClick={onClose}
+              className="border-border/60 text-muted-foreground hover:text-foreground rounded border px-2 py-1 text-[11px] transition-colors"
+            >
               Cancelar
             </button>
           </div>
@@ -497,32 +624,68 @@ function SkillsAiPopover({
       )}
 
       {mode === 'loading' && (
-        <div className="flex items-center justify-center gap-2 p-6 text-muted-foreground">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="text-muted-foreground flex items-center justify-center gap-2 p-6">
+          <span className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
           <span className="text-[11px]">Analizando oferta y perfil…</span>
         </div>
       )}
 
       {mode === 'result' && (
-        <div className="p-3 space-y-2.5">
-          <p className="text-[10px] text-muted-foreground">Revisa y edita antes de aceptar:</p>
-          <textarea
-            value={result}
-            onChange={(e) => setResult(e.target.value)}
-            className="w-full rounded border border-input bg-background px-2 py-1.5 text-[11px] resize-y min-h-[80px] focus:outline-none focus:ring-1 focus:ring-ring"
-          />
+        <div className="space-y-2.5 p-3">
+          <p className="text-muted-foreground text-[10px]">
+            Edita las sugerencias antes de aceptar:
+          </p>
+          <div
+            className="border-border/50 bg-muted/10 flex min-h-[52px] flex-wrap gap-1.5 rounded-md border px-2 py-1.5"
+            onClick={() => inputRef.current?.focus()}
+          >
+            {result.map((skill, i) => (
+              <span
+                key={i}
+                className="bg-primary/10 border-primary/20 text-primary flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-none font-medium"
+              >
+                {skill}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    removePill(i)
+                  }}
+                  className="text-primary/50 hover:text-primary ml-0.5 transition-colors"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </span>
+            ))}
+            <input
+              ref={inputRef}
+              type="text"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={handlePillKeyDown}
+              onBlur={() => {
+                commitPill()
+                setNewTag('')
+              }}
+              placeholder={result.length === 0 ? 'Agregar skill…' : '+'}
+              className="placeholder:text-muted-foreground/40 min-w-[80px] flex-1 bg-transparent text-[11px] focus:outline-none"
+            />
+          </div>
           <div className="flex gap-1.5">
             <button
               type="button"
-              onClick={() => { onUpdate(result); onClose() }}
-              className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-[11px] text-primary-foreground hover:bg-primary/90 transition-colors"
+              onClick={handleAccept}
+              className="bg-primary text-primary-foreground hover:bg-primary/90 flex items-center gap-1 rounded px-2.5 py-1 text-[11px] transition-colors"
             >
               <Check className="h-3 w-3" /> Aceptar
             </button>
             <button
               type="button"
-              onClick={() => setMode('input')}
-              className="rounded border border-border/60 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => {
+                setResult([])
+                setMode('input')
+              }}
+              className="border-border/60 text-muted-foreground hover:text-foreground rounded border px-2 py-1 text-[11px] transition-colors"
             >
               ← Reintentar
             </button>
@@ -541,7 +704,9 @@ function SortableBulletRow({
 }: {
   sortableId: string
 } & Parameters<typeof BulletRow>[0]) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: sortableId })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: sortableId,
+  })
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -600,13 +765,21 @@ function BulletRow({
           autoFocus
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
-          className="w-full rounded border border-input bg-background px-2 py-1.5 text-xs resize-y min-h-[64px] focus:outline-none focus:ring-1 focus:ring-ring"
+          className="border-input bg-background focus:ring-ring min-h-[64px] w-full resize-y rounded border px-2 py-1.5 text-xs focus:ring-1 focus:outline-none"
         />
         <div className="flex gap-1.5">
-          <button type="button" onClick={save} className="flex items-center gap-1 rounded bg-primary px-2 py-1 text-[10px] text-primary-foreground">
+          <button
+            type="button"
+            onClick={save}
+            className="bg-primary text-primary-foreground flex items-center gap-1 rounded px-2 py-1 text-[10px]"
+          >
             <Check className="h-2.5 w-2.5" /> Guardar
           </button>
-          <button type="button" onClick={() => setEditing(false)} className="flex items-center gap-1 rounded border border-border/60 px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground">
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="border-border/60 text-muted-foreground hover:text-foreground flex items-center gap-1 rounded border px-2 py-1 text-[10px]"
+          >
             <X className="h-2.5 w-2.5" /> Cancelar
           </button>
         </div>
@@ -632,7 +805,7 @@ function BulletRow({
       {/* Background + scan layer — overflow-hidden here so scan line is clipped but popover escapes */}
       <div
         className={cn(
-          'absolute inset-0 overflow-hidden rounded-sm pointer-events-none',
+          'pointer-events-none absolute inset-0 overflow-hidden rounded-sm',
           'transition-colors duration-300 ease-out',
           isLinked && !aiOpen && !aiLoading && 'bg-primary/[0.07]',
           aiOpen && !aiLoading && 'bg-primary/[0.04]',
@@ -640,37 +813,51 @@ function BulletRow({
         )}
       >
         {aiOpen && !aiLoading && (
-          <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-primary/50" />
+          <div className="bg-primary/50 absolute top-2 bottom-2 left-0 w-0.5 rounded-full" />
         )}
         {aiLoading && (
           <>
-            <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full bg-amber-400/70" />
-            <div className="absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent animate-ai-scan" />
+            <div className="absolute top-2 bottom-2 left-0 w-0.5 rounded-full bg-amber-400/70" />
+            <div className="animate-ai-scan absolute inset-y-0 w-24 bg-gradient-to-r from-transparent via-amber-400/20 to-transparent" />
           </>
         )}
       </div>
 
       {/* Content — relative so it sits above background layer */}
-      <div className={cn('relative flex gap-2 items-start py-1.5 transition-all duration-200', aiOpen && 'pl-2.5')}>
+      <div
+        className={cn(
+          'relative flex items-start gap-2 py-1.5 transition-all duration-200',
+          aiOpen && 'pl-2.5'
+        )}
+      >
         {dragHandleProps && (
           <button
             type="button"
             {...dragHandleProps}
-            className="mt-1 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/30 hover:text-muted-foreground/70 transition-colors touch-none"
+            className="text-muted-foreground/30 hover:text-muted-foreground/70 mt-1 shrink-0 cursor-grab touch-none transition-colors active:cursor-grabbing"
           >
             <GripVertical className="h-3.5 w-3.5" />
           </button>
         )}
         <div
           className={cn(
-            'mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 transition-colors duration-200',
-            aiLoading ? 'bg-amber-400 animate-pulse' :
-            aiOpen    ? 'bg-primary' :
-            isAts     ? 'bg-green-500' : 'bg-amber-400'
+            'mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full transition-colors duration-200',
+            aiLoading
+              ? 'animate-pulse bg-amber-400'
+              : aiOpen
+                ? 'bg-primary'
+                : isAts
+                  ? 'bg-green-500'
+                  : 'bg-amber-400'
           )}
           title={isAts ? 'Verbo ATS fuerte' : 'Sin verbo ATS'}
         />
-        <p className={cn('flex-1 text-xs leading-relaxed transition-opacity duration-200', aiLoading && 'opacity-50')}>
+        <p
+          className={cn(
+            'flex-1 text-xs leading-relaxed transition-opacity duration-200',
+            aiLoading && 'opacity-50'
+          )}
+        >
           {text}
         </p>
         {/* Link2 scroll button — always rendered for layout stability, visible only for original bullets */}
@@ -684,22 +871,30 @@ function BulletRow({
               ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
           }
           className={cn(
-            'shrink-0 mt-0.5 text-primary/60 hover:text-primary',
+            'text-primary/60 hover:text-primary mt-0.5 shrink-0',
             'transition-[opacity,color] duration-300 ease-out',
             isOriginalBullet
               ? cn('opacity-0 group-hover:opacity-100', isLinked && '!opacity-100')
-              : 'opacity-0 pointer-events-none'
+              : 'pointer-events-none opacity-0'
           )}
           title="Ver bullet original"
         >
           <Link2 className="h-3.5 w-3.5" />
         </button>
-        <div className={cn('relative flex items-center gap-1 shrink-0 transition-opacity', aiOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100')}>
+        <div
+          className={cn(
+            'relative flex shrink-0 items-center gap-1 transition-opacity',
+            aiOpen ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          )}
+        >
           {settings?.aiApiKey && (
             <button
               type="button"
               onClick={() => setAiOpen((v) => !v)}
-              className={cn('transition-colors', aiOpen ? 'text-primary' : 'text-muted-foreground/50 hover:text-primary')}
+              className={cn(
+                'transition-colors',
+                aiOpen ? 'text-primary' : 'text-muted-foreground/50 hover:text-primary'
+              )}
               title="Mejorar con IA"
             >
               <Sparkles className="h-3.5 w-3.5" />
@@ -710,15 +905,32 @@ function BulletRow({
               bulletText={text}
               jobOfferText={jobOfferText}
               settings={settings}
-              onUpdate={(t) => { onUpdate(t); setAiOpen(false) }}
-              onClose={() => { setAiOpen(false); setAiLoading(false) }}
+              onUpdate={(t) => {
+                onUpdate(t)
+                setAiOpen(false)
+              }}
+              onClose={() => {
+                setAiOpen(false)
+                setAiLoading(false)
+              }}
               onLoadingChange={setAiLoading}
             />
           )}
-          <button type="button" onClick={() => { setEditText(text); setEditing(true) }} className="text-muted-foreground/50 hover:text-foreground transition-colors">
+          <button
+            type="button"
+            onClick={() => {
+              setEditText(text)
+              setEditing(true)
+            }}
+            className="text-muted-foreground/50 hover:text-foreground transition-colors"
+          >
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={onDelete} className="text-muted-foreground/50 hover:text-destructive transition-colors">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-muted-foreground/50 hover:text-destructive transition-colors"
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -773,8 +985,8 @@ function RoleSection({
   }
 
   return (
-    <div className="rounded-md border border-border/40">
-      <div className="px-3 py-2 sticky top-0 z-10 bg-card rounded-t-md group/header">
+    <div className="border-border/40 rounded-md border">
+      <div className="bg-card group/header sticky top-0 z-10 rounded-t-md px-3 py-2">
         {headerEditing ? (
           <div className="space-y-2">
             <InlineField
@@ -801,28 +1013,28 @@ function RoleSection({
             <button
               type="button"
               onClick={() => setHeaderEditing(false)}
-              className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground text-[10px] transition-colors"
             >
               ← Cerrar edición
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
-            <div
-              className="flex-1 min-w-0 cursor-pointer"
-              onClick={() => setCollapsed((v) => !v)}
-            >
-              <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setCollapsed((v) => !v)}>
+              <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-xs font-semibold">{org}</span>
-                <span className="text-[11px] text-muted-foreground">· {role}</span>
+                <span className="text-muted-foreground text-[11px]">· {role}</span>
               </div>
-              <p className="text-[11px] text-muted-foreground">{item.dates}</p>
+              <p className="text-muted-foreground text-[11px]">{item.dates}</p>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex shrink-0 items-center gap-1">
               <button
                 type="button"
-                onClick={() => { setHeaderEditing(true); setCollapsed(false) }}
-                className="opacity-0 group-hover/header:opacity-100 transition-opacity text-muted-foreground/50 hover:text-foreground"
+                onClick={() => {
+                  setHeaderEditing(true)
+                  setCollapsed(false)
+                }}
+                className="text-muted-foreground/50 hover:text-foreground opacity-0 transition-opacity group-hover/header:opacity-100"
                 title="Editar cabecera"
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -831,15 +1043,25 @@ function RoleSection({
                 <button
                   type="button"
                   onClick={onDelete}
-                  className="opacity-0 group-hover/header:opacity-100 transition-opacity text-muted-foreground/50 hover:text-destructive"
+                  className="text-muted-foreground/50 hover:text-destructive opacity-0 transition-opacity group-hover/header:opacity-100"
                   title="Eliminar entrada"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               )}
-              <span className="text-[10px] text-muted-foreground ml-1">{item.bullets.length} bullets</span>
-              <button type="button" onClick={() => setCollapsed((v) => !v)} className="text-muted-foreground">
-                {collapsed ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+              <span className="text-muted-foreground ml-1 text-[10px]">
+                {item.bullets.length} bullets
+              </span>
+              <button
+                type="button"
+                onClick={() => setCollapsed((v) => !v)}
+                className="text-muted-foreground"
+              >
+                {collapsed ? (
+                  <ChevronDown className="h-3.5 w-3.5" />
+                ) : (
+                  <ChevronUp className="h-3.5 w-3.5" />
+                )}
               </button>
             </div>
           </div>
@@ -847,7 +1069,7 @@ function RoleSection({
       </div>
 
       {!collapsed && !headerEditing && (
-        <div className="px-3 pb-2 border-t border-border/30 divide-y divide-border/20">
+        <div className="border-border/30 divide-border/20 divide-y border-t px-3 pb-2">
           <SortableContext
             items={item.bullets.map((_, i) => `${item.id}-bullet-${i}`)}
             strategy={verticalListSortingStrategy}
@@ -875,7 +1097,7 @@ function RoleSection({
             <button
               type="button"
               onClick={addBullet}
-              className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-[11px] transition-colors"
             >
               <Plus className="h-3 w-3" /> Agregar bullet
             </button>
@@ -900,30 +1122,66 @@ function EduEntry({
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="rounded-md border border-border/40 px-3 py-2 space-y-1.5">
+    <div className="border-border/40 space-y-1.5 rounded-md border px-3 py-2">
       <div className="flex items-start gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold">{item.institution || <span className="text-muted-foreground/60 italic">Nueva institución</span>}</p>
-          <p className="text-[11px] text-muted-foreground">{item.degree}{item.concentration ? ` — ${item.concentration}` : ''}</p>
-          <p className="text-[10px] text-muted-foreground">{item.graduationDate}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold">
+            {item.institution || (
+              <span className="text-muted-foreground/60 italic">Nueva institución</span>
+            )}
+          </p>
+          <p className="text-muted-foreground text-[11px]">
+            {item.degree}
+            {item.concentration ? ` — ${item.concentration}` : ''}
+          </p>
+          <p className="text-muted-foreground text-[10px]">{item.graduationDate}</p>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <button type="button" onClick={() => setExpanded((v) => !v)} className="text-muted-foreground/50 hover:text-foreground">
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="text-muted-foreground/50 hover:text-foreground"
+          >
             <Pencil className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={onDelete} className="text-muted-foreground/50 hover:text-destructive">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-muted-foreground/50 hover:text-destructive"
+          >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
       {expanded && (
-        <div className="space-y-2 pt-1 border-t border-border/30">
-          <InlineField label="Institución" value={item.institution} onSave={(v) => onUpdate({ ...item, institution: v })} />
-          <InlineField label="Grado" value={item.degree} onSave={(v) => onUpdate({ ...item, degree: v })} />
-          <InlineField label="Concentración" value={item.concentration} onSave={(v) => onUpdate({ ...item, concentration: v })} />
-          <InlineField label="Fecha graduación" value={item.graduationDate} onSave={(v) => onUpdate({ ...item, graduationDate: v })} />
-          <InlineField label="Materias clave" value={item.coursework} onSave={(v) => onUpdate({ ...item, coursework: v })} multiline />
+        <div className="border-border/30 space-y-2 border-t pt-1">
+          <InlineField
+            label="Institución"
+            value={item.institution}
+            onSave={(v) => onUpdate({ ...item, institution: v })}
+          />
+          <InlineField
+            label="Grado"
+            value={item.degree}
+            onSave={(v) => onUpdate({ ...item, degree: v })}
+          />
+          <InlineField
+            label="Concentración"
+            value={item.concentration}
+            onSave={(v) => onUpdate({ ...item, concentration: v })}
+          />
+          <InlineField
+            label="Fecha graduación"
+            value={item.graduationDate}
+            onSave={(v) => onUpdate({ ...item, graduationDate: v })}
+          />
+          <InlineField
+            label="Materias clave"
+            value={item.coursework}
+            onSave={(v) => onUpdate({ ...item, coursework: v })}
+            multiline
+          />
         </div>
       )}
     </div>
@@ -957,42 +1215,50 @@ function AddEduDropdown({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+        className="text-muted-foreground hover:text-foreground hover:bg-muted/40 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors"
       >
         <Plus className="h-3 w-3" /> Agregar
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-30 w-64 rounded-md border border-border bg-popover shadow-md overflow-hidden">
+        <div className="border-border bg-popover absolute top-full right-0 z-30 mt-1 w-64 overflow-hidden rounded-md border shadow-md">
           {availableEdu.length > 0 && (
             <>
-              <div className="px-3 py-1.5 border-b border-border/40">
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Desde Mi Experiencia</p>
+              <div className="border-border/40 border-b px-3 py-1.5">
+                <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+                  Desde Mi Experiencia
+                </p>
               </div>
               {availableEdu.map((edu) => (
                 <button
                   key={edu.id}
                   type="button"
-                  onClick={() => { onAdd(edu); setOpen(false) }}
-                  className="flex items-start gap-2 w-full px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+                  onClick={() => {
+                    onAdd(edu)
+                    setOpen(false)
+                  }}
+                  className="hover:bg-muted/40 flex w-full items-start gap-2 px-3 py-2 text-left transition-colors"
                 >
-                  <BookOpen className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground" />
+                  <BookOpen className="text-muted-foreground mt-0.5 h-3 w-3 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-xs font-medium truncate">{edu.institution}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{edu.degree}</p>
+                    <p className="truncate text-xs font-medium">{edu.institution}</p>
+                    <p className="text-muted-foreground truncate text-[10px]">{edu.degree}</p>
                   </div>
                 </button>
               ))}
-              <div className="border-t border-border/40" />
+              <div className="border-border/40 border-t" />
             </>
           )}
           <button
             type="button"
-            onClick={() => { onAddManual(); setOpen(false) }}
-            className="flex items-center gap-2 w-full px-3 py-2 text-left hover:bg-muted/40 transition-colors"
+            onClick={() => {
+              onAddManual()
+              setOpen(false)
+            }}
+            className="hover:bg-muted/40 flex w-full items-center gap-2 px-3 py-2 text-left transition-colors"
           >
-            <Plus className="h-3 w-3 shrink-0 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Agregar manualmente</span>
+            <Plus className="text-muted-foreground h-3 w-3 shrink-0" />
+            <span className="text-muted-foreground text-xs">Agregar manualmente</span>
           </button>
         </div>
       )}
@@ -1002,12 +1268,22 @@ function AddEduDropdown({
 
 // ── Section wrapper ───────────────────────────────────────────────────────────
 
-function CvSection({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function CvSection({
+  title,
+  action,
+  children,
+}: {
+  title: string
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
-        <div className="flex-1 h-px bg-border/50" />
+        <p className="text-muted-foreground text-[11px] font-bold tracking-widest uppercase">
+          {title}
+        </p>
+        <div className="bg-border/50 h-px flex-1" />
         {action}
       </div>
       <div className="space-y-2">{children}</div>
@@ -1017,11 +1293,30 @@ function CvSection({ title, action, children }: { title: string; action?: React.
 
 // ── CvEditor main ─────────────────────────────────────────────────────────────
 
-export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange, onBulletAdded, onBulletDeleted, onSectionDeleted, onBulletMoved, draftBulletIds, hoveredBulletId, onBulletHover, onBulletLeave }: CvEditorProps) {
+export function CvEditor({
+  draftCv,
+  jobOfferText,
+  settings,
+  originalCv,
+  onChange,
+  onBulletAdded,
+  onBulletDeleted,
+  onSectionDeleted,
+  onBulletMoved,
+  draftBulletIds,
+  hoveredBulletId,
+  onBulletHover,
+  onBulletLeave,
+}: CvEditorProps) {
   const [skillsAiOpen, setSkillsAiOpen] = useState(false)
   const [activeDragId, setActiveDragId] = useState<string | null>(null)
   const pages = estimatePageLength(draftCv)
-  const pageColor = pages > 2 ? 'text-red-500' : pages > 1.5 ? 'text-amber-500' : 'text-green-600 dark:text-green-400'
+  const pageColor =
+    pages > 2
+      ? 'text-red-500'
+      : pages > 1.5
+        ? 'text-amber-500'
+        : 'text-green-600 dark:text-green-400'
 
   const bulletSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1077,26 +1372,50 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     if (from.sectionId === to.sectionId) {
       // Same section: reorder
       const srcSection = allSections.find((s) => s.id === from.sectionId)
-      if (!srcSection) { dragOriginRef.current = null; return }
+      if (!srcSection) {
+        dragOriginRef.current = null
+        return
+      }
       const reordered = arrayMove(srcSection.bullets, from.bulletIndex, to.bulletIndex)
-      const updated = applyBulletChange(from.sectionId, reordered, draftCv.experience, draftCv.leadership)
+      const updated = applyBulletChange(
+        from.sectionId,
+        reordered,
+        draftCv.experience,
+        draftCv.leadership
+      )
       onChange({ ...draftCv, ...updated })
       onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
     } else {
       // Cross-section: move bullet from source to destination
       const srcSection = allSections.find((s) => s.id === from.sectionId)
       const dstSection = allSections.find((s) => s.id === to.sectionId)
-      if (!srcSection || !dstSection) { dragOriginRef.current = null; return }
+      if (!srcSection || !dstSection) {
+        dragOriginRef.current = null
+        return
+      }
 
       const bulletText = srcSection.bullets[from.bulletIndex]
-      if (bulletText === undefined) { dragOriginRef.current = null; return }
+      if (bulletText === undefined) {
+        dragOriginRef.current = null
+        return
+      }
 
       const srcBullets = srcSection.bullets.filter((_, i) => i !== from.bulletIndex)
       const dstBullets = [...dstSection.bullets]
       dstBullets.splice(to.bulletIndex, 0, bulletText)
 
-      let { experience, leadership } = applyBulletChange(from.sectionId, srcBullets, draftCv.experience, draftCv.leadership)
-      ;({ experience, leadership } = applyBulletChange(to.sectionId, dstBullets, experience, leadership))
+      let { experience, leadership } = applyBulletChange(
+        from.sectionId,
+        srcBullets,
+        draftCv.experience,
+        draftCv.leadership
+      )
+      ;({ experience, leadership } = applyBulletChange(
+        to.sectionId,
+        dstBullets,
+        experience,
+        leadership
+      ))
       onChange({ ...draftCv, experience, leadership })
       onBulletMoved?.(from.sectionId, from.bulletIndex, to.sectionId, to.bulletIndex)
     }
@@ -1109,19 +1428,27 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     if (!activeDragId) return null
     const parsed = parseBulletId(activeDragId)
     if (!parsed) return null
-    const section = [...draftCv.experience, ...draftCv.leadership].find((s) => s.id === parsed.sectionId)
+    const section = [...draftCv.experience, ...draftCv.leadership].find(
+      (s) => s.id === parsed.sectionId
+    )
     return section?.bullets[parsed.bulletIndex] ?? null
   })()
 
   function updateExperience(id: string, updated: ExperienceItem) {
-    onChange({ ...draftCv, experience: draftCv.experience.map((e) => (e.id === id ? updated as ExperienceItem : e)) })
+    onChange({
+      ...draftCv,
+      experience: draftCv.experience.map((e) => (e.id === id ? (updated as ExperienceItem) : e)),
+    })
   }
   function deleteExperience(id: string) {
     onSectionDeleted?.(id)
     onChange({ ...draftCv, experience: draftCv.experience.filter((e) => e.id !== id) })
   }
   function updateLeadership(id: string, updated: LeadershipItem) {
-    onChange({ ...draftCv, leadership: draftCv.leadership.map((l) => (l.id === id ? updated as LeadershipItem : l)) })
+    onChange({
+      ...draftCv,
+      leadership: draftCv.leadership.map((l) => (l.id === id ? (updated as LeadershipItem) : l)),
+    })
   }
   function deleteLeadershipItem(id: string) {
     onSectionDeleted?.(id)
@@ -1138,7 +1465,10 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     onChange({ ...draftCv, education: draftCv.education.filter((e) => e.id !== id) })
   }
   function addEducation(edu: EducationItem) {
-    onChange({ ...draftCv, education: [...draftCv.education, edu].sort((a, b) => a.order - b.order) })
+    onChange({
+      ...draftCv,
+      education: [...draftCv.education, edu].sort((a, b) => a.order - b.order),
+    })
   }
   function addManualEducation() {
     const newEdu: EducationItem = {
@@ -1159,7 +1489,9 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
 
   const expWithBullets = draftCv.experience.filter((e) => e.bullets.length > 0)
   const leadWithBullets = draftCv.leadership.filter((l) => l.bullets.length > 0)
-  const totalBullets = expWithBullets.reduce((s, e) => s + e.bullets.length, 0) + leadWithBullets.reduce((s, l) => s + l.bullets.length, 0)
+  const totalBullets =
+    expWithBullets.reduce((s, e) => s + e.bullets.length, 0) +
+    leadWithBullets.reduce((s, l) => s + l.bullets.length, 0)
 
   const availableEdu = originalCv
     ? originalCv.education.filter((e) => !draftCv.education.some((d) => d.id === e.id))
@@ -1169,9 +1501,9 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
     <div className="space-y-3 p-3">
       {/* Page estimate header */}
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-foreground">CV Borrador</p>
+        <p className="text-foreground text-xs font-semibold">CV Borrador</p>
         <div className="flex items-center gap-3">
-          <span className="text-[11px] text-muted-foreground">{totalBullets} bullets</span>
+          <span className="text-muted-foreground text-[11px]">{totalBullets} bullets</span>
           <span className={cn('text-[11px] font-medium', pageColor)}>
             ~{pages.toFixed(1)} {pages >= 1.5 ? 'páginas' : 'página'}
           </span>
@@ -1179,11 +1511,35 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
       </div>
 
       {/* Header section */}
-      <div className="rounded-md border border-border/40 px-3 py-2 space-y-1.5">
-        <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Información personal</p>
-        <InlineField label="Nombre" value={draftCv.basics.fullName} onSave={(v) => onChange({ ...draftCv, basics: { ...draftCv.basics, fullName: v } })} />
-        <InlineField label="Email" value={draftCv.basics.contact.email} onSave={(v) => onChange({ ...draftCv, basics: { ...draftCv.basics, contact: { ...draftCv.basics.contact, email: v } } })} />
-        <InlineField label="Teléfono" value={draftCv.basics.contact.phone} onSave={(v) => onChange({ ...draftCv, basics: { ...draftCv.basics, contact: { ...draftCv.basics.contact, phone: v } } })} />
+      <div className="border-border/40 space-y-1.5 rounded-md border px-3 py-2">
+        <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
+          Información personal
+        </p>
+        <InlineField
+          label="Nombre"
+          value={draftCv.basics.fullName}
+          onSave={(v) => onChange({ ...draftCv, basics: { ...draftCv.basics, fullName: v } })}
+        />
+        <InlineField
+          label="Email"
+          value={draftCv.basics.contact.email}
+          onSave={(v) =>
+            onChange({
+              ...draftCv,
+              basics: { ...draftCv.basics, contact: { ...draftCv.basics.contact, email: v } },
+            })
+          }
+        />
+        <InlineField
+          label="Teléfono"
+          value={draftCv.basics.contact.phone}
+          onSave={(v) =>
+            onChange({
+              ...draftCv,
+              basics: { ...draftCv.basics, contact: { ...draftCv.basics.contact, phone: v } },
+            })
+          }
+        />
       </div>
 
       {/* Experience + Leadership — shared DndContext for cross-section bullet D&D */}
@@ -1196,22 +1552,24 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
         {/* Experience */}
         {expWithBullets.length > 0 && (
           <CvSection title="Experiencia Profesional">
-            {expWithBullets.sort((a, b) => a.order - b.order).map((exp) => (
-              <RoleSection
-                key={exp.id}
-                item={exp}
-                jobOfferText={jobOfferText}
-                settings={settings}
-                onUpdate={(u) => updateExperience(exp.id, u as ExperienceItem)}
-                onDelete={() => deleteExperience(exp.id)}
-                onBulletAdded={() => onBulletAdded?.(exp.id)}
-                onBulletDeleted={(idx) => onBulletDeleted?.(exp.id, idx)}
-                bulletIds={draftBulletIds?.[exp.id]}
-                hoveredBulletId={hoveredBulletId}
-                onBulletHover={onBulletHover}
-                onBulletLeave={onBulletLeave}
-              />
-            ))}
+            {expWithBullets
+              .sort((a, b) => a.order - b.order)
+              .map((exp) => (
+                <RoleSection
+                  key={exp.id}
+                  item={exp}
+                  jobOfferText={jobOfferText}
+                  settings={settings}
+                  onUpdate={(u) => updateExperience(exp.id, u as ExperienceItem)}
+                  onDelete={() => deleteExperience(exp.id)}
+                  onBulletAdded={() => onBulletAdded?.(exp.id)}
+                  onBulletDeleted={(idx) => onBulletDeleted?.(exp.id, idx)}
+                  bulletIds={draftBulletIds?.[exp.id]}
+                  hoveredBulletId={hoveredBulletId}
+                  onBulletHover={onBulletHover}
+                  onBulletLeave={onBulletLeave}
+                />
+              ))}
           </CvSection>
         )}
 
@@ -1223,36 +1581,38 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
               <button
                 type="button"
                 onClick={clearLeadership}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-colors"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/5 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors"
                 title="Eliminar sección completa"
               >
                 <Trash2 className="h-3 w-3" /> Eliminar sección
               </button>
             }
           >
-            {leadWithBullets.sort((a, b) => a.order - b.order).map((lead) => (
-              <RoleSection
-                key={lead.id}
-                item={lead}
-                jobOfferText={jobOfferText}
-                settings={settings}
-                onUpdate={(u) => updateLeadership(lead.id, u as LeadershipItem)}
-                onDelete={() => deleteLeadershipItem(lead.id)}
-                onBulletAdded={() => onBulletAdded?.(lead.id)}
-                onBulletDeleted={(idx) => onBulletDeleted?.(lead.id, idx)}
-                bulletIds={draftBulletIds?.[lead.id]}
-                hoveredBulletId={hoveredBulletId}
-                onBulletHover={onBulletHover}
-                onBulletLeave={onBulletLeave}
-              />
-            ))}
+            {leadWithBullets
+              .sort((a, b) => a.order - b.order)
+              .map((lead) => (
+                <RoleSection
+                  key={lead.id}
+                  item={lead}
+                  jobOfferText={jobOfferText}
+                  settings={settings}
+                  onUpdate={(u) => updateLeadership(lead.id, u as LeadershipItem)}
+                  onDelete={() => deleteLeadershipItem(lead.id)}
+                  onBulletAdded={() => onBulletAdded?.(lead.id)}
+                  onBulletDeleted={(idx) => onBulletDeleted?.(lead.id, idx)}
+                  bulletIds={draftBulletIds?.[lead.id]}
+                  hoveredBulletId={hoveredBulletId}
+                  onBulletHover={onBulletHover}
+                  onBulletLeave={onBulletLeave}
+                />
+              ))}
           </CvSection>
         )}
 
         {/* Drag overlay for bullet being dragged */}
         <DragOverlay>
           {activeDragText ? (
-            <div className="rounded-md border border-primary/30 bg-card shadow-lg px-3 py-2 text-xs leading-relaxed max-w-2xl opacity-90">
+            <div className="border-primary/30 bg-card max-w-2xl rounded-md border px-3 py-2 text-xs leading-relaxed opacity-90 shadow-lg">
               {activeDragText}
             </div>
           ) : null}
@@ -1271,22 +1631,26 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
         }
       >
         {draftCv.education.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground/60 italic px-1">Sin educación en el borrador — usa el botón Agregar.</p>
+          <p className="text-muted-foreground/60 px-1 text-[11px] italic">
+            Sin educación en el borrador — usa el botón Agregar.
+          </p>
         ) : (
-          draftCv.education.sort((a, b) => a.order - b.order).map((edu) => (
-            <EduEntry
-              key={edu.id}
-              item={edu}
-              onUpdate={(u) => updateEducation(edu.id, u)}
-              onDelete={() => deleteEducation(edu.id)}
-            />
-          ))
+          draftCv.education
+            .sort((a, b) => a.order - b.order)
+            .map((edu) => (
+              <EduEntry
+                key={edu.id}
+                item={edu}
+                onUpdate={(u) => updateEducation(edu.id, u)}
+                onDelete={() => deleteEducation(edu.id)}
+              />
+            ))
         )}
       </CvSection>
 
       {/* Skills */}
       <CvSection title="Habilidades">
-        <div className="rounded-md border border-border/40 px-3 py-2.5 space-y-3">
+        <div className="border-border/40 space-y-3 rounded-md border px-3 py-2.5">
           <TagsField
             label="Técnicas"
             value={draftCv.skills.technical}
@@ -1312,7 +1676,10 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
                       currentSkills={draftCv.skills.technical}
                       jobOfferText={jobOfferText}
                       settings={settings}
-                      onUpdate={(v) => { onChange({ ...draftCv, skills: { ...draftCv.skills, technical: v } }); setSkillsAiOpen(false) }}
+                      onUpdate={(v) => {
+                        onChange({ ...draftCv, skills: { ...draftCv.skills, technical: v } })
+                        setSkillsAiOpen(false)
+                      }}
                       onClose={() => setSkillsAiOpen(false)}
                     />
                   )}
@@ -1325,11 +1692,13 @@ export function CvEditor({ draftCv, jobOfferText, settings, originalCv, onChange
             value={draftCv.skills.language}
             onChange={(v) => onChange({ ...draftCv, skills: { ...draftCv.skills, language: v } })}
           />
-          {(draftCv.skills.interests !== undefined) && (
+          {draftCv.skills.interests !== undefined && (
             <TagsField
               label="Intereses"
               value={draftCv.skills.interests ?? ''}
-              onChange={(v) => onChange({ ...draftCv, skills: { ...draftCv.skills, interests: v } })}
+              onChange={(v) =>
+                onChange({ ...draftCv, skills: { ...draftCv.skills, interests: v } })
+              }
             />
           )}
         </div>

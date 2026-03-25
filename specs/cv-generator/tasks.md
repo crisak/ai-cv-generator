@@ -69,7 +69,7 @@
   - Archivos: `components/cv-generator/cv-editor.tsx`
   - Spec: FR22, FR23
 
-- [ ] Task 28: FR24+FR25 — Skills IA como pills + mejorar prompt
+- [x] Task 28: FR24+FR25 — Skills IA como pills + mejorar prompt
   - Scope: Dos cambios en una tarea: (1) Mejorar el prompt en `lib/ai-cv.ts` para extracción de skills técnicas — extraer solo de la oferta, no de la experiencia del usuario. (2) Cambiar la respuesta de la IA en el campo Habilidades > Técnicas: parsear la lista de skills devuelta y renderizarla como pills editables (agregar/borrar individual) en lugar de un textarea plano. Al confirmar, fusionar con `draftCv.skills.technical`.
   - Archivos: `lib/ai-cv.ts`, `components/cv-generator/cv-editor.tsx`
   - Spec: FR24, FR25
