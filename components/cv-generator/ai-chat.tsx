@@ -1,13 +1,26 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
-import { Send, Sparkles } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import { cn } from '@/lib/utils'
+import { Sparkles, Key, Settings2 } from 'lucide-react'
+import Link from 'next/link'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+} from '@/components/ai-elements/conversation'
+import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message'
+import {
+  PromptInput,
+  PromptInputFooter,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from '@/components/ai-elements/prompt-input'
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { chatWithCv } from '@/lib/ai-cv'
 import type { ChatMessage, ChatStyle } from '@/lib/ai-cv'
 import type { CvData } from '@/types/experience'
 import type { SettingsDocument } from '@/lib/db/schemas'
+import { useCallback, useState } from 'react'
+import type { PromptInputMessage } from '@/components/ai-elements/prompt-input'
 
 const SUGGESTIONS = [
   '¿Qué keywords críticas me faltan cubrir?',
@@ -49,163 +62,159 @@ export function AiChat({
   style,
   onStyleChange,
 }: AiChatProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const [localInput, setLocalInput] = useState(input)
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, isLoading])
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value
+      setLocalInput(value)
+      onInputChange(value)
+    },
+    [onInputChange]
+  )
 
-  async function send(text: string) {
-    const trimmed = text.trim()
-    if (!trimmed || isLoading) return
+  const handleSuggestionClick = useCallback(
+    (suggestion: string) => {
+      setLocalInput(suggestion)
+      onInputChange(suggestion)
+    },
+    [onInputChange]
+  )
 
-    const userMsg: ChatMessage = { role: 'user', content: trimmed }
-    const next = [...messages, userMsg]
-    onMessagesChange(next)
-    onInputChange('')
-    onLoadingChange(true)
+  const send = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim()
+      if (!trimmed || isLoading) return
 
-    const reply = await chatWithCv(next, draftCv, jobOfferText, settings, style)
-    onMessagesChange([...next, { role: 'assistant', content: reply }])
-    onLoadingChange(false)
-  }
+      const userMsg: ChatMessage = { role: 'user', content: trimmed }
+      const next = [...messages, userMsg]
+      onMessagesChange(next)
+      onInputChange('')
+      setLocalInput('')
+      onLoadingChange(true)
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      send(input)
-    }
-  }
+      const reply = await chatWithCv(next, draftCv, jobOfferText, settings, style)
+      onMessagesChange([...next, { role: 'assistant', content: reply }])
+      onLoadingChange(false)
+    },
+    [
+      draftCv,
+      jobOfferText,
+      settings,
+      style,
+      isLoading,
+      messages,
+      onMessagesChange,
+      onInputChange,
+      onLoadingChange,
+    ]
+  )
+
+  const handleSubmit = useCallback(
+    (message: PromptInputMessage) => {
+      send(message.text)
+    },
+    [send]
+  )
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 ? (
-          <div className="space-y-2 pt-1">
-            <p className="text-xs text-muted-foreground mb-3">
-              Tengo el contexto completo de tu borrador y la oferta. Pregúntame algo:
-            </p>
-            <div className="space-y-1.5">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => send(s)}
-                  className="block w-full text-left rounded-lg border border-border/50 bg-muted/20 hover:bg-muted/50 hover:border-border px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-all"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          messages.map((m, i) => (
-            <div
-              key={i}
-              className={cn('flex flex-col gap-1', m.role === 'user' ? 'items-end' : 'items-start')}
+    <div className="flex h-full flex-col">
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent>
+          {messages.length === 0 ? (
+            <ConversationEmptyState
+              description="Tengo el contexto completo de tu borrador y la oferta. Pregúntame algo:"
+              title="¿En qué puedo ayudarte?"
             >
-              <div
-                className={cn(
-                  'rounded-xl px-3 py-2.5 text-xs leading-relaxed break-words',
-                  m.role === 'user'
-                    ? 'bg-primary text-primary-foreground max-w-[85%]'
-                    : 'bg-muted/50 text-foreground border border-border/40 max-w-[92%] w-full'
-                )}
-              >
-                {m.role === 'user' ? (
-                  <span className="whitespace-pre-wrap">{m.content}</span>
-                ) : (
-                  <div className="prose prose-xs dark:prose-invert max-w-none
-                    [&>p]:mb-2 [&>p:last-child]:mb-0
-                    [&>ul]:mb-2 [&>ul]:pl-4 [&>ul>li]:mb-0.5 [&>ul>li]:list-disc
-                    [&>ol]:mb-2 [&>ol]:pl-4 [&>ol>li]:mb-0.5 [&>ol>li]:list-decimal
-                    [&>h1]:text-xs [&>h2]:text-xs [&>h3]:text-xs
-                    [&>h1]:font-bold [&>h2]:font-bold [&>h3]:font-semibold
-                    [&>h1]:mb-1.5 [&>h2]:mb-1.5 [&>h3]:mb-1
-                    [&>strong]:font-semibold
-                    [&>code]:bg-muted [&>code]:px-1 [&>code]:rounded [&>code]:text-[11px]
-                    [&>pre]:bg-muted [&>pre]:p-2 [&>pre]:rounded [&>pre]:overflow-x-auto [&>pre]:text-[11px]
-                    [&>blockquote]:border-l-2 [&>blockquote]:border-primary/40 [&>blockquote]:pl-2 [&>blockquote]:text-muted-foreground
-                  ">
-                    <Sparkles className="h-3 w-3 text-primary inline mr-1.5 mb-0.5 shrink-0" />
-                    <ReactMarkdown>{m.content}</ReactMarkdown>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-
-        {isLoading && (
-          <div className="flex items-start">
-            <div className="bg-muted/50 border border-border/40 rounded-xl px-3 py-2.5">
-              <div className="flex gap-1 items-center">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce"
-                    style={{ animationDelay: `${i * 150}ms` }}
-                  />
+              <div className="mt-4 flex max-w-full flex-wrap justify-center gap-2 px-2">
+                {SUGGESTIONS.map((s) => (
+                  <Suggestion key={s} onClick={handleSuggestionClick} suggestion={s} />
                 ))}
               </div>
-            </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
+            </ConversationEmptyState>
+          ) : (
+            <>
+              {messages.map((m, i) => (
+                <Message from={m.role} key={i}>
+                  <MessageContent>
+                    {m.role === 'user' ? (
+                      m.content
+                    ) : (
+                      <>
+                        <Sparkles className="text-primary mr-1.5 mb-0.5 inline h-3 w-3 shrink-0" />
+                        <MessageResponse>{m.content}</MessageResponse>
+                      </>
+                    )}
+                  </MessageContent>
+                </Message>
+              ))}
+              {isLoading && (
+                <Message from="assistant">
+                  <MessageContent>
+                    <span className="flex items-center gap-1">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="bg-muted-foreground/60 h-1.5 w-1.5 animate-bounce rounded-full"
+                          style={{ animationDelay: `${i * 150}ms` }}
+                        />
+                      ))}
+                    </span>
+                  </MessageContent>
+                </Message>
+              )}
+            </>
+          )}
+        </ConversationContent>
+      </Conversation>
 
-      {/* Style selector + Input */}
-      <div className="border-t border-border/40 p-3 space-y-2 shrink-0">
-        {/* Style selector */}
+      <div className="border-border/40 shrink-0 space-y-2 border-t p-3">
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-muted-foreground/70 font-medium mr-0.5">Estilo:</span>
+          <span className="text-muted-foreground/70 mr-0.5 text-[10px] font-medium">Estilo:</span>
           {STYLES.map((s) => (
             <button
               key={s.value}
               type="button"
               onClick={() => onStyleChange(s.value)}
               title={s.hint}
-              className={cn(
-                'rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors border',
+              className={`rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition-colors ${
                 style === s.value
                   ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-transparent text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground'
-              )}
+                  : 'text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground bg-transparent'
+              }`}
             >
               {s.label}
             </button>
           ))}
-          <span className="ml-auto text-[10px] text-muted-foreground/50">
+          <span className="text-muted-foreground/50 ml-auto text-[10px]">
             {STYLES.find((s) => s.value === style)?.hint}
           </span>
         </div>
 
-        {/* Textarea */}
-        <div className="flex gap-2 items-end">
-          <textarea
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={handleKeyDown}
+        <PromptInput onSubmit={handleSubmit}>
+          <PromptInputTextarea
+            onChange={handleInputChange}
             placeholder="Pregunta algo… (Enter para enviar, Shift+Enter para salto)"
-            disabled={isLoading}
-            rows={2}
-            className="flex-1 rounded-lg border border-input bg-muted/20 px-3 py-2 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground/50 disabled:opacity-50 leading-relaxed"
+            value={localInput}
           />
-          <button
-            type="button"
-            disabled={!input.trim() || isLoading}
-            onClick={() => send(input)}
-            className="rounded-lg bg-primary p-2.5 text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors shrink-0"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </button>
-        </div>
+          <PromptInputFooter>
+            <PromptInputSubmit
+              disabled={!localInput.trim() || isLoading}
+              status={isLoading ? 'submitted' : undefined}
+            />
+          </PromptInputFooter>
+        </PromptInput>
 
         {!settings?.aiApiKey && (
-          <p className="text-[10px] text-muted-foreground/60">
-            Configura una API key en Configuración para activar el chat.
-          </p>
+          <Link
+            href="/settings"
+            className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+          >
+            <Key className="h-3.5 w-3.5 shrink-0" />
+            <span>Configura una API key en </span>
+            <span className="font-medium underline underline-offset-2">Configuración</span>
+            <Settings2 className="h-3 w-3 shrink-0" />
+          </Link>
         )}
       </div>
     </div>
