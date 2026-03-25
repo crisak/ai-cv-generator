@@ -111,24 +111,22 @@ export async function improveSkills(
   const currentSkillsList = parseSkills(currentSkills)
   const existingSkillsStr =
     currentSkillsList.length > 0
-      ? `HABILIDADES ACTUALES DEL CANDIDATO (NO REPETIR): ${currentSkillsList.join(', ')}`
-      : 'HABILIDADES ACTUALES DEL CANDIDATO: (ninguna aún)'
+      ? `HABILIDADES ACTUALES DEL CANDIDATO: ${currentSkillsList.join(', ')}`
+      : ''
 
-  const prompt = `Eres un experto en CVs ATS. Analiza la oferta laboral y sugiere nuevas habilidades técnicas que complementen el perfil del candidato.
+  const prompt = `Eres un experto en CVs ATS. El candidato necesita ayuda con sus habilidades técnicas.
 
 OFERTA LABORAL:
 ${jobOffer.substring(0, 3000)}
 
-${existingSkillsStr}
-
+${existingSkillsStr ? `${existingSkillsStr}\n` : ''}
 INSTRUCCIÓN DEL CANDIDATO: ${instruction}
 
 REGLAS:
-- Analiza la oferta laboral y detecta habilidades técnicas mencionadas o implícitas
-- NO repitas ninguna de las habilidades que el candidato YA tiene listadas arriba
-- Sugiere ÚNICAMENTE habilidades nuevas que estén en la oferta pero no en las actuales del candidato
-- Si la oferta menciona "JavaScript, React, Node.js" y el candidato ya tiene "React", sugiere solo "JavaScript, Node.js"
-- Ordena de mayor a menor relevancia para la oferta (las más solicitadas primero)
+- Analiza la intención de la instrucción del candidato:
+  * Si pide "analizar", "organizar", "reordenar" o "relevancia": trabaja con las habilidades EXISTENTES del candidato y reordénalas por relevancia para la oferta (las más solicitadas primero, las menos relevantes al final)
+  * Si pide "extraer", "agregar", "añadir" o "sugerir nuevas": detecta habilidades en la oferta que el candidato NO tenga aún y añádelas
+  * En ambos casos, NO inventes habilidades que no estén en la oferta ni en la experiencia del candidato
 - Cada skill debe empezar con mayúscula
 - Sin duplicados, sin categorías ni prefijos, solo los nombres de las habilidades
 - Formato: separado por comas
