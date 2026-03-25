@@ -3,7 +3,7 @@ import type { CvData, ExperienceItem, LeadershipItem } from '@/types/experience'
 import { callProxy } from './ai-proxy-client'
 
 export interface BulletState {
-  id: string       // stable: "${sectionId}-b${originalIndex}", never changes
+  id: string // stable: "${sectionId}-b${originalIndex}", never changes
   selected: boolean
   text: string
 }
@@ -34,11 +34,7 @@ CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
 Responde ÚNICAMENTE con el texto del bullet mejorado, sin comillas ni prefijos.`
 
   try {
-    const result = await callProxy(
-      [{ role: 'user', content: prompt }],
-      settings,
-      300
-    )
+    const result = await callProxy([{ role: 'user', content: prompt }], settings, 300)
     return result.trim().replace(/^["']|["']$/g, '') || bulletText
   } catch {
     return bulletText
@@ -92,29 +88,27 @@ Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}
 // ── Improve technical skills list ────────────────────────────────────────────
 
 export async function improveSkills(
-  currentSkills: string,
   jobOffer: string,
   instruction: string,
   settings: SettingsDocument | null
 ): Promise<string | null> {
   if (!settings?.aiApiKey) return null
 
-  const prompt = `Eres un experto en CVs ATS. Genera una lista de habilidades técnicas optimizada para este perfil.
-
-HABILIDADES ACTUALES DEL CANDIDATO:
-${currentSkills}
+  const prompt = `Eres un experto en CVs ATS. Extrae las habilidades técnicas requeridas exclusivamente de la oferta laboral.
 
 OFERTA LABORAL:
-${jobOffer.substring(0, 2000)}
+${jobOffer.substring(0, 3000)}
 
 INSTRUCCIÓN DEL CANDIDATO: ${instruction}
 
 REGLAS:
-- Incluye habilidades del candidato que sigan siendo relevantes para la oferta
-- Extrae y añade habilidades mencionadas en la oferta que el candidato pueda dominar dado su perfil
+- Extrae ÚNICAMENTE las habilidades técnicas mencionadas o implícitas en la oferta laboral
+- No incluyas habilidades que solo estén en la experiencia del candidato pero no sean relevantes para esta oferta
+- Si la oferta menciona "JavaScript, React, Node.js", incluye esas tecnologías
+- Si la oferta pide "experiencia en bases de datos SQL", incluye "SQL" como skill
 - Ordena de mayor a menor relevancia para la oferta (las más solicitadas primero)
 - Sin duplicados, sin categorías ni prefijos, solo los nombres de las habilidades
-- Usa el mismo formato separado por comas
+- Formato: separado por comas
 - Si la instrucción pide mínimo N skills, asegúrate de cumplirlo
 
 Responde SOLO con JSON: {"skills": "skill1, skill2, skill3, ..."}`
@@ -149,12 +143,14 @@ export async function improveNonAtsBullets(
 
   draftCv.experience.forEach((exp) => {
     exp.bullets.forEach((b, idx) => {
-      if (!ATS_VERBS_RE.test(b.trimStart())) toImprove.push({ section: 'experience', id: exp.id, idx, text: b })
+      if (!ATS_VERBS_RE.test(b.trimStart()))
+        toImprove.push({ section: 'experience', id: exp.id, idx, text: b })
     })
   })
   draftCv.leadership.forEach((lead) => {
     lead.bullets.forEach((b, idx) => {
-      if (!ATS_VERBS_RE.test(b.trimStart())) toImprove.push({ section: 'leadership', id: lead.id, idx, text: b })
+      if (!ATS_VERBS_RE.test(b.trimStart()))
+        toImprove.push({ section: 'leadership', id: lead.id, idx, text: b })
     })
   })
 
@@ -172,12 +168,7 @@ ${bulletsList}
 Responde SOLO con JSON: {"bullets": ["bullet mejorado 1", "bullet mejorado 2", ...]}`
 
   try {
-    const raw = await callProxy(
-      [{ role: 'user', content: prompt }],
-      settings,
-      1500,
-      'json_object'
-    )
+    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 1500, 'json_object')
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return draftCv
     const parsed = JSON.parse(jsonMatch[0]) as { bullets: string[] }
@@ -213,9 +204,11 @@ export interface ChatMessage {
 export type ChatStyle = 'concise' | 'normal' | 'extended'
 
 const STYLE_INSTRUCTIONS: Record<ChatStyle, string> = {
-  concise: 'IMPORTANTE: Responde de forma MUY breve y directa. Máximo 2-3 oraciones. Sin introducciones, sin listas largas, sin conclusiones. Solo la respuesta esencial.',
+  concise:
+    'IMPORTANTE: Responde de forma MUY breve y directa. Máximo 2-3 oraciones. Sin introducciones, sin listas largas, sin conclusiones. Solo la respuesta esencial.',
   normal: 'Sé claro y conciso. Usa listas cortas cuando ayuden.',
-  extended: 'Puedes dar explicaciones detalladas con ejemplos concretos cuando sea útil para el candidato.',
+  extended:
+    'Puedes dar explicaciones detalladas con ejemplos concretos cuando sea útil para el candidato.',
 }
 
 export async function chatWithCv(
@@ -227,13 +220,25 @@ export async function chatWithCv(
 ): Promise<string> {
   if (!settings?.aiApiKey) return 'Configura una API key en Configuración para usar el chat.'
 
-  const cvSummary = JSON.stringify({
-    nombre: draftCv.basics.fullName,
-    experience: draftCv.experience.map((e) => ({ org: e.organization, titulo: e.title, bullets: e.bullets })),
-    leadership: draftCv.leadership.map((l) => ({ org: l.organization, rol: l.role, bullets: l.bullets })),
-    educacion: draftCv.education.map((e) => ({ institucion: e.institution, grado: e.degree })),
-    skills: draftCv.skills,
-  }, null, 2).substring(0, 3000)
+  const cvSummary = JSON.stringify(
+    {
+      nombre: draftCv.basics.fullName,
+      experience: draftCv.experience.map((e) => ({
+        org: e.organization,
+        titulo: e.title,
+        bullets: e.bullets,
+      })),
+      leadership: draftCv.leadership.map((l) => ({
+        org: l.organization,
+        rol: l.role,
+        bullets: l.bullets,
+      })),
+      educacion: draftCv.education.map((e) => ({ institucion: e.institution, grado: e.degree })),
+      skills: draftCv.skills,
+    },
+    null,
+    2
+  ).substring(0, 3000)
 
   const maxTokens = style === 'concise' ? 300 : style === 'extended' ? 1500 : 800
 
@@ -306,10 +311,7 @@ export function initSelections(cvData: CvData): BulletsBySection {
 
 // ── Reconstruct selections from a saved CV ────────────────────────────────────
 
-export function initSelectionsFromSavedCv(
-  savedCv: CvData,
-  fullCvData: CvData
-): BulletsBySection {
+export function initSelectionsFromSavedCv(savedCv: CvData, fullCvData: CvData): BulletsBySection {
   const result: BulletsBySection = {}
 
   fullCvData.experience.forEach((exp) => {
@@ -388,15 +390,13 @@ BULLETS DEL CANDIDATO:
 ${JSON.stringify(bulletsSummary)}${extra}`
 
   try {
-    const raw = await callProxy(
-      [{ role: 'user', content: prompt }],
-      settings,
-      900,
-      'json_object'
-    )
+    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 900, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return fallback
-    const result = JSON.parse(match[0]) as { selections?: Record<string, number[]>; skills?: string }
+    const result = JSON.parse(match[0]) as {
+      selections?: Record<string, number[]>
+      skills?: string
+    }
 
     const suggested: BulletsBySection = {}
 
@@ -467,12 +467,7 @@ Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title"
 JSON:`
 
   try {
-    const raw = await callProxy(
-      [{ role: 'user', content: prompt }],
-      settings,
-      4000,
-      'json_object'
-    )
+    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 4000, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return { cv: draft, usedAI: false }
 
@@ -487,12 +482,20 @@ JSON:`
       experience: draft.experience.map((exp, idx) => {
         const opt = (parsed.experience ?? [])[idx]
         if (!opt) return exp
-        return { ...exp, ...(opt.title ? { title: opt.title } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+        return {
+          ...exp,
+          ...(opt.title ? { title: opt.title } : {}),
+          ...(opt.bullets ? { bullets: opt.bullets } : {}),
+        }
       }),
       leadership: draft.leadership.map((lead, idx) => {
         const opt = (parsed.leadership ?? [])[idx]
         if (!opt) return lead
-        return { ...lead, ...(opt.role ? { role: opt.role } : {}), ...(opt.bullets ? { bullets: opt.bullets } : {}) }
+        return {
+          ...lead,
+          ...(opt.role ? { role: opt.role } : {}),
+          ...(opt.bullets ? { bullets: opt.bullets } : {}),
+        }
       }),
       skills: parsed.skills ? { ...draft.skills, ...parsed.skills } : draft.skills,
     }
@@ -526,7 +529,7 @@ export interface SkillsDiff {
 }
 
 export interface TitleDiff {
-  key: string          // format: `${sectionId}-title`
+  key: string // format: `${sectionId}-title`
   sectionType: 'experience' | 'leadership'
   sectionId: string
   sectionLabel: string
@@ -543,7 +546,13 @@ export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
   const diffs: CvDiffItem[] = []
 
   const processSection = (
-    draftItems: Array<{ id: string; organization: string; bullets: string[]; title?: string; role?: string }>,
+    draftItems: Array<{
+      id: string
+      organization: string
+      bullets: string[]
+      title?: string
+      role?: string
+    }>,
     optimizedItems: Array<{ id: string; bullets: string[]; title?: string; role?: string }>,
     sectionType: 'experience' | 'leadership',
     getLabel: (item: { organization: string }) => string,
@@ -590,8 +599,20 @@ export function computeCvDiffs(draft: CvData, optimized: CvData): CvDiffItem[] {
     })
   }
 
-  processSection(draft.experience, optimized.experience, 'experience', (item) => item.organization, 'title')
-  processSection(draft.leadership, optimized.leadership, 'leadership', (item) => item.organization, 'role')
+  processSection(
+    draft.experience,
+    optimized.experience,
+    'experience',
+    (item) => item.organization,
+    'title'
+  )
+  processSection(
+    draft.leadership,
+    optimized.leadership,
+    'leadership',
+    (item) => item.organization,
+    'role'
+  )
 
   const origSkills = draft.skills.technical.trim()
   const propSkills = optimized.skills.technical.trim()
