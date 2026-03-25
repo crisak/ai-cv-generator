@@ -703,7 +703,9 @@ export function StepGoals({
           </SheetHeader>
           <div className="min-h-0 flex-1">
             <ResizablePanelGroup direction="horizontal">
-              <ResizablePanel defaultSize={100} minSize={50}>
+              <ResizablePanel defaultSize={0} minSize={0} maxSize={40} collapsible></ResizablePanel>
+              <ResizableHandle withHandle className="w-1" />
+              <ResizablePanel defaultSize={100} minSize={60}>
                 <AiChat
                   draftCv={draftCv}
                   jobOfferText={jobOfferText}
@@ -718,7 +720,6 @@ export function StepGoals({
                   onStyleChange={setChatStyle}
                 />
               </ResizablePanel>
-              <ResizableHandle withHandle className="w-1" />
             </ResizablePanelGroup>
           </div>
         </SheetContent>
