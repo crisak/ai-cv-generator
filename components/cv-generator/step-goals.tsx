@@ -1,13 +1,35 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { X, ChevronDown, ChevronUp, Sparkles, MessageSquare, FileText, Eye, Search, Briefcase, Users, Link2, ChevronsUpDown, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import {
+  X,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+  MessageSquare,
+  FileText,
+  Eye,
+  Search,
+  Briefcase,
+  Users,
+  Link2,
+  ChevronsUpDown,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable'
 import { MatchAnalysis } from './match-analysis'
 import { CvEditor } from './cv-editor'
 import { AiChat } from './ai-chat'
@@ -40,7 +62,12 @@ interface StepGoalsProps {
   onBulletAdded?: (sectionId: string) => void
   onBulletDeleted?: (sectionId: string, bulletIndex: number) => void
   onSectionDeleted?: (sectionId: string) => void
-  onBulletMoved?: (fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) => void
+  onBulletMoved?: (
+    fromSectionId: string,
+    fromIndex: number,
+    toSectionId: string,
+    toIndex: number
+  ) => void
   onContinue: () => void
   onOptimize: (msg: string) => void
   onOptimizeConfirm: (cv: CvData) => void
@@ -96,12 +123,15 @@ export function StepGoals({
     ...cvData.leadership.map((l) => l.id),
   ].filter((id) => (selections[id] ?? []).length > 0)
 
-  const allSectionsCollapsed = allSectionIds.length > 0 && allSectionIds.every((id) => collapsedSections[id])
+  const allSectionsCollapsed =
+    allSectionIds.length > 0 && allSectionIds.every((id) => collapsedSections[id])
 
   const toggleAllSections = useCallback(() => {
     const nextState = !allSectionsCollapsed
     const next: Record<string, boolean> = {}
-    allSectionIds.forEach((id) => { next[id] = nextState })
+    allSectionIds.forEach((id) => {
+      next[id] = nextState
+    })
     setCollapsedSections(next)
   }, [allSectionsCollapsed, allSectionIds])
 
@@ -211,8 +241,8 @@ export function StepGoals({
   return (
     <div className="space-y-3">
       {isAnalyzing && (
-        <div className="flex items-center gap-2 rounded-md bg-primary/10 border border-primary/20 px-3 py-2.5 text-sm text-primary">
-          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="bg-primary/10 border-primary/20 text-primary flex items-center gap-2 rounded-md border px-3 py-2.5 text-sm">
+          <div className="border-primary h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent" />
           Analizando oferta y seleccionando bullets relevantes…
         </div>
       )}
@@ -223,7 +253,7 @@ export function StepGoals({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors"
           >
             <Eye className="h-3.5 w-3.5" />
             Vista previa
@@ -233,7 +263,7 @@ export function StepGoals({
           <button
             type="button"
             onClick={() => setOfferOpen(true)}
-            className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors"
           >
             <FileText className="h-3.5 w-3.5" />
             Ver oferta
@@ -243,12 +273,12 @@ export function StepGoals({
           <button
             type="button"
             onClick={() => setChatOpen(true)}
-            className="flex items-center gap-1.5 rounded-md border border-border/60 bg-card hover:bg-muted px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors"
           >
             <MessageSquare className="h-3.5 w-3.5" />
             Chat con IA
             {chatMessages.length > 0 && (
-              <span className="rounded-full bg-primary/20 px-1.5 text-[10px] font-medium text-primary">
+              <span className="bg-primary/20 text-primary rounded-full px-1.5 text-[10px] font-medium">
                 {chatMessages.length}
               </span>
             )}
@@ -259,36 +289,41 @@ export function StepGoals({
             type="button"
             disabled={isOptimizing}
             onClick={() => setOptimizeContextOpen(true)}
-            className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 hover:bg-primary/10 px-2.5 py-1.5 text-xs text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="border-primary/40 bg-primary/5 hover:bg-primary/10 text-primary flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isOptimizing
-              ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              : <Sparkles className="h-3.5 w-3.5" />
-            }
+            {isOptimizing ? (
+              <span className="border-primary h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
             {isOptimizing ? 'Optimizando…' : 'Optimizar con IA'}
           </button>
         </Tooltip>
       </div>
 
       {/* 3-column layout */}
-      <div className={cn(
-        'grid gap-4 h-[calc(100vh-280px)] transition-[grid-template-columns] duration-300 ease-in-out',
-        col1Collapsed ? 'grid-cols-[0px_1fr_300px]' : 'grid-cols-[300px_1fr_300px]'
-      )}>
-
+      <div
+        className={cn(
+          'grid h-[calc(100vh-280px)] gap-4 transition-[grid-template-columns] duration-300 ease-in-out',
+          col1Collapsed ? 'grid-cols-[0px_1fr_300px]' : 'grid-cols-[300px_1fr_300px]'
+        )}
+      >
         {/* Column 1: Bullets checklist */}
-        <div className={cn(
-          'flex flex-col gap-2 min-h-0 transition-opacity duration-300',
-          col1Collapsed ? 'opacity-0 overflow-hidden pointer-events-none' : 'opacity-100'
-        )}>
+        <div
+          className={cn(
+            'flex min-h-0 flex-col gap-2 transition-opacity duration-300',
+            col1Collapsed ? 'pointer-events-none overflow-hidden opacity-0' : 'opacity-100'
+          )}
+        >
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">{totalSelected}</span> bullets seleccionados
+            <p className="text-muted-foreground text-xs">
+              <span className="text-foreground font-medium">{totalSelected}</span> bullets
+              seleccionados
             </p>
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground text-[10px] transition-colors"
                 onClick={() => {
                   const all: BulletsBySection = {}
                   Object.entries(selections).forEach(([id, bullets]) => {
@@ -302,7 +337,7 @@ export function StepGoals({
               <span className="text-muted-foreground/40 text-[10px]">·</span>
               <button
                 type="button"
-                className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground text-[10px] transition-colors"
                 onClick={() => {
                   const none: BulletsBySection = {}
                   Object.entries(selections).forEach(([id, bullets]) => {
@@ -314,11 +349,17 @@ export function StepGoals({
                 Ninguno
               </button>
               <span className="text-muted-foreground/40 text-[10px]">·</span>
-              <Tooltip label={allSectionsCollapsed ? 'Expandir todas las secciones' : 'Colapsar todas las secciones'}>
+              <Tooltip
+                label={
+                  allSectionsCollapsed
+                    ? 'Expandir todas las secciones'
+                    : 'Colapsar todas las secciones'
+                }
+              >
                 <button
                   type="button"
                   onClick={toggleAllSections}
-                  className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
+                  className="text-muted-foreground hover:text-foreground p-0.5 transition-colors"
                 >
                   <ChevronsUpDown className="h-3.5 w-3.5" />
                 </button>
@@ -327,35 +368,38 @@ export function StepGoals({
           </div>
 
           {/* Search bar — fixed */}
-          <div className="flex items-center gap-1.5 rounded-md border border-input bg-muted/30 px-2.5 py-1.5 shrink-0">
-            <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <div className="border-input bg-muted/30 flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5">
+            <Search className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
             <input
               type="text"
               value={bulletSearch}
               onChange={(e) => setBulletSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); navigateMatch(e.shiftKey ? -1 : 1) }
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  navigateMatch(e.shiftKey ? -1 : 1)
+                }
                 if (e.key === 'Escape') setBulletSearch('')
               }}
               placeholder="Buscar tecnología, herramienta…"
-              className="flex-1 bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground/50 min-w-0"
+              className="placeholder:text-muted-foreground/50 min-w-0 flex-1 bg-transparent text-xs focus:outline-none"
             />
             {bulletSearch && (
               <>
                 {matchTotal > 0 ? (
-                  <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                  <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
                     {matchIdx + 1}/{matchTotal}
                   </span>
                 ) : (
-                  <span className="text-[10px] text-red-500/70 shrink-0">Sin resultados</span>
+                  <span className="shrink-0 text-[10px] text-red-500/70">Sin resultados</span>
                 )}
-                <div className="flex items-center shrink-0">
+                <div className="flex shrink-0 items-center">
                   <button
                     type="button"
                     onClick={() => navigateMatch(-1)}
                     disabled={matchTotal === 0}
                     title="Anterior (Shift+Enter)"
-                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                    className="text-muted-foreground hover:text-foreground p-0.5 transition-colors disabled:opacity-30"
                   >
                     <ChevronUp className="h-3.5 w-3.5" />
                   </button>
@@ -364,24 +408,33 @@ export function StepGoals({
                     onClick={() => navigateMatch(1)}
                     disabled={matchTotal === 0}
                     title="Siguiente (Enter)"
-                    className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                    className="text-muted-foreground hover:text-foreground p-0.5 transition-colors disabled:opacity-30"
                   >
                     <ChevronDown className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <button type="button" onClick={() => setBulletSearch('')} className="text-muted-foreground/60 hover:text-foreground shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setBulletSearch('')}
+                  className="text-muted-foreground/60 hover:text-foreground shrink-0"
+                >
                   <X className="h-3 w-3" />
                 </button>
               </>
             )}
           </div>
 
-          <div ref={listRef} className="flex-1 overflow-y-auto rounded-md border border-border/40 min-h-0">
+          <div
+            ref={listRef}
+            className="border-border/40 min-h-0 flex-1 overflow-y-auto rounded-md border"
+          >
             {/* Experiencia */}
             {experienceSections.some((s) => (selections[s.id] ?? []).length > 0) && (
-              <div className="sticky top-0 z-20 flex items-center gap-2 px-3 py-1.5 bg-muted/60 backdrop-blur-md border-b border-border/40">
-                <Briefcase className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Experiencia</span>
+              <div className="bg-muted/60 border-border/40 sticky top-0 z-20 flex items-center gap-2 border-b px-3 py-1.5 backdrop-blur-md">
+                <Briefcase className="text-muted-foreground h-3 w-3 shrink-0" />
+                <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+                  Experiencia
+                </span>
               </div>
             )}
             {experienceSections.map((section) => {
@@ -409,9 +462,11 @@ export function StepGoals({
 
             {/* Liderazgo */}
             {leadershipSections.some((s) => (selections[s.id] ?? []).length > 0) && (
-              <div className="sticky top-0 z-20 flex items-center gap-2 px-3 py-1.5 bg-muted/60 backdrop-blur-md border-y border-border/40">
-                <Users className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Liderazgo</span>
+              <div className="bg-muted/60 border-border/40 sticky top-0 z-20 flex items-center gap-2 border-y px-3 py-1.5 backdrop-blur-md">
+                <Users className="text-muted-foreground h-3 w-3 shrink-0" />
+                <span className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
+                  Liderazgo
+                </span>
               </div>
             )}
             {leadershipSections.map((section) => {
@@ -444,37 +499,41 @@ export function StepGoals({
         </div>
 
         {/* Column 2: Editable CV preview — with collapse toggle */}
-        <div className="min-h-0 flex gap-0 relative">
+        <div className="relative flex min-h-0 gap-0">
           <Tooltip label={col1Collapsed ? 'Mostrar experiencia' : 'Ocultar experiencia'}>
             <button
               type="button"
               onClick={() => setCol1Collapsed(!col1Collapsed)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 flex items-center justify-center h-8 w-5 rounded-md border border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shadow-sm"
+              className="border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground absolute top-1/2 left-0 z-10 flex h-8 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-md border shadow-sm transition-colors"
             >
-              {col1Collapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+              {col1Collapsed ? (
+                <PanelLeftOpen className="h-3.5 w-3.5" />
+              ) : (
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              )}
             </button>
           </Tooltip>
-          <div className="flex-1 min-h-0 overflow-y-auto rounded-md border border-border/40">
-          <CvEditor
-            draftCv={draftCv}
-            jobOfferText={jobOfferText}
-            settings={settings}
-            originalCv={cvData}
-            onChange={onDraftCvChange}
-            onBulletAdded={onBulletAdded}
-            onBulletDeleted={onBulletDeleted}
-            onSectionDeleted={onSectionDeleted}
-            onBulletMoved={onBulletMoved}
-            draftBulletIds={draftBulletIds}
-            hoveredBulletId={hoveredBulletId}
-            onBulletHover={setHoveredBulletId}
-            onBulletLeave={() => setHoveredBulletId(null)}
-          />
+          <div className="border-border/40 min-h-0 flex-1 overflow-y-auto rounded-md border">
+            <CvEditor
+              draftCv={draftCv}
+              jobOfferText={jobOfferText}
+              settings={settings}
+              originalCv={cvData}
+              onChange={onDraftCvChange}
+              onBulletAdded={onBulletAdded}
+              onBulletDeleted={onBulletDeleted}
+              onSectionDeleted={onSectionDeleted}
+              onBulletMoved={onBulletMoved}
+              draftBulletIds={draftBulletIds}
+              hoveredBulletId={hoveredBulletId}
+              onBulletHover={setHoveredBulletId}
+              onBulletLeave={() => setHoveredBulletId(null)}
+            />
           </div>
         </div>
 
         {/* Column 3: Match analysis — fills height internally */}
-        <div className="min-h-0 flex flex-col">
+        <div className="flex min-h-0 flex-col">
           <MatchAnalysis
             jobOfferText={jobOfferText}
             draftCv={draftCv}
@@ -486,44 +545,53 @@ export function StepGoals({
       </div>
 
       {/* Job offer dialog */}
-      <Dialog open={offerOpen} onOpenChange={(o) => { setOfferOpen(o); if (!o) setOfferSearch('') }}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col">
+      <Dialog
+        open={offerOpen}
+        onOpenChange={(o) => {
+          setOfferOpen(o)
+          if (!o) setOfferSearch('')
+        }}
+      >
+        <DialogContent className="flex max-h-[80vh] flex-col sm:max-w-2xl">
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2 text-sm">
-              <FileText className="h-4 w-4 text-primary" />
+              <FileText className="text-primary h-4 w-4" />
               Oferta laboral
             </DialogTitle>
           </DialogHeader>
           {jobOfferText && (
-            <div className="shrink-0 flex items-center gap-1.5 rounded-md border border-input bg-muted/30 px-2.5 py-1.5">
-              <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div className="border-input bg-muted/30 flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5">
+              <Search className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
               <input
                 type="text"
                 value={offerSearch}
                 onChange={(e) => setOfferSearch(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); navigateOfferMatch(e.shiftKey ? -1 : 1) }
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    navigateOfferMatch(e.shiftKey ? -1 : 1)
+                  }
                   if (e.key === 'Escape') setOfferSearch('')
                 }}
                 placeholder="Buscar en la oferta…"
-                className="flex-1 bg-transparent text-xs focus:outline-none placeholder:text-muted-foreground/50 min-w-0"
+                className="placeholder:text-muted-foreground/50 min-w-0 flex-1 bg-transparent text-xs focus:outline-none"
               />
               {offerSearch && (
                 <>
                   {offerMatchTotal > 0 ? (
-                    <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums">
+                    <span className="text-muted-foreground shrink-0 text-[10px] tabular-nums">
                       {offerMatchIdx + 1}/{offerMatchTotal}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-red-500/70 shrink-0">Sin resultados</span>
+                    <span className="shrink-0 text-[10px] text-red-500/70">Sin resultados</span>
                   )}
-                  <div className="flex items-center shrink-0">
+                  <div className="flex shrink-0 items-center">
                     <button
                       type="button"
                       onClick={() => navigateOfferMatch(-1)}
                       disabled={offerMatchTotal === 0}
                       title="Anterior (Shift+Enter)"
-                      className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      className="text-muted-foreground hover:text-foreground p-0.5 transition-colors disabled:opacity-30"
                     >
                       <ChevronUp className="h-3.5 w-3.5" />
                     </button>
@@ -532,12 +600,16 @@ export function StepGoals({
                       onClick={() => navigateOfferMatch(1)}
                       disabled={offerMatchTotal === 0}
                       title="Siguiente (Enter)"
-                      className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      className="text-muted-foreground hover:text-foreground p-0.5 transition-colors disabled:opacity-30"
                     >
                       <ChevronDown className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <button type="button" onClick={() => setOfferSearch('')} className="text-muted-foreground/60 hover:text-foreground shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setOfferSearch('')}
+                    className="text-muted-foreground/60 hover:text-foreground shrink-0"
+                  >
                     <X className="h-3 w-3" />
                   </button>
                 </>
@@ -548,7 +620,9 @@ export function StepGoals({
             {jobOfferText ? (
               <HighlightedJobOffer text={jobOfferText} query={offerSearch} />
             ) : (
-              <p className="text-sm text-muted-foreground italic">No se ingresó texto de oferta laboral.</p>
+              <p className="text-muted-foreground text-sm italic">
+                No se ingresó texto de oferta laboral.
+              </p>
             )}
           </div>
         </DialogContent>
@@ -559,19 +633,20 @@ export function StepGoals({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-sm">
-              <Sparkles className="h-4 w-4 text-primary" />
+              <Sparkles className="text-primary h-4 w-4" />
               Optimizar CV con IA
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              La IA revisará cada bullet y las habilidades técnicas para hacerlos match con la oferta. Puedes añadir contexto adicional (opcional).
+            <p className="text-muted-foreground text-xs">
+              La IA revisará cada bullet y las habilidades técnicas para hacerlos match con la
+              oferta. Puedes añadir contexto adicional (opcional).
             </p>
             <Textarea
               placeholder="Ej: Enfócate en mi experiencia con microservicios, ignora los proyectos de 2019…"
               value={optimizeMessage}
               onChange={(e) => setOptimizeMessage(e.target.value)}
-              className="min-h-[80px] text-xs resize-none"
+              className="min-h-[80px] resize-none text-xs"
             />
             <div className="flex flex-wrap gap-1.5">
               {OPTIMIZE_SUGGESTIONS.map((s) => (
@@ -609,7 +684,9 @@ export function StepGoals({
       {/* AI Optimize diff dialog */}
       <CvOptimizeDialog
         open={optimizedCv !== null}
-        onOpenChange={(o) => { if (!o) onOptimizeCancel() }}
+        onOpenChange={(o) => {
+          if (!o) onOptimizeCancel()
+        }}
         draftCv={draftCv}
         optimizedCv={optimizedCv}
         onConfirm={onOptimizeConfirm}
@@ -617,32 +694,32 @@ export function StepGoals({
 
       {/* Chat Sheet */}
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
-        <SheetContent side="right" className="w-[480px] sm:w-[480px] p-0 flex flex-col">
-          <SheetHeader className="px-5 pt-5 pb-4 border-b border-border/50 shrink-0">
+        <SheetContent side="right" className="flex w-[90vw] max-w-[900px] flex-col p-0">
+          <SheetHeader className="border-border/50 shrink-0 border-b px-5 pt-5 pb-4">
             <SheetTitle className="flex items-center gap-2 text-sm">
-              <MessageSquare className="h-4 w-4 text-primary" />
+              <MessageSquare className="text-primary h-4 w-4" />
               Chat con IA — Asistente de CV
             </SheetTitle>
-            {!settings?.aiApiKey && (
-              <p className="text-[11px] text-muted-foreground/70 font-normal mt-0.5">
-                Configura una API key en Configuración para activar el chat.
-              </p>
-            )}
           </SheetHeader>
-          <div className="flex-1 min-h-0">
-            <AiChat
-              draftCv={draftCv}
-              jobOfferText={jobOfferText}
-              settings={settings}
-              messages={chatMessages}
-              onMessagesChange={setChatMessages}
-              input={chatInput}
-              onInputChange={setChatInput}
-              isLoading={chatLoading}
-              onLoadingChange={setChatLoading}
-              style={chatStyle}
-              onStyleChange={setChatStyle}
-            />
+          <div className="min-h-0 flex-1">
+            <ResizablePanelGroup direction="horizontal">
+              <ResizablePanel defaultSize={100} minSize={50}>
+                <AiChat
+                  draftCv={draftCv}
+                  jobOfferText={jobOfferText}
+                  settings={settings}
+                  messages={chatMessages}
+                  onMessagesChange={setChatMessages}
+                  input={chatInput}
+                  onInputChange={setChatInput}
+                  isLoading={chatLoading}
+                  onLoadingChange={setChatLoading}
+                  style={chatStyle}
+                  onStyleChange={setChatStyle}
+                />
+              </ResizablePanel>
+              <ResizableHandle withHandle className="w-1" />
+            </ResizablePanelGroup>
           </div>
         </SheetContent>
       </Sheet>
@@ -652,10 +729,10 @@ export function StepGoals({
 
 function Tooltip({ children, label }: { children: React.ReactNode; label: string }) {
   return (
-    <div className="relative group">
+    <div className="group relative">
       {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 pointer-events-none">
-        <div className="rounded-md border border-border/60 bg-popover px-2.5 py-1.5 text-[10px] text-popover-foreground shadow-md whitespace-nowrap max-w-[200px] text-center leading-snug">
+      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 hidden -translate-x-1/2 group-hover:block">
+        <div className="border-border/60 bg-popover text-popover-foreground max-w-[200px] rounded-md border px-2.5 py-1.5 text-center text-[10px] leading-snug whitespace-nowrap shadow-md">
           {label}
         </div>
       </div>
@@ -665,17 +742,25 @@ function Tooltip({ children, label }: { children: React.ReactNode; label: string
 
 function HighlightedJobOffer({ text, query }: { text: string; query: string }) {
   if (!query.trim()) {
-    return <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">{text}</pre>
+    return (
+      <pre className="text-foreground font-sans text-xs leading-relaxed whitespace-pre-wrap">
+        {text}
+      </pre>
+    )
   }
 
   const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const parts = text.split(new RegExp(`(${escaped})`, 'gi'))
 
   return (
-    <pre className="whitespace-pre-wrap text-xs leading-relaxed text-foreground font-sans">
+    <pre className="text-foreground font-sans text-xs leading-relaxed whitespace-pre-wrap">
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} data-match className="bg-yellow-200 dark:bg-yellow-600/50 text-foreground rounded-sm px-0.5">
+          <mark
+            key={i}
+            data-match
+            className="text-foreground rounded-sm bg-yellow-200 px-0.5 dark:bg-yellow-600/50"
+          >
             {part}
           </mark>
         ) : (
@@ -713,7 +798,6 @@ function SectionGroup({
   collapsed: boolean
   onCollapsedChange: (collapsed: boolean) => void
 }) {
-
   function toggle(i: number) {
     const next = [...bullets]
     next[i] = { ...next[i], selected: !next[i].selected }
@@ -721,42 +805,51 @@ function SectionGroup({
   }
 
   return (
-    <div className="border-b border-border/40 last:border-0">
+    <div className="border-border/40 border-b last:border-0">
       <div
-        className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-muted transition-colors sticky top-7 z-10 bg-card border-b border-border/30"
+        className="hover:bg-muted bg-card border-border/30 sticky top-7 z-10 flex cursor-pointer items-center gap-2 border-b px-3 py-2.5 transition-colors"
         onClick={() => onCollapsedChange(!collapsed)}
       >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-semibold truncate">{header}</span>
-            <span className="text-[10px] text-muted-foreground truncate">— {subheader}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="truncate text-xs font-semibold">{header}</span>
+            <span className="text-muted-foreground truncate text-[10px]">— {subheader}</span>
           </div>
-          <p className="text-[10px] text-muted-foreground">{dates}</p>
+          <p className="text-muted-foreground text-[10px]">{dates}</p>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
+          <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
             {selectedCount}/{bullets.length}
           </Badge>
-          {collapsed
-            ? <ChevronDown className="h-3 w-3 text-muted-foreground" />
-            : <ChevronUp className="h-3 w-3 text-muted-foreground" />
-          }
+          {collapsed ? (
+            <ChevronDown className="text-muted-foreground h-3 w-3" />
+          ) : (
+            <ChevronUp className="text-muted-foreground h-3 w-3" />
+          )}
         </div>
       </div>
 
       {!collapsed && (
         <div>
-          <div className="flex gap-2 px-3 py-1 bg-muted/20">
-            <button type="button" onClick={() => onChange(bullets.map((b) => ({ ...b, selected: true })))} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+          <div className="bg-muted/20 flex gap-2 px-3 py-1">
+            <button
+              type="button"
+              onClick={() => onChange(bullets.map((b) => ({ ...b, selected: true })))}
+              className="text-muted-foreground hover:text-foreground text-[10px] transition-colors"
+            >
               Todos
             </button>
             <span className="text-muted-foreground/40">·</span>
-            <button type="button" onClick={() => onChange(bullets.map((b) => ({ ...b, selected: false })))} className="text-[10px] text-muted-foreground hover:text-foreground transition-colors">
+            <button
+              type="button"
+              onClick={() => onChange(bullets.map((b) => ({ ...b, selected: false })))}
+              className="text-muted-foreground hover:text-foreground text-[10px] transition-colors"
+            >
               Ninguno
             </button>
           </div>
 
-          <div className="divide-y divide-border/30">
+          <div className="divide-border/30 divide-y">
             {bullets.map((bullet, i) => {
               // Only link when bullet is selected (unchecked have no col-2 counterpart)
               const isLinked = bullet.selected && activeBulletId === bullet.id
@@ -766,7 +859,7 @@ function SectionGroup({
                   data-col1-bullet-id={bullet.id}
                   className={cn(
                     // Layout-stable base: ring + rounded always present, only color transitions
-                    'flex gap-2 px-3 py-2 items-start rounded-sm',
+                    'flex items-start gap-2 rounded-sm px-3 py-2',
                     'ring-1 ring-inset',
                     'transition-[background-color,box-shadow,opacity] duration-300 ease-out',
                     bullet.selected ? 'bg-background' : 'bg-muted/20 opacity-60',
@@ -782,7 +875,7 @@ function SectionGroup({
                     onCheckedChange={() => toggle(i)}
                     className="mt-0.5 shrink-0"
                   />
-                  <p className="flex-1 text-[11px] leading-relaxed min-w-0">
+                  <p className="min-w-0 flex-1 text-[11px] leading-relaxed">
                     <HighlightText text={bullet.text} query={searchQuery ?? ''} />
                   </p>
                   {/* Always reserve icon space — opacity-only transition, no layout shift */}
@@ -795,11 +888,11 @@ function SectionGroup({
                         ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
                     }
                     className={cn(
-                      'shrink-0 mt-0.5 text-primary/60 hover:text-primary',
+                      'text-primary/60 hover:text-primary mt-0.5 shrink-0',
                       'transition-[opacity,color] duration-300 ease-out',
                       bullet.selected && isLinked
-                        ? 'opacity-100 cursor-pointer'
-                        : 'opacity-0 pointer-events-none'
+                        ? 'cursor-pointer opacity-100'
+                        : 'pointer-events-none opacity-0'
                     )}
                   >
                     <Link2 className="h-3 w-3" />
@@ -822,7 +915,11 @@ function HighlightText({ text, query }: { text: string; query: string }) {
     <>
       {parts.map((part, i) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={i} data-match className="bg-yellow-200 dark:bg-yellow-600/50 text-foreground rounded-sm px-0.5">
+          <mark
+            key={i}
+            data-match
+            className="text-foreground rounded-sm bg-yellow-200 px-0.5 dark:bg-yellow-600/50"
+          >
             {part}
           </mark>
         ) : (

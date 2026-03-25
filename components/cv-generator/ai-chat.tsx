@@ -1,6 +1,7 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { Sparkles, Key, Settings2 } from 'lucide-react'
+import Link from 'next/link'
 import {
   Conversation,
   ConversationContent,
@@ -125,11 +126,11 @@ export function AiChat({
               description="Tengo el contexto completo de tu borrador y la oferta. Pregúntame algo:"
               title="¿En qué puedo ayudarte?"
             >
-              <Suggestions className="mt-4 flex-wrap justify-center">
+              <div className="mt-4 flex max-w-full flex-wrap justify-center gap-2 px-2">
                 {SUGGESTIONS.map((s) => (
                   <Suggestion key={s} onClick={handleSuggestionClick} suggestion={s} />
                 ))}
-              </Suggestions>
+              </div>
             </ConversationEmptyState>
           ) : (
             <>
@@ -205,9 +206,15 @@ export function AiChat({
         </PromptInput>
 
         {!settings?.aiApiKey && (
-          <p className="text-muted-foreground/60 text-[10px]">
-            Configura una API key en Configuración para activar el chat.
-          </p>
+          <Link
+            href="/settings"
+            className="flex items-center gap-2 rounded-md border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-600 transition-colors hover:bg-amber-500/20 dark:text-amber-400"
+          >
+            <Key className="h-3.5 w-3.5 shrink-0" />
+            <span>Configura una API key en </span>
+            <span className="font-medium underline underline-offset-2">Configuración</span>
+            <Settings2 className="h-3 w-3 shrink-0" />
+          </Link>
         )}
       </div>
     </div>
