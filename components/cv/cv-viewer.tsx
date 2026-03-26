@@ -23,25 +23,39 @@ export function CvViewer({ cv }: CvViewerProps) {
       {/* Print styles */}
       <style>{`
         @page {
-          margin: 0;
-          size: A4;
+          margin: 12mm 0;
+          size: A4 portrait;
         }
         @media print {
           html, body {
             height: auto;
-            overflow: visible;
+            overflow-y: visible;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          body {
+            margin: 0;
+            padding: 0;
+            background: white;
           }
           body * { visibility: hidden; }
-          .cv-print-root, .cv-print-root * { visibility: visible; }
+          .cv-print-root,
+          .cv-print-root * {
+            visibility: visible;
+          }
           .cv-print-root {
-            position: static;
-            width: 100%;
-            max-width: 210mm;
-            min-height: 100vh;
+            position: relative;
+            width: 210mm;
             margin: 0 auto;
-            padding: 15mm 16mm;
-            box-sizing: border-box;
+            padding: 12mm 16mm;
+            background: white;
             font-size: ${fontSize};
+            color: #111;
+            box-sizing: border-box;
+          }
+          .cv-print-section {
+            page-break-inside: avoid;
+            page-break-after: auto;
           }
         }
         .cv-print-root { color: #111; }
@@ -169,7 +183,7 @@ export function CvViewer({ cv }: CvViewerProps) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div className="cv-print-section" style={{ marginBottom: 14 }}>
       <h2
         style={{
           fontSize: '10.5pt',
