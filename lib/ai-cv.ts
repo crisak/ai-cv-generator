@@ -237,6 +237,7 @@ const STYLE_INSTRUCTIONS: Record<ChatStyle, string> = {
 
 export async function chatWithCv(
   messages: ChatMessage[],
+  cvData: CvData,
   draftCv: CvData,
   jobOffer: string,
   settings: SettingsDocument | null,
@@ -244,20 +245,44 @@ export async function chatWithCv(
 ): Promise<string> {
   if (!settings?.aiApiKey) return 'Configura una API key en Configuración para usar el chat.'
 
-  const cvSummary = JSON.stringify(
+  const experienciaRealSummary = JSON.stringify(
     {
-      nombre: draftCv.basics.fullName,
-      experience: draftCv.experience.map((e) => ({
-        org: e.organization,
+      nombre: cvData.basics.fullName,
+      experiencia: cvData.experience.map((e) => ({
+        organizacion: e.organization,
         titulo: e.title,
+        fechas: e.dates,
         bullets: e.bullets,
       })),
-      leadership: draftCv.leadership.map((l) => ({
-        org: l.organization,
+      liderazgo: cvData.leadership.map((l) => ({
+        organizacion: l.organization,
         rol: l.role,
+        fechas: l.dates,
         bullets: l.bullets,
       })),
-      educacion: draftCv.education.map((e) => ({ institucion: e.institution, grado: e.degree })),
+      educacion: cvData.education,
+      skills: cvData.skills,
+    },
+    null,
+    2
+  ).substring(0, 5000)
+
+  const cvEdicionSummary = JSON.stringify(
+    {
+      nombre: draftCv.basics.fullName,
+      experiencia: draftCv.experience.map((e) => ({
+        organizacion: e.organization,
+        titulo: e.title,
+        fechas: e.dates,
+        bullets: e.bullets,
+      })),
+      liderazgo: draftCv.leadership.map((l) => ({
+        organizacion: l.organization,
+        rol: l.role,
+        fechas: l.dates,
+        bullets: l.bullets,
+      })),
+      educacion: draftCv.education,
       skills: draftCv.skills,
     },
     null,
@@ -266,10 +291,19 @@ export async function chatWithCv(
 
   const maxTokens = style === 'concise' ? 300 : style === 'extended' ? 1500 : 800
 
-  const systemContent = `Eres un experto en CVs ATS y reclutamiento. Ayuda al candidato a optimizar su CV para la oferta.
+  const systemContent = `Eres un experto en CVs ATS y reclutamiento. Tienes acceso a tres fuentes de información:
 
-CV ACTUAL:
-${cvSummary}
+1. **EXPERIENCIA REAL**: Toda la experiencia del candidato (posiciones, empresas, fechas, todos los bullets disponibles)
+2. **CV EN EDICIÓN**: El borrador actual con los bullets seleccionados para esta postulación
+3. **OFERTA LABORAL**: La descripción del puesto al que aplica
+
+IMPORTANTE: Cuando el candidato pregunte sobre fechas, skills, o valide información, usa la EXPERIENCIA REAL como fuente de verdad. El CV EN EDICIÓN puede estar incompleto o tener cambios pendientes.
+
+EXPERIENCIA REAL:
+${experienciaRealSummary}
+
+CV EN EDICIÓN:
+${cvEdicionSummary}
 
 OFERTA LABORAL:
 ${jobOffer.substring(0, 2000)}
