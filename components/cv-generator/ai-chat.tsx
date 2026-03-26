@@ -36,6 +36,7 @@ const STYLES: { value: ChatStyle; label: string; hint: string }[] = [
 ]
 
 interface AiChatProps {
+  cvData: CvData
   draftCv: CvData
   jobOfferText: string
   settings: SettingsDocument | null
@@ -50,6 +51,7 @@ interface AiChatProps {
 }
 
 export function AiChat({
+  cvData,
   draftCv,
   jobOfferText,
   settings,
@@ -93,11 +95,12 @@ export function AiChat({
       setLocalInput('')
       onLoadingChange(true)
 
-      const reply = await chatWithCv(next, draftCv, jobOfferText, settings, style)
+      const reply = await chatWithCv(next, cvData, draftCv, jobOfferText, settings, style)
       onMessagesChange([...next, { role: 'assistant', content: reply }])
       onLoadingChange(false)
     },
     [
+      cvData,
       draftCv,
       jobOfferText,
       settings,

@@ -756,6 +756,7 @@ export function StepGoals({
           </SheetHeader>
           <div className="min-h-0 flex-1">
             <AiChat
+              cvData={cvData}
               draftCv={draftCv}
               jobOfferText={jobOfferText}
               settings={settings}
