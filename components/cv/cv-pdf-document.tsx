@@ -1,46 +1,44 @@
 'use client'
 
-import { Document, Page, Text, View, StyleSheet, Font, PDFDownloadLink } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer'
 import type { CvData } from '@/types/experience'
-
-Font.register({
-  family: 'Calibri',
-  fonts: [{ src: 'https://fonts.gstatic.com/s/calibri/v14/2OGbDZ连字体.ttf' }],
-})
 
 const styles = StyleSheet.create({
   page: {
     padding: '40 45',
     fontFamily: 'Helvetica',
-    fontSize: 10,
-    lineHeight: 1.4,
+    fontSize: 11,
+    lineHeight: 1.35,
     color: '#111111',
   },
-  header: {
-    textAlign: 'center',
-    marginBottom: 12,
-  },
   name: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    letterSpacing: 1,
+    textAlign: 'center',
     marginBottom: 4,
+    textTransform: 'capitalize',
   },
-  contact: {
+  contactLine: {
     fontSize: 9,
-    color: '#444444',
+    textAlign: 'center',
+    color: '#555555',
+    marginBottom: 6,
   },
-  section: {
-    marginBottom: 14,
+  headerLine: {
+    borderBottom: '1 solid #000000',
+    marginVertical: 6,
   },
   sectionTitle: {
-    fontSize: 10.5,
+    fontSize: 11,
     fontWeight: 'bold',
+    textAlign: 'center',
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    marginBottom: 2,
-    borderBottom: '1.5 solid #111111',
-    paddingBottom: 2,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  sectionLine: {
+    borderBottom: '0.5 solid #999999',
+    marginBottom: 6,
   },
   roleEntry: {
     marginBottom: 10,
@@ -49,7 +47,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
-    marginBottom: 1,
   },
   org: {
     fontSize: 10,
@@ -59,12 +56,12 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#555555',
   },
-  roleSubHeader: {
+  roleTitleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 3,
+    marginTop: 1,
   },
-  role: {
+  roleTitle: {
     fontSize: 9.5,
     fontStyle: 'italic',
   },
@@ -74,16 +71,16 @@ const styles = StyleSheet.create({
   },
   bulletList: {
     marginLeft: 12,
+    marginTop: 3,
   },
   bullet: {
     fontSize: 9.5,
     marginBottom: 2,
-    lineHeight: 1.4,
   },
   educationEntry: {
     marginBottom: 8,
   },
-  educationHeader: {
+  eduHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'baseline',
@@ -108,151 +105,229 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#555555',
   },
-  coursework: {
-    fontSize: 9,
-    color: '#333333',
-    marginTop: 2,
-  },
-  skillRow: {
+  skillItem: {
     fontSize: 9.5,
     marginBottom: 3,
+    flexDirection: 'row',
   },
-  bold: {
+  skillLabel: {
     fontWeight: 'bold',
   },
+  skillValue: {
+    fontSize: 9.5,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 20,
+    right: 45,
+    fontSize: 9,
+    color: '#666666',
+  },
 })
+
+function capitalize(str: string): string {
+  if (!str) return ''
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+}
+
+function buildContactLine(contact: CvData['basics']['contact']): string {
+  const parts: string[] = []
+
+  if (contact.address) {
+    parts.push(contact.address)
+  }
+
+  const locationParts: string[] = []
+  if (contact.city) locationParts.push(contact.city)
+  if (contact.state) {
+    if (contact.zip) {
+      locationParts.push(`${contact.state} ${contact.zip}`)
+    } else {
+      locationParts.push(contact.state)
+    }
+  }
+  if (locationParts.length > 0) {
+    parts.push(locationParts.join(', '))
+  }
+
+  if (contact.email) parts.push(contact.email)
+  if (contact.phone) parts.push(contact.phone)
+
+  return parts.join(' | ')
+}
+
+function EducationSection({ cv }: { cv: CvData }) {
+  const { education } = cv
+  const hideOptionalEmpty = cv.settings.hideOptionalEmpty
+
+  const validEducation = education.filter((e) => e.degree && e.degree.trim() !== '')
+  if (validEducation.length === 0) return null
+
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Educación</Text>
+      <View style={styles.sectionLine} />
+      {validEducation
+        .sort((a, b) => a.order - b.order)
+        .map((edu) => (
+          <View key={edu.id} style={styles.educationEntry}>
+            <View style={styles.eduHeaderRow}>
+              <Text style={styles.institution}>{edu.institution}</Text>
+              {edu.location && <Text style={styles.eduLocation}>{edu.location}</Text>}
+            </View>
+            <View style={styles.degreeRow}>
+              <Text style={styles.degree}>
+                {edu.degree}
+                {edu.concentration ? ` — ${edu.concentration}` : ''}
+              </Text>
+              <Text style={styles.gradDate}>{edu.graduationDate}</Text>
+            </View>
+          </View>
+        ))}
+    </View>
+  )
+}
+
+function ExperienceSection({ cv }: { cv: CvData }) {
+  const { experience } = cv
+
+  const validExperience = experience.filter((e) => e.bullets && e.bullets.length > 0)
+  if (validExperience.length === 0) return null
+
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Experiencia</Text>
+      <View style={styles.sectionLine} />
+      {validExperience
+        .sort((a, b) => a.order - b.order)
+        .map((exp) => (
+          <View key={exp.id} style={styles.roleEntry}>
+            <View style={styles.roleHeader}>
+              <Text style={styles.org}>{exp.organization}</Text>
+              {exp.location && <Text style={styles.location}>{exp.location}</Text>}
+            </View>
+            <View style={styles.roleTitleRow}>
+              <Text style={styles.roleTitle}>{exp.title}</Text>
+              <Text style={styles.dates}>{exp.dates}</Text>
+            </View>
+            <View style={styles.bulletList}>
+              {exp.bullets.map((b, i) => (
+                <Text key={i} style={styles.bullet}>
+                  {`• ${b}`}
+                </Text>
+              ))}
+            </View>
+          </View>
+        ))}
+    </View>
+  )
+}
+
+function LeadershipSection({ cv }: { cv: CvData }) {
+  const { leadership } = cv
+
+  const validLeadership = leadership.filter((l) => l.bullets && l.bullets.length > 0)
+  if (validLeadership.length === 0) return null
+
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Liderazgo y Actividades</Text>
+      <View style={styles.sectionLine} />
+      {validLeadership
+        .sort((a, b) => a.order - b.order)
+        .map((lead) => (
+          <View key={lead.id} style={styles.roleEntry}>
+            <View style={styles.roleHeader}>
+              <Text style={styles.org}>{lead.organization}</Text>
+              {lead.location && <Text style={styles.location}>{lead.location}</Text>}
+            </View>
+            <View style={styles.roleTitleRow}>
+              <Text style={styles.roleTitle}>{lead.role}</Text>
+              <Text style={styles.dates}>{lead.dates}</Text>
+            </View>
+            <View style={styles.bulletList}>
+              {lead.bullets.map((b, i) => (
+                <Text key={i} style={styles.bullet}>
+                  {`• ${b}`}
+                </Text>
+              ))}
+            </View>
+          </View>
+        ))}
+    </View>
+  )
+}
+
+function SkillsSection({ cv }: { cv: CvData }) {
+  const { skills } = cv
+  const hideOptionalEmpty = cv.settings.hideOptionalEmpty
+
+  const hasTechnical = skills.technical && skills.technical.trim() !== ''
+  const hasLanguage = skills.language && skills.language.trim() !== ''
+  const hasLaboratory = skills.laboratory && skills.laboratory.trim() !== ''
+  const hasInterests = skills.interests && skills.interests.trim() !== ''
+
+  if (!hasTechnical && !hasLanguage && !hasLaboratory && !hasInterests) return null
+
+  const showAll = !hideOptionalEmpty
+
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>Habilidades e Intereses</Text>
+      <View style={styles.sectionLine} />
+      {hasTechnical && (
+        <View style={styles.skillItem}>
+          <Text style={styles.skillLabel}>Técnicas: </Text>
+          <Text style={styles.skillValue}>{skills.technical}</Text>
+        </View>
+      )}
+      {hasLanguage && (
+        <View style={styles.skillItem}>
+          <Text style={styles.skillLabel}>Idiomas: </Text>
+          <Text style={styles.skillValue}>{skills.language}</Text>
+        </View>
+      )}
+      {hasLaboratory && showAll && (
+        <View style={styles.skillItem}>
+          <Text style={styles.skillLabel}>Laboratorio: </Text>
+          <Text style={styles.skillValue}>{skills.laboratory}</Text>
+        </View>
+      )}
+      {hasInterests && showAll && (
+        <View style={styles.skillItem}>
+          <Text style={styles.skillLabel}>Intereses: </Text>
+          <Text style={styles.skillValue}>{skills.interests}</Text>
+        </View>
+      )}
+    </View>
+  )
+}
 
 interface CvPdfDocumentProps {
   cv: CvData
 }
 
 function CvPdfDocument({ cv }: CvPdfDocumentProps) {
-  const { basics, experience, leadership, education, skills } = cv
-
-  const expWithBullets = experience.filter((e) => e.bullets.length > 0)
-  const leadWithBullets = leadership.filter((l) => l.bullets.length > 0)
-
-  const contactLine = [
-    basics.contact.city && basics.contact.state
-      ? `${basics.contact.city}, ${basics.contact.state}`
-      : basics.contact.city || basics.contact.state,
-    basics.contact.phone,
-    basics.contact.email,
-  ]
-    .filter(Boolean)
-    .join('  ·  ')
+  const { basics } = cv
+  const contactLine = buildContactLine(basics.contact)
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <Text style={styles.name}>{basics.fullName}</Text>
-          <Text style={styles.contact}>{contactLine}</Text>
-        </View>
+      <Page size={cv.settings.paperSize === 'Letter' ? 'LETTER' : 'A4'} style={styles.page}>
+        <Text style={styles.name}>{capitalize(basics.fullName)}</Text>
+        <Text style={styles.contactLine}>{contactLine}</Text>
+        <View style={styles.headerLine} />
 
-        {expWithBullets.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Experiencia Profesional</Text>
-            {expWithBullets
-              .sort((a, b) => a.order - b.order)
-              .map((exp) => (
-                <View key={exp.id} style={styles.roleEntry}>
-                  <View style={styles.roleHeader}>
-                    <Text style={styles.org}>{exp.organization}</Text>
-                    <Text style={styles.location}>{exp.location}</Text>
-                  </View>
-                  <View style={styles.roleSubHeader}>
-                    <Text style={styles.role}>{exp.title}</Text>
-                    <Text style={styles.dates}>{exp.dates}</Text>
-                  </View>
-                  <View style={styles.bulletList}>
-                    {exp.bullets.map((b, i) => (
-                      <Text key={i} style={styles.bullet}>
-                        {`• ${b}`}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
-              ))}
-          </View>
-        )}
+        <EducationSection cv={cv} />
+        <ExperienceSection cv={cv} />
+        <LeadershipSection cv={cv} />
+        <SkillsSection cv={cv} />
 
-        {leadWithBullets.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Liderazgo y Mentoría</Text>
-            {leadWithBullets
-              .sort((a, b) => a.order - b.order)
-              .map((lead) => (
-                <View key={lead.id} style={styles.roleEntry}>
-                  <View style={styles.roleHeader}>
-                    <Text style={styles.org}>{lead.organization}</Text>
-                    <Text style={styles.location}>{lead.location}</Text>
-                  </View>
-                  <View style={styles.roleSubHeader}>
-                    <Text style={styles.role}>{lead.role}</Text>
-                    <Text style={styles.dates}>{lead.dates}</Text>
-                  </View>
-                  <View style={styles.bulletList}>
-                    {lead.bullets.map((b, i) => (
-                      <Text key={i} style={styles.bullet}>
-                        {`• ${b}`}
-                      </Text>
-                    ))}
-                  </View>
-                </View>
-              ))}
-          </View>
-        )}
-
-        {education.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Educación</Text>
-            {education
-              .sort((a, b) => a.order - b.order)
-              .map((edu) => (
-                <View key={edu.id} style={styles.educationEntry}>
-                  <View style={styles.educationHeader}>
-                    <Text style={styles.institution}>{edu.institution}</Text>
-                    <Text style={styles.eduLocation}>{edu.location}</Text>
-                  </View>
-                  <View style={styles.degreeRow}>
-                    <Text style={styles.degree}>
-                      {edu.degree}
-                      {edu.concentration ? ` — ${edu.concentration}` : ''}
-                    </Text>
-                    <Text style={styles.gradDate}>{edu.graduationDate}</Text>
-                  </View>
-                  {(edu.coursework || edu.thesis) && (
-                    <Text style={styles.coursework}>{edu.coursework || edu.thesis}</Text>
-                  )}
-                </View>
-              ))}
-          </View>
-        )}
-
-        {(skills.technical || skills.language) && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Habilidades</Text>
-            {skills.technical && (
-              <Text style={styles.skillRow}>
-                <Text style={styles.bold}>Técnicas: </Text>
-                {skills.technical}
-              </Text>
-            )}
-            {skills.language && (
-              <Text style={styles.skillRow}>
-                <Text style={styles.bold}>Idiomas: </Text>
-                {skills.language}
-              </Text>
-            )}
-            {(!cv.settings.hideOptionalEmpty || skills.interests) && skills.interests && (
-              <Text style={styles.skillRow}>
-                <Text style={styles.bold}>Intereses: </Text>
-                {skills.interests}
-              </Text>
-            )}
-          </View>
-        )}
+        <Text
+          style={styles.footer}
+          render={({ pageNumber, totalPages }) => `Page ${pageNumber} of ${totalPages}`}
+          fixed
+        />
       </Page>
     </Document>
   )
