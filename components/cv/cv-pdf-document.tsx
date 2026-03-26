@@ -69,9 +69,17 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     marginTop: 3,
   },
-  bullet: {
-    fontSize: 9.5,
+  bulletItem: {
+    flexDirection: 'row',
     marginBottom: 2,
+  },
+  bulletPoint: {
+    fontSize: 9.5,
+    marginRight: 4,
+  },
+  bulletText: {
+    fontSize: 9.5,
+    flex: 1,
   },
   educationEntry: {
     marginBottom: 8,
@@ -206,9 +214,10 @@ function ExperienceSection({ cv }: { cv: CvData }) {
             </View>
             <View style={styles.bulletList}>
               {exp.bullets.map((b, i) => (
-                <Text key={i} style={styles.bullet}>
-                  {`• ${b}`}
-                </Text>
+                <View key={i} style={styles.bulletItem}>
+                  <Text style={styles.bulletPoint}>•</Text>
+                  <Text style={styles.bulletText}>{b}</Text>
+                </View>
               ))}
             </View>
           </View>
@@ -240,9 +249,10 @@ function LeadershipSection({ cv }: { cv: CvData }) {
             </View>
             <View style={styles.bulletList}>
               {lead.bullets.map((b, i) => (
-                <Text key={i} style={styles.bullet}>
-                  {`• ${b}`}
-                </Text>
+                <View key={i} style={styles.bulletItem}>
+                  <Text style={styles.bulletPoint}>•</Text>
+                  <Text style={styles.bulletText}>{b}</Text>
+                </View>
               ))}
             </View>
           </View>
