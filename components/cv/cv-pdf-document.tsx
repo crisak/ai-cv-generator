@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
   contactLine: {
     fontSize: 9,
     textAlign: 'center',
-    marginBottom: 6,
+    marginBottom: 0,
   },
   headerLine: {
     borderBottom: '1 solid #000000',
