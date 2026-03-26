@@ -6,7 +6,10 @@ interface CvViewerProps {
 
 export function CvViewer({ cv }: CvViewerProps) {
   const { basics, experience, leadership, education, skills, settings } = cv
-  const fontFamily = settings.fontFamily === 'Times New Roman' ? '"Times New Roman", serif' : 'Calibri, "Segoe UI", Arial, sans-serif'
+  const fontFamily =
+    settings.fontFamily === 'Times New Roman'
+      ? '"Times New Roman", serif'
+      : 'Calibri, "Segoe UI", Arial, sans-serif'
   const fontSize = `${settings.fontSize}pt`
 
   const expWithBullets = experience.filter((e) => e.bullets.length > 0)
@@ -19,14 +22,25 @@ export function CvViewer({ cv }: CvViewerProps) {
     >
       {/* Print styles */}
       <style>{`
+        @page {
+          margin: 0;
+          size: A4;
+        }
         @media print {
+          html, body {
+            height: auto;
+            overflow: visible;
+          }
           body * { visibility: hidden; }
           .cv-print-root, .cv-print-root * { visibility: visible; }
           .cv-print-root {
-            position: fixed;
-            top: 0; left: 0;
+            position: static;
             width: 100%;
-            padding: 18mm 16mm;
+            max-width: 210mm;
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 15mm 16mm;
+            box-sizing: border-box;
             font-size: ${fontSize};
           }
         }
@@ -37,7 +51,9 @@ export function CvViewer({ cv }: CvViewerProps) {
       <div className="mx-auto max-w-[720px] px-8 py-8">
         {/* ── Header ── */}
         <div className="mb-4 text-center">
-          <h1 style={{ fontSize: '16pt', fontWeight: 700, letterSpacing: '0.04em', marginBottom: 4 }}>
+          <h1
+            style={{ fontSize: '16pt', fontWeight: 700, letterSpacing: '0.04em', marginBottom: 4 }}
+          >
             {basics.fullName}
           </h1>
           <p style={{ fontSize: '9pt', color: '#444' }}>
@@ -96,7 +112,13 @@ export function CvViewer({ cv }: CvViewerProps) {
               .sort((a, b) => a.order - b.order)
               .map((edu) => (
                 <div key={edu.id} style={{ marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                    }}
+                  >
                     <span style={{ fontWeight: 700, fontSize: '10pt' }}>{edu.institution}</span>
                     <span style={{ fontSize: '9pt', color: '#555' }}>{edu.location}</span>
                   </div>
@@ -122,17 +144,20 @@ export function CvViewer({ cv }: CvViewerProps) {
           <Section title="Habilidades">
             {skills.technical && (
               <p style={{ fontSize: '9.5pt', marginBottom: 4 }}>
-                <strong>Técnicas: </strong>{skills.technical}
+                <strong>Técnicas: </strong>
+                {skills.technical}
               </p>
             )}
             {skills.language && (
               <p style={{ fontSize: '9.5pt', marginBottom: 4 }}>
-                <strong>Idiomas: </strong>{skills.language}
+                <strong>Idiomas: </strong>
+                {skills.language}
               </p>
             )}
             {!settings.hideOptionalEmpty || skills.interests ? (
               <p style={{ fontSize: '9.5pt' }}>
-                <strong>Intereses: </strong>{skills.interests}
+                <strong>Intereses: </strong>
+                {skills.interests}
               </p>
             ) : null}
           </Section>
@@ -145,7 +170,15 @@ export function CvViewer({ cv }: CvViewerProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: 14 }}>
-      <h2 style={{ fontSize: '10.5pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+      <h2
+        style={{
+          fontSize: '10.5pt',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          marginBottom: 2,
+        }}
+      >
         {title}
       </h2>
       <hr className="cv-section-line" />
