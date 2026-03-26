@@ -74,7 +74,7 @@ export function CvViewer({ cv }: CvViewerProps) {
   return (
     <div
       className="cv-print-root bg-white text-black"
-      style={{ fontFamily, fontSize, lineHeight: 1.35 }}
+      style={{ fontFamily, fontSize, lineHeight: 1.35, padding: '40px 45px' }}
     >
       {/* Print styles */}
       <style>{`
@@ -130,11 +130,11 @@ export function CvViewer({ cv }: CvViewerProps) {
         >
           {capitalize(basics.fullName)}
         </h1>
-        <p style={{ fontSize: '9pt', color: '#555', textAlign: 'center', marginBottom: 6 }}>
-          {contactLine}
-        </p>
       </div>
       <div style={{ borderBottom: '1px solid #000', marginBottom: 8 }} />
+      <p style={{ fontSize: '9pt', color: '#555', textAlign: 'center', marginBottom: 6 }}>
+        {contactLine}
+      </p>
 
       {/* ── Educación ── */}
       {validEducation.length > 0 && (

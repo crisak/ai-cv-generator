@@ -307,8 +307,8 @@ function CvPdfDocument({ cv }: CvPdfDocumentProps) {
     <Document>
       <Page size={cv.settings.paperSize === 'Letter' ? 'LETTER' : 'A4'} style={styles.page}>
         <Text style={styles.name}>{capitalize(basics.fullName)}</Text>
-        <Text style={styles.contactLine}>{contactLine}</Text>
         <View style={styles.headerLine} />
+        <Text style={styles.contactLine}>{contactLine}</Text>
 
         <EducationSection cv={cv} />
         <ExperienceSection cv={cv} />
