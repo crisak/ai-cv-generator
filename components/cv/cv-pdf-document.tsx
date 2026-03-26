@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
   },
   headerLine: {
     borderBottom: '1 solid #000000',
-    marginVertical: 6,
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 11,
@@ -34,11 +34,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'uppercase',
     marginTop: 12,
-    marginBottom: 6,
-  },
-  sectionLine: {
-    borderBottom: '0.5 solid #999999',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   roleEntry: {
     marginBottom: 10,
@@ -63,7 +59,7 @@ const styles = StyleSheet.create({
   },
   roleTitle: {
     fontSize: 9.5,
-    fontStyle: 'italic',
+    fontWeight: 'bold',
   },
   dates: {
     fontSize: 9,
@@ -106,11 +102,12 @@ const styles = StyleSheet.create({
     color: '#555555',
   },
   skillItem: {
-    fontSize: 9.5,
     marginBottom: 3,
     flexDirection: 'row',
+    flexWrap: 'wrap',
   },
   skillLabel: {
+    fontSize: 9.5,
     fontWeight: 'bold',
   },
   skillValue: {
@@ -158,7 +155,6 @@ function buildContactLine(contact: CvData['basics']['contact']): string {
 
 function EducationSection({ cv }: { cv: CvData }) {
   const { education } = cv
-  const hideOptionalEmpty = cv.settings.hideOptionalEmpty
 
   const validEducation = education.filter((e) => e.degree && e.degree.trim() !== '')
   if (validEducation.length === 0) return null
@@ -166,7 +162,6 @@ function EducationSection({ cv }: { cv: CvData }) {
   return (
     <View>
       <Text style={styles.sectionTitle}>Educación</Text>
-      <View style={styles.sectionLine} />
       {validEducation
         .sort((a, b) => a.order - b.order)
         .map((edu) => (
@@ -197,7 +192,6 @@ function ExperienceSection({ cv }: { cv: CvData }) {
   return (
     <View>
       <Text style={styles.sectionTitle}>Experiencia</Text>
-      <View style={styles.sectionLine} />
       {validExperience
         .sort((a, b) => a.order - b.order)
         .map((exp) => (
@@ -232,7 +226,6 @@ function LeadershipSection({ cv }: { cv: CvData }) {
   return (
     <View>
       <Text style={styles.sectionTitle}>Liderazgo y Actividades</Text>
-      <View style={styles.sectionLine} />
       {validLeadership
         .sort((a, b) => a.order - b.order)
         .map((lead) => (
@@ -274,7 +267,6 @@ function SkillsSection({ cv }: { cv: CvData }) {
   return (
     <View>
       <Text style={styles.sectionTitle}>Habilidades e Intereses</Text>
-      <View style={styles.sectionLine} />
       {hasTechnical && (
         <View style={styles.skillItem}>
           <Text style={styles.skillLabel}>Técnicas: </Text>
