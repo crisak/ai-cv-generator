@@ -121,7 +121,7 @@ export function CvViewer({ cv }: CvViewerProps) {
       <div className="text-center" style={{ marginBottom: 4 }}>
         <h1
           style={{
-            fontSize: '18pt',
+            fontSize: '12pt',
             fontWeight: 700,
             textAlign: 'center',
             marginBottom: 4,

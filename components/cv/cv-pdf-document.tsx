@@ -12,7 +12,7 @@ const styles = StyleSheet.create({
     color: '#111111',
   },
   name: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 4,
