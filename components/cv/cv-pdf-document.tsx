@@ -21,12 +21,12 @@ const styles = StyleSheet.create({
   contactLine: {
     fontSize: 9,
     textAlign: 'center',
-    color: '#555555',
     marginBottom: 6,
   },
   headerLine: {
     borderBottom: '1 solid #000000',
-    marginBottom: 8,
+    marginTop: 11,
+    marginBottom: 2,
   },
   sectionTitle: {
     fontSize: 11,
