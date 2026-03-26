@@ -6,12 +6,7 @@ import Link from 'next/link'
 import { useCvs } from '@/hooks/use-cvs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { CvViewer } from '@/components/cv/cv-viewer'
+import { CvPdfDownloadLink } from '@/components/cv/cv-pdf-document'
 import type { CvData } from '@/types/experience'
 import type { CvDocument } from '@/lib/db/schemas'
 
@@ -42,6 +38,22 @@ function parseCvData(raw: string): CvData | null {
   }
 }
 
+function CvListItemPdfButton({ cvDoc }: { cvDoc: CvDocument }) {
+  const cvData = parseCvData(cvDoc.cvData)
+  if (!cvData) return null
+  return (
+    <CvPdfDownloadLink
+      cv={cvData}
+      filename={`cv-${cvDoc.jobTitle?.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().slice(0, 10)}.pdf`}
+    >
+      <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs">
+        <Download className="h-3.5 w-3.5" />
+        PDF
+      </Button>
+    </CvPdfDownloadLink>
+  )
+}
+
 export default function CvsPage() {
   const { cvs, isLoading, deleteCV } = useCvs()
   const [previewCv, setPreviewCv] = useState<CvDocument | null>(null)
@@ -49,32 +61,28 @@ export default function CvsPage() {
 
   const previewData = previewCv ? parseCvData(previewCv.cvData) : null
 
-  function handleDownload() {
-    window.print()
-  }
-
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="border-primary h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
       </div>
     )
   }
 
   return (
-    <div className="p-6 max-w-4xl space-y-6">
+    <div className="max-w-4xl space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Mis CVs</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           CVs generados y guardados desde el generador de CV
         </p>
       </div>
 
       {cvs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3 rounded-lg border border-dashed border-border/60 text-center">
-          <FileText className="h-10 w-10 text-muted-foreground/40" />
+        <div className="border-border/60 flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed py-20 text-center">
+          <FileText className="text-muted-foreground/40 h-10 w-10" />
           <p className="text-sm font-medium">Sin CVs guardados aún</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Genera tu primer CV optimizado desde el generador
           </p>
           <Button asChild variant="outline" size="sm" className="mt-2">
@@ -86,24 +94,24 @@ export default function CvsPage() {
           {cvs.map((cv) => (
             <div
               key={cv.id}
-              className="flex items-center gap-4 rounded-lg border border-border/60 bg-card px-4 py-3"
+              className="border-border/60 bg-card flex items-center gap-4 rounded-lg border px-4 py-3"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-                <FileText className="h-4 w-4 text-primary" />
+              <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md">
+                <FileText className="text-primary h-4 w-4" />
               </div>
 
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{cv.jobTitle}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground">{cv.company}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{cv.jobTitle}</p>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className="text-muted-foreground text-xs">{cv.company}</span>
                   <span className="text-muted-foreground/40 text-xs">·</span>
-                  <span className="text-xs text-muted-foreground">{formatDate(cv.createdAt)}</span>
+                  <span className="text-muted-foreground text-xs">{formatDate(cv.createdAt)}</span>
                   {cv.applicationId && (
                     <>
                       <span className="text-muted-foreground/40 text-xs">·</span>
                       <Link
                         href={`/applications/${cv.applicationId}`}
-                        className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                        className="text-primary flex items-center gap-0.5 text-xs hover:underline"
                       >
                         Ver postulación
                         <ExternalLink className="h-3 w-3" />
@@ -113,7 +121,7 @@ export default function CvsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
+              <div className="flex shrink-0 items-center gap-1.5">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -123,33 +131,17 @@ export default function CvsPage() {
                   <Eye className="h-3.5 w-3.5" />
                   Ver
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  asChild
-                >
+                <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs" asChild>
                   <Link href={`/cv-generator?editId=${cv.id}&step=2`}>
                     <Pencil className="h-3.5 w-3.5" />
                     Editar
                   </Link>
                 </Button>
+                <CvListItemPdfButton cvDoc={cv} />
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 gap-1.5 text-xs"
-                  onClick={() => {
-                    setPreviewCv(cv)
-                    setTimeout(() => window.print(), 300)
-                  }}
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  PDF
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive h-8"
                   onClick={() => setDeletingId(cv.id)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
@@ -166,16 +158,28 @@ export default function CvsPage() {
 
       {/* CV Preview Sheet */}
       <Sheet open={!!previewCv} onOpenChange={(open) => !open && setPreviewCv(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
-          <SheetHeader className="p-4 border-b border-border/60">
+        <SheetContent side="right" className="w-full overflow-y-auto p-0 sm:max-w-2xl">
+          <SheetHeader className="border-border/60 border-b p-4">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-sm">
                 {previewCv?.jobTitle} — {previewCv?.company}
               </SheetTitle>
-              <Button size="sm" variant="outline" className="gap-1.5 h-8" onClick={handleDownload}>
-                <Download className="h-3.5 w-3.5" />
-                Descargar PDF
-              </Button>
+              {previewData ? (
+                <CvPdfDownloadLink
+                  cv={previewData}
+                  filename={`cv-${previewCv?.jobTitle?.toLowerCase().replace(/\s+/g, '-') || 'export'}-${new Date().toISOString().slice(0, 10)}.pdf`}
+                >
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                    <Download className="h-3.5 w-3.5" />
+                    Descargar PDF
+                  </Button>
+                </CvPdfDownloadLink>
+              ) : (
+                <Button size="sm" variant="outline" className="h-8 gap-1.5" disabled>
+                  <Download className="h-3.5 w-3.5" />
+                  Descargar PDF
+                </Button>
+              )}
             </div>
           </SheetHeader>
           {previewData && (
@@ -187,7 +191,10 @@ export default function CvsPage() {
       </Sheet>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={!!deletingId} onOpenChange={(open: boolean) => !open && setDeletingId(null)}>
+      <AlertDialog
+        open={!!deletingId}
+        onOpenChange={(open: boolean) => !open && setDeletingId(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Eliminar este CV?</AlertDialogTitle>
