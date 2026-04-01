@@ -387,12 +387,15 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                 {app.workModality || isEditing ? (
                   <Field label="Modalidad" isEditing={isEditing}>
                     {isEditing ? (
-                      <Select value={workModality} onValueChange={setWorkModality}>
+                      <Select
+                        value={workModality || '_none'}
+                        onValueChange={(v) => setWorkModality(v === '_none' ? '' : v)}
+                      >
                         <SelectTrigger className="h-8 text-sm">
                           <SelectValue placeholder="Seleccionar" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Sin especificar</SelectItem>
+                          <SelectItem value="_none">Sin especificar</SelectItem>
                           {Object.entries(WORK_MODALITY_LABELS).map(([val, label]) => (
                             <SelectItem key={val} value={val}>
                               {label}
