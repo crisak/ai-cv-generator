@@ -89,6 +89,29 @@ export async function getDatabase(userId: string): Promise<AppDatabase> {
             const { responseDate, ...rest } = oldDoc
             return rest
           },
+          // v4 → v5: add 'applied' status. Migrate existing appliedAt to timeline entry.
+          5: (oldDoc: Record<string, unknown>) => {
+            const appliedAt = oldDoc.appliedAt as string | undefined
+            const timeline = (oldDoc.timeline as Record<string, unknown>[] | undefined) ?? []
+            const hasAppliedEntry = timeline.some((e) => e.status === 'applied')
+            if (appliedAt && !hasAppliedEntry) {
+              return {
+                ...oldDoc,
+                timeline: [
+                  ...timeline,
+                  {
+                    id: uuidv4(),
+                    status: 'applied',
+                    title: 'Postulado',
+                    date: appliedAt,
+                    notes: 'Migrado automáticamente',
+                    files: [],
+                  },
+                ],
+              }
+            }
+            return oldDoc
+          },
         },
       },
       cvs: {

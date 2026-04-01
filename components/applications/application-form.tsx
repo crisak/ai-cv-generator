@@ -173,6 +173,7 @@ const schema = z.object({
   workModality: z.string(),
   status: z.enum([
     'pending',
+    'applied',
     'phone_screen',
     'technical',
     'hr_interview',
@@ -1002,20 +1003,6 @@ export function ApplicationForm({
                     )}
                   />
                 </FlashWrapper>
-                {isEditing && (
-                  <FormField
-                    control={form.control}
-                    name="appliedAt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Fecha postulación</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                )}
               </div>
 
               <Separator className="my-5" />

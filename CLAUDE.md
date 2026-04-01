@@ -87,3 +87,6 @@ docs/.draft/           → Docs internos/sensibles (gitignored)
 - Priorizar match con la oferta
 - Max 1 página PDF
 - Goals editables antes de generar
+
+## Recent Changes
+- 001-sync-detail-fields: Added [if applicable, e.g., PostgreSQL, CoreData, files or N/A]

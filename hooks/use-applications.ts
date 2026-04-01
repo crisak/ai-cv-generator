@@ -13,9 +13,6 @@ export type ApplicationInput = Omit<
   | 'updatedAt'
   | 'cvId'
   | 'timeline'
-  | 'url'
-  | 'workModality'
-  | 'offerPublishedAt'
 > & {
   cvId?: string
   timeline?: TimelineEntry[]
@@ -31,7 +28,8 @@ export type NewTimelineEntry = {
 }
 
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
-  pending: 'Postulado',
+  pending: 'Pendiente',
+  applied: 'Postulado',
   phone_screen: 'Llamada inicial',
   technical: 'Entrevista técnica',
   hr_interview: 'Entrevista HR',
@@ -39,6 +37,11 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   rejected: 'Rechazado',
   accepted: 'Aceptado',
   withdrawn: 'Retirado',
+}
+
+export function getAppliedDate(timeline: TimelineEntry[]): string | null {
+  const entry = timeline.find((e) => e.status === 'applied')
+  return entry?.date ?? null
 }
 
 export function useApplications() {
@@ -67,9 +70,6 @@ export function useApplications() {
       const doc = await db.applications.insert({
         id: uuidv4(),
         cvId: '',
-        url: '',
-        workModality: '',
-        offerPublishedAt: '',
         ...input,
         timeline: [],
         createdAt: now,
