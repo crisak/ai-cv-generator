@@ -82,6 +82,7 @@ export interface CVData {
 
 export type ApplicationStatus =
   | 'pending'
+  | 'applied'
   | 'phone_screen'
   | 'technical'
   | 'hr_interview'
@@ -92,6 +93,7 @@ export type ApplicationStatus =
 
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   pending: 'Pendiente',
+  applied: 'Postulado',
   phone_screen: 'Llamada inicial',
   technical: 'Entrevista técnica',
   hr_interview: 'Entrevista HR',
@@ -103,7 +105,8 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
 
 export const APPLICATION_STATUS_COLORS: Record<ApplicationStatus, string> = {
   pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-  phone_screen: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  applied: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  phone_screen: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400',
   technical: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
   hr_interview: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
   offer: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',

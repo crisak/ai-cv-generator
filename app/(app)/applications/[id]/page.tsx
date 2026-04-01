@@ -15,9 +15,12 @@ import {
   CalendarDays,
   DollarSign,
   LayoutList,
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useApplications } from '@/hooks/use-applications'
+import { useApplications, getAppliedDate } from '@/hooks/use-applications'
 import { useCvs } from '@/hooks/use-cvs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,13 +42,14 @@ import { CvViewer } from '@/components/cv/cv-viewer'
 import {
   APPLICATION_STATUS_LABELS,
   APPLICATION_STATUS_COLORS,
+  WORK_MODALITY_LABELS,
   type ApplicationStatus,
+  type WorkModality,
 } from '@/types/cv'
 import type { ApplicationDocument, TimelineEntry } from '@/lib/db/schemas'
 import type { CvData } from '@/types/experience'
 import { cn } from '@/lib/utils'
 
-const SOURCES = ['LinkedIn', 'Computrabajo', 'GetOnBoard', 'Indeed', 'Referido', 'Otro']
 const CURRENCIES = ['COP', 'USD', 'EUR']
 
 function formatSalary(amount: number, currency: string) {
@@ -84,6 +88,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [showTimelineForm, setShowTimelineForm] = useState(false)
   const [editingEntry, setEditingEntry] = useState<TimelineEntry | null>(null)
   const [showCvPreview, setShowCvPreview] = useState(false)
+  const [jobOfferExpanded, setJobOfferExpanded] = useState(false)
 
   const [company, setCompany] = useState('')
   const [position, setPosition] = useState('')
@@ -92,9 +97,12 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const [salaryOffered, setSalaryOffered] = useState('')
   const [salaryCurrency, setSalaryCurrency] = useState('COP')
   const [benefits, setBenefits] = useState<string[]>([])
-  const [appliedAt, setAppliedAt] = useState('')
   const [nextSteps, setNextSteps] = useState('')
   const [notes, setNotes] = useState('')
+  const [jobOfferText, setJobOfferText] = useState('')
+  const [url, setUrl] = useState('')
+  const [workModality, setWorkModality] = useState('')
+  const [offerPublishedAt, setOfferPublishedAt] = useState('')
 
   const app = applications.find((a) => a.id === id) as ApplicationDocument | undefined
   const linkedCv = cvs.find((c) => c.id === app?.cvId)
@@ -117,9 +125,14 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       setSalaryOffered(app.salaryOffered ? String(app.salaryOffered) : '')
       setSalaryCurrency(app.salaryCurrency || 'COP')
       setBenefits(app.benefits ?? [])
-      setAppliedAt(app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : '')
       setNextSteps(app.nextSteps ?? '')
       setNotes(app.notes ?? '')
+      setJobOfferText(app.jobOfferText ?? '')
+      setUrl(app.url ?? '')
+      setWorkModality(app.workModality ?? '')
+      setOfferPublishedAt(
+        app.offerPublishedAt ? new Date(app.offerPublishedAt).toISOString().split('T')[0] : ''
+      )
     }
   }, [app])
 
@@ -134,10 +147,12 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
       salaryOffered: salaryOffered ? parseFloat(salaryOffered) : 0,
       salaryCurrency,
       benefits,
-      appliedAt: appliedAt ? new Date(appliedAt).toISOString() : '',
       nextSteps,
       notes,
-      jobOfferText: app.jobOfferText,
+      jobOfferText,
+      url,
+      workModality,
+      offerPublishedAt: offerPublishedAt ? new Date(offerPublishedAt).toISOString() : '',
       isFavorite: app.isFavorite,
     })
     setIsSaving(false)
@@ -153,9 +168,14 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
     setSalaryOffered(app.salaryOffered ? String(app.salaryOffered) : '')
     setSalaryCurrency(app.salaryCurrency || 'COP')
     setBenefits(app.benefits ?? [])
-    setAppliedAt(app.appliedAt ? new Date(app.appliedAt).toISOString().split('T')[0] : '')
     setNextSteps(app.nextSteps ?? '')
     setNotes(app.notes ?? '')
+    setJobOfferText(app.jobOfferText ?? '')
+    setUrl(app.url ?? '')
+    setWorkModality(app.workModality ?? '')
+    setOfferPublishedAt(
+      app.offerPublishedAt ? new Date(app.offerPublishedAt).toISOString().split('T')[0] : ''
+    )
     setIsEditing(false)
   }
 
@@ -180,7 +200,9 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
 
   const currentStatus = isEditing ? status : app.status
   const salary = formatSalary(app.salaryOffered, app.salaryCurrency || 'COP')
-  const daysAgo = daysSince(app.appliedAt)
+  const appliedDate = getAppliedDate(app.timeline ?? [])
+  const daysAgo = appliedDate ? daysSince(appliedDate) : null
+  const jobOfferLong = (app.jobOfferText?.length ?? 0) > 500
 
   return (
     <div className="p-6 pb-10">
@@ -220,7 +242,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
           </div>
         </div>
 
-        {/* ── Company identity card (signature element: pipeline indicator) ── */}
+        {/* ── Company identity card ── */}
         <div className="border-border/60 bg-card overflow-hidden rounded-xl border">
           {/* Header row: company + favorite */}
           <div className="px-6 pt-5 pb-4">
@@ -304,7 +326,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
           </div>
 
           {/* Quick stats bar */}
-          {!isEditing && (salary || daysAgo || app.appliedAt) && (
+          {!isEditing && (salary || daysAgo || appliedDate) && (
             <div className="border-border/40 flex flex-wrap items-center gap-x-6 gap-y-2 border-t px-6 py-3">
               {salary && (
                 <div className="flex items-center gap-1.5">
@@ -315,16 +337,20 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                   </span>
                 </div>
               )}
-              {daysAgo && (
-                <div className="flex items-center gap-1.5">
+              {daysAgo && appliedDate && (
+                <div className="relative flex items-center gap-1.5 group">
                   <CalendarDays className="text-muted-foreground h-3.5 w-3.5" />
-                  <span className="text-muted-foreground text-xs">Aplicado</span>
+                  <span className="text-muted-foreground text-xs">Postulado</span>
                   <span className="text-foreground text-xs font-medium">{daysAgo} atrás</span>
+                  <HelpCircle className="text-muted-foreground/50 h-3 w-3 cursor-help" />
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden w-52 -translate-x-1/2 rounded-md bg-popover px-2.5 py-1.5 text-[11px] text-popover-foreground shadow-md group-hover:block">
+                    Fecha en que te postulaste a esta oferta
+                  </span>
                 </div>
               )}
-              {app.appliedAt && (
+              {appliedDate && (
                 <span className="text-muted-foreground text-xs">
-                  {new Date(app.appliedAt).toLocaleDateString('es-CO', {
+                  {new Date(appliedDate).toLocaleDateString('es-CO', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',
@@ -337,7 +363,7 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
 
         {/* ── Main content grid ── */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_380px]">
-          {/* LEFT: Details, Compensation, Notes */}
+          {/* LEFT: Details, Offer, Compensation, Notes */}
           <div className="space-y-4">
             {/* Detalles */}
             <div className="border-border/60 bg-card space-y-4 rounded-xl border p-5">
@@ -347,43 +373,96 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                 <Field label="Fuente" isEditing={isEditing}>
                   {isEditing ? (
-                    <Select value={source} onValueChange={setSource}>
-                      <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Seleccionar" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SOURCES.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Input
+                      value={source}
+                      onChange={(e) => setSource(e.target.value)}
+                      className="h-8 text-sm"
+                      placeholder="LinkedIn, Referido, etc."
+                    />
                   ) : (
                     <span>{app.source || '—'}</span>
                   )}
                 </Field>
 
-                <Field label="Fecha de aplicación" isEditing={isEditing}>
-                  {isEditing ? (
-                    <Input
-                      type="date"
-                      value={appliedAt}
-                      onChange={(e) => setAppliedAt(e.target.value)}
-                      className="h-8 text-sm"
-                    />
-                  ) : (
-                    <span>
-                      {app.appliedAt
-                        ? new Date(app.appliedAt).toLocaleDateString('es-CO', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                          })
-                        : '—'}
-                    </span>
-                  )}
-                </Field>
+                {app.workModality || isEditing ? (
+                  <Field label="Modalidad" isEditing={isEditing}>
+                    {isEditing ? (
+                      <Select value={workModality} onValueChange={setWorkModality}>
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue placeholder="Seleccionar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Sin especificar</SelectItem>
+                          {Object.entries(WORK_MODALITY_LABELS).map(([val, label]) => (
+                            <SelectItem key={val} value={val}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs font-medium w-fit">
+                        {WORK_MODALITY_LABELS[app.workModality as WorkModality] ?? app.workModality}
+                      </Badge>
+                    )}
+                  </Field>
+                ) : null}
+
+                {app.url || isEditing ? (
+                  <Field label="URL de la oferta" isEditing={isEditing}>
+                    {isEditing ? (
+                      <Input
+                        type="url"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        className="h-8 text-sm"
+                        placeholder="https://..."
+                      />
+                    ) : (
+                      <a
+                        href={app.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary flex items-center gap-1 hover:underline"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">Ver oferta</span>
+                      </a>
+                    )}
+                  </Field>
+                ) : null}
+
+                {app.offerPublishedAt || isEditing ? (
+                  <Field
+                    label={
+                      <span className="relative flex items-center gap-1 group">
+                        Fecha de publicación
+                        <HelpCircle className="text-muted-foreground/50 h-3 w-3 cursor-help" />
+                        <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 hidden w-56 rounded-md bg-popover px-2.5 py-1.5 text-[11px] text-popover-foreground shadow-md group-hover:block">
+                          Fecha en que la oferta fue publicada por la empresa
+                        </span>
+                      </span>
+                    }
+                    isEditing={isEditing}
+                  >
+                    {isEditing ? (
+                      <Input
+                        type="date"
+                        value={offerPublishedAt}
+                        onChange={(e) => setOfferPublishedAt(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    ) : (
+                      <span>
+                        {new Date(app.offerPublishedAt).toLocaleDateString('es-CO', {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    )}
+                  </Field>
+                ) : null}
 
                 <Field label="Próximos pasos" isEditing={isEditing}>
                   {isEditing ? (
@@ -397,8 +476,74 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                     <span>{app.nextSteps || '—'}</span>
                   )}
                 </Field>
+
+                <Field
+                  label={
+                    <span className="relative flex items-center gap-1 group">
+                      Fecha de registro
+                      <HelpCircle className="text-muted-foreground/50 h-3 w-3 cursor-help" />
+                      <span className="pointer-events-none absolute bottom-full left-0 z-10 mb-1.5 hidden w-56 rounded-md bg-popover px-2.5 py-1.5 text-[11px] text-popover-foreground shadow-md group-hover:block">
+                        Fecha en que registraste esta oferta en la plataforma
+                      </span>
+                    </span>
+                  }
+                  isEditing={false}
+                >
+                  <span>
+                    {new Date(app.createdAt).toLocaleDateString('es-CO', {
+                      day: '2-digit',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </Field>
               </div>
             </div>
+
+            {/* Oferta laboral */}
+            {(app.jobOfferText || isEditing) && (
+              <div className="border-border/60 bg-card space-y-3 rounded-xl border p-5">
+                <h2 className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+                  Oferta laboral
+                </h2>
+                {isEditing ? (
+                  <Textarea
+                    value={jobOfferText}
+                    onChange={(e) => setJobOfferText(e.target.value)}
+                    placeholder="Pega aquí el texto completo de la oferta laboral..."
+                    className="min-h-[160px] resize-y text-sm"
+                  />
+                ) : (
+                  <div>
+                    <p
+                      className={cn(
+                        'text-foreground/80 text-sm leading-relaxed whitespace-pre-wrap',
+                        !jobOfferExpanded && jobOfferLong && 'line-clamp-6'
+                      )}
+                    >
+                      {app.jobOfferText}
+                    </p>
+                    {jobOfferLong && (
+                      <button
+                        type="button"
+                        onClick={() => setJobOfferExpanded((v) => !v)}
+                        className="text-primary mt-2 flex items-center gap-1 text-xs hover:underline"
+                      >
+                        {jobOfferExpanded ? (
+                          <>
+                            <ChevronUp className="h-3.5 w-3.5" /> Mostrar menos
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-3.5 w-3.5" /> Ver oferta completa
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Compensación */}
             <div className="border-border/60 bg-card space-y-4 rounded-xl border p-5">
@@ -449,23 +594,12 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
                 <Label className="text-muted-foreground text-xs font-medium">Beneficios</Label>
                 {isEditing ? (
                   <BenefitList value={benefits} onChange={setBenefits} />
+                ) : app.benefits?.length > 0 ? (
+                  <BenefitList readOnly value={app.benefits} onChange={() => {}} />
                 ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {app.benefits?.length > 0 ? (
-                      app.benefits.map((b) => (
-                        <span
-                          key={b}
-                          className="bg-primary/10 text-primary rounded-full px-2.5 py-0.5 text-xs font-medium"
-                        >
-                          {b}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground text-sm italic">
-                        Sin beneficios registrados
-                      </span>
-                    )}
-                  </div>
+                  <span className="text-muted-foreground text-sm italic">
+                    Sin beneficios registrados
+                  </span>
                 )}
               </div>
             </div>
@@ -631,7 +765,7 @@ function Field({
   isEditing,
   children,
 }: {
-  label: string
+  label: React.ReactNode
   isEditing: boolean
   children: React.ReactNode
 }) {
