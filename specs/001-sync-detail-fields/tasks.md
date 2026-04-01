@@ -122,7 +122,7 @@
 - [x] T025 [P] Remove unused `appliedAt` state variable from `app/(app)/applications/[id]/page.tsx` if not already removed in T018
 - [x] T026 [P] Verify `timeline-view.tsx` renders `applied` status with correct dot color (should pick up from existing status color mapping, add if missing) in `components/applications/timeline-view.tsx`
 - [x] T027 Run `pnpm build` to verify no TypeScript errors from status enum changes
-- [ ] T028 Run quickstart.md verification flow end-to-end (manual test per `specs/001-sync-detail-fields/quickstart.md`)
+- [x] T028 Run quickstart.md verification flow end-to-end (manual test per `specs/001-sync-detail-fields/quickstart.md`)
 
 ---
 
