@@ -8,9 +8,10 @@ interface BenefitListProps {
   value: string[]
   onChange: (items: string[]) => void
   className?: string
+  readOnly?: boolean
 }
 
-export function BenefitList({ value, onChange, className }: BenefitListProps) {
+export function BenefitList({ value, onChange, className, readOnly }: BenefitListProps) {
   const [newItem, setNewItem] = useState('')
   const [editingIdx, setEditingIdx] = useState<number | null>(null)
   const [editingValue, setEditingValue] = useState('')
@@ -100,22 +101,24 @@ export function BenefitList({ value, onChange, className }: BenefitListProps) {
               ) : (
                 <>
                   <span className="flex-1 text-sm">{item}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => startEdit(idx)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(idx)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
+                  {!readOnly && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(idx)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(idx)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </li>
@@ -124,24 +127,26 @@ export function BenefitList({ value, onChange, className }: BenefitListProps) {
       )}
 
       {/* Add new */}
-      <div className={cn('flex items-center gap-2 px-3 py-2', value.length > 0 && 'border-t border-border/50')}>
-        <input
-          ref={inputRef}
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          onKeyDown={handleNewKeyDown}
-          placeholder={value.length === 0 ? 'Ej: Home office, Seguro médico...' : 'Agregar beneficio...'}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-        />
-        <button
-          type="button"
-          onClick={addItem}
-          disabled={!newItem.trim()}
-          className="shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-30"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-      </div>
+      {!readOnly && (
+        <div className={cn('flex items-center gap-2 px-3 py-2', value.length > 0 && 'border-t border-border/50')}>
+          <input
+            ref={inputRef}
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            onKeyDown={handleNewKeyDown}
+            placeholder={value.length === 0 ? 'Ej: Home office, Seguro médico...' : 'Agregar beneficio...'}
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          />
+          <button
+            type="button"
+            onClick={addItem}
+            disabled={!newItem.trim()}
+            className="shrink-0 text-muted-foreground hover:text-primary transition-colors disabled:opacity-30"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -68,7 +68,7 @@ export interface ExperienceDocument {
 }
 
 export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
-  version: 4,
+  version: 5,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -80,6 +80,7 @@ export const applicationSchema: RxJsonSchema<ApplicationDocument> = {
       type: 'string',
       enum: [
         'pending',
+        'applied',
         'phone_screen',
         'technical',
         'hr_interview',

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Paperclip, X, Loader2 } from 'lucide-react'
 import {
   Dialog,
@@ -26,6 +26,7 @@ import type { ApplicationStatus } from '@/types/cv'
 
 const APPLICATION_STATUSES: ApplicationStatus[] = [
   'pending',
+  'applied',
   'phone_screen',
   'technical',
   'hr_interview',
@@ -77,6 +78,23 @@ export function TimelineEntryForm({
   )
   const [notes, setNotes] = useState(initialEntry?.notes ?? '')
   const [files, setFiles] = useState<TimelineFile[]>(initialEntry?.files ?? [])
+
+  useEffect(() => {
+    if (!open) return
+    setTitle(initialEntry?.title ?? '')
+    setStatus(initialEntry?.status ?? currentStatus)
+    setDate(
+      initialEntry?.date
+        ? new Date(initialEntry.date).toISOString().split('T')[0]
+        : new Date().toISOString().split('T')[0]
+    )
+    setDeadline(
+      initialEntry?.deadline ? new Date(initialEntry.deadline).toISOString().split('T')[0] : ''
+    )
+    setNotes(initialEntry?.notes ?? '')
+    setFiles(initialEntry?.files ?? [])
+    setFileError('')
+  }, [initialEntry, open])
 
   function resetForm() {
     setTitle(initialEntry?.title ?? '')
