@@ -89,7 +89,8 @@ function extractWithRegex(text: string): ParsedJobOffer {
 async function extractWithBackendProxy(
   text: string,
   model: string,
-  apiKey: string
+  apiKey: string,
+  modelId?: string
 ): Promise<ParsedJobOffer> {
   const res = await fetch('/api/ai/parse', {
     method: 'POST',
@@ -97,6 +98,7 @@ async function extractWithBackendProxy(
     body: JSON.stringify({
       jobOffer: text.substring(0, 4000),
       model,
+      modelId: modelId || undefined,
       apiKey,
     }),
   })
@@ -134,7 +136,7 @@ export async function parseJobOffer(
   }
 
   try {
-    const result = await extractWithBackendProxy(text, model, settings.aiApiKey)
+    const result = await extractWithBackendProxy(text, model, settings.aiApiKey, settings.aiModelId)
     return { result, usedAI: true }
   } catch {
     return { result: extractWithRegex(text), usedAI: false }

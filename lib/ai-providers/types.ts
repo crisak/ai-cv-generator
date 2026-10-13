@@ -9,12 +9,23 @@ export type AIErrorCode =
   | 'PROVIDER_ERROR'       // error interno del proveedor (5xx)
   | 'NETWORK_ERROR'        // error de red / timeout
 
+/** Detalle interno del error del proveedor. Solo para logs, nunca se devuelve al cliente. */
+export interface AIProviderErrorDetails {
+  provider: string
+  status?: number
+  upstreamRequestId?: string | null
+  upstreamBody?: unknown
+  model?: string
+}
+
 export class AIProviderError extends Error {
   constructor(
     public readonly code: AIErrorCode,
     message: string,
+    public readonly details?: AIProviderErrorDetails,
+    options?: { cause?: unknown },
   ) {
-    super(message)
+    super(message, options)
     this.name = 'AIProviderError'
   }
 }
@@ -26,6 +37,8 @@ export interface AIMessage {
 
 export interface AIRequest {
   apiKey: string
+  /** ID del modelo del proveedor. Si falta se usa DEFAULT_MODELS. */
+  model?: string
   messages: AIMessage[]
   maxTokens?: number
   responseFormat?: 'text' | 'json_object'

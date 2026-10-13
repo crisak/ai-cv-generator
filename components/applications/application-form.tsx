@@ -426,6 +426,7 @@ export function ApplicationForm({
           body: JSON.stringify({
             jobOffer: scrapeData.raw,
             model: settings.aiModel ?? 'claude',
+            modelId: settings.aiModelId || undefined,
             apiKey: settings.aiApiKey,
             mode: 'clean',
           }),

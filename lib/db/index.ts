@@ -125,7 +125,13 @@ export async function getDatabase(userId: string): Promise<AppDatabase> {
           }),
         },
       },
-      settings: { schema: settingsSchema },
+      settings: {
+        schema: settingsSchema,
+        migrationStrategies: {
+          // v0 → v1: add aiModelId (vacío = modelo por defecto del proveedor)
+          1: (oldDoc: Record<string, unknown>) => ({ ...oldDoc, aiModelId: '' }),
+        },
+      },
       experiences: { schema: experienceSchema },
     })
 

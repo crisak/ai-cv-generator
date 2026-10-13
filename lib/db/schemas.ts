@@ -56,6 +56,7 @@ export interface CvDocument {
 export interface SettingsDocument {
   id: string
   aiModel: AIModel
+  aiModelId: string
   aiApiKey: string
   userName: string
   userEmail: string
@@ -156,7 +157,7 @@ export const cvSchema: RxJsonSchema<CvDocument> = {
 }
 
 export const settingsSchema: RxJsonSchema<SettingsDocument> = {
-  version: 0,
+  version: 1,
   type: 'object',
   primaryKey: 'id',
   properties: {
@@ -165,6 +166,7 @@ export const settingsSchema: RxJsonSchema<SettingsDocument> = {
       type: 'string',
       enum: ['claude', 'gpt', 'gemini', 'grok', 'deepseek'],
     },
+    aiModelId: { type: 'string' },
     aiApiKey: { type: 'string' },
     userName: { type: 'string' },
     userEmail: { type: 'string' },

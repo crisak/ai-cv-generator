@@ -19,6 +19,8 @@ import {
   ModelSelectorTrigger,
 } from '@/components/ai-elements/model-selector'
 import { Badge } from '@/components/ui/badge'
+import { DEFAULT_MODELS, MODEL_SUGGESTIONS } from '@/lib/ai-providers/models'
+import type { AIProviderName } from '@/lib/ai-providers/types'
 import type { AIModel } from '@/types/cv'
 
 type ModelEntry = {
@@ -75,6 +77,7 @@ export default function SettingsPage() {
   const { settings, isSaving, saveSettings } = useSettings()
 
   const [aiModel, setAiModel] = useState<AIModel>('claude')
+  const [modelId, setModelId] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [isDirty, setIsDirty] = useState(false)
@@ -86,6 +89,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (settings) {
       setAiModel(settings.aiModel ?? 'claude')
+      setModelId(settings.aiModelId ?? '')
       setApiKey(settings.aiApiKey ?? '')
     }
   }, [settings])
@@ -98,6 +102,7 @@ export default function SettingsPage() {
 
   const handleModelSelect = useCallback((value: AIModel) => {
     setAiModel(value)
+    setModelId('')
     setSelectorOpen(false)
     markDirty()
   }, [])
@@ -110,7 +115,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/ai/validate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: aiModel, apiKey }),
+        body: JSON.stringify({ model: aiModel, modelId: modelId.trim() || undefined, apiKey }),
       })
       const data = await res.json()
       setValidationResult({ valid: data.valid, reason: data.reason })
@@ -122,13 +127,17 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
-    await saveSettings({ aiModel, aiApiKey: apiKey })
+    await saveSettings({ aiModel, aiModelId: modelId.trim(), aiApiKey: apiKey })
     setIsDirty(false)
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
   }
 
   const selectedModel = AI_MODELS.find((m) => m.value === aiModel) ?? AI_MODELS[0]
+  const provider = aiModel as AIProviderName
+  const suggestions = MODEL_SUGGESTIONS[provider] ?? []
+  const defaultModelId = DEFAULT_MODELS[provider]
+  const activeModelId = modelId.trim() || defaultModelId
 
   return (
     <div className="p-6 max-w-2xl space-y-8">
@@ -172,6 +181,43 @@ export default function SettingsPage() {
             </ModelSelector>
             </div>
           </div>
+
+          {defaultModelId && (
+            <div className="space-y-1.5">
+              <Label htmlFor="model-id">Versión del modelo</Label>
+              <div className="max-w-sm space-y-2">
+                <Input
+                  id="model-id"
+                  value={modelId}
+                  onChange={(e) => { setModelId(e.target.value); markDirty() }}
+                  placeholder={defaultModelId}
+                  className="font-mono text-sm"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestions.map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => { setModelId(id); markDirty() }}
+                      aria-pressed={activeModelId === id}
+                    >
+                      <Badge
+                        variant={activeModelId === id ? 'default' : 'outline'}
+                        className="cursor-pointer font-mono text-xs"
+                      >
+                        {id}
+                      </Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Elige una sugerencia o escribe el ID de cualquier modelo del proveedor. Vacío usa <span className="font-mono">{defaultModelId}</span>.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>{selectedModel.keyLabel}</Label>

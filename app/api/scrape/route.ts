@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { z } from 'zod'
+import { logger, requestContext } from '@/lib/logger'
 
 const ScrapeBodySchema = z.object({
   url: z.string().url('URL inválida'),
@@ -66,6 +67,16 @@ const JOB_SELECTORS = [
   { selector: 'article, [role="main"] p' },
 ]
 
+async function logCfFailure(strategy: string, res: Response, url: string) {
+  logger.warn('scrape.cloudflare_error', {
+    strategy,
+    targetUrl: url,
+    status: res.status,
+    cfRay: res.headers.get('cf-ray'),
+    body: (await res.text().catch(() => '')).slice(0, 500),
+  })
+}
+
 /**
  * Strategy 1: /markdown endpoint — works for most pages that render server-side or with light JS.
  */
@@ -77,7 +88,10 @@ async function tryMarkdown(cfBase: string, apiToken: string, url: string): Promi
     signal: AbortSignal.timeout(55_000),
   })
 
-  if (!res.ok) return null
+  if (!res.ok) {
+    await logCfFailure('markdown', res, url)
+    return null
+  }
 
   const data = (await res.json()) as { success?: boolean; result?: string }
   const text = data.result?.trim() ?? ''
@@ -114,7 +128,10 @@ async function tryScrape(cfBase: string, apiToken: string, url: string): Promise
     signal: AbortSignal.timeout(55_000),
   })
 
-  if (!res.ok) return null
+  if (!res.ok) {
+    await logCfFailure('scrape', res, url)
+    return null
+  }
 
   const data = (await res.json()) as { success?: boolean; result?: ScrapeElement[] }
   if (!data.success || !Array.isArray(data.result)) return null
@@ -151,19 +168,23 @@ async function tryScrape(cfBase: string, apiToken: string, url: string): Promise
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
+  const ctx = requestContext(request, 'scrape', userId)
   if (!userId) {
+    logger.warn('request.unauthorized', ctx)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   let body: unknown
   try {
     body = await request.json()
-  } catch {
+  } catch (error) {
+    logger.warn('request.invalid_json', { ...ctx, message: String(error) })
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   }
 
   const parsed = ScrapeBodySchema.safeParse(body)
   if (!parsed.success) {
+    logger.warn('request.validation_failed', { ...ctx, issues: parsed.error.issues })
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
 
@@ -173,6 +194,11 @@ export async function POST(request: NextRequest) {
   const apiToken = process.env.CF_API_TOKEN
 
   if (!accountId || !apiToken) {
+    logger.error('scrape.not_configured', new Error('CF_ACCOUNT_ID / CF_API_TOKEN missing'), {
+      ...ctx,
+      hasAccountId: !!accountId,
+      hasApiToken: !!apiToken,
+    })
     return NextResponse.json({ error: 'Servicio de scraping no configurado' }, { status: 503 })
   }
 
@@ -191,18 +217,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ raw: scraped })
     }
 
+    logger.warn('scrape.unreadable', { ...ctx, targetUrl: url })
     return NextResponse.json(
       { error: 'Contenido no legible. Intenta copiar y pegar el texto directamente.' },
       { status: 422 },
     )
   } catch (error) {
     if (error instanceof Error && error.name === 'TimeoutError') {
+      logger.error('scrape.timeout', error, { ...ctx, targetUrl: url })
       return NextResponse.json(
         { error: 'Tiempo de espera agotado. Intenta copiar y pegar el texto directamente.' },
         { status: 504 },
       )
     }
-    console.error('Scrape error:', error)
+    logger.error('scrape.failed', error, { ...ctx, targetUrl: url })
     return NextResponse.json(
       { error: 'Error al procesar la URL. Intenta copiar y pegar el texto directamente.' },
       { status: 500 },

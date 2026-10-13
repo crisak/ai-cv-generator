@@ -16,6 +16,7 @@ export async function callProxy(
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       provider,
+      modelId: settings.aiModelId || undefined,
       apiKey: settings.aiApiKey,
       messages,
       maxTokens,

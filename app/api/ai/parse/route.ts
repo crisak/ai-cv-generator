@@ -3,11 +3,13 @@ import { auth } from '@clerk/nextjs/server'
 import { AIProviderFactory } from '@/lib/ai-providers/factory'
 import { AIProviderError } from '@/lib/ai-providers/types'
 import type { AIProviderName } from '@/lib/ai-providers/types'
+import { logger, requestContext } from '@/lib/logger'
 
 interface ParseRequest {
   jobOffer: string
   model?: string
   apiKey?: string
+  modelId?: string
   mode?: 'extract' | 'clean'
 }
 
@@ -59,19 +61,29 @@ const SUPPORTED: AIProviderName[] = ['claude', 'gpt', 'deepseek', 'gemini']
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth()
+  const ctx = requestContext(request, 'ai/parse', userId)
   if (!userId) {
+    logger.warn('request.unauthorized', ctx)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  let model: string | undefined
+  let modelId: string | undefined
+  let mode: string | undefined
   try {
     const body = (await request.json()) as ParseRequest
-    const { jobOffer, model = 'claude', apiKey, mode = 'extract' } = body
+    const { jobOffer, apiKey } = body
+    modelId = typeof body.modelId === 'string' ? body.modelId : undefined
+    model = body.model ?? 'claude'
+    mode = body.mode ?? 'extract'
 
     if (!jobOffer || typeof jobOffer !== 'string' || jobOffer.trim().length === 0) {
+      logger.warn('request.invalid_job_offer', { ...ctx, model, mode })
       return NextResponse.json({ error: 'Missing or invalid jobOffer' }, { status: 400 })
     }
 
     if (!apiKey) {
+      logger.warn('request.no_api_key', { ...ctx, model, mode })
       return NextResponse.json(
         { error: 'AI service not configured.', code: 'NO_API_KEY' },
         { status: 503 }
@@ -79,6 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!SUPPORTED.includes(model as AIProviderName)) {
+      logger.warn('request.unsupported_provider', { ...ctx, model })
       return NextResponse.json(
         { error: 'Model not yet implemented', code: 'NOT_IMPLEMENTED' },
         { status: 501 }
@@ -91,6 +104,7 @@ export async function POST(request: NextRequest) {
     if (mode === 'clean') {
       const result = await provider.call({
         apiKey,
+        model: modelId,
         messages: [{ role: 'user', content: CLEAN_PROMPT(jobOffer) }],
         maxTokens: 3000,
       })
@@ -104,6 +118,7 @@ export async function POST(request: NextRequest) {
     // mode=extract (default): return structured JSON fields
     const result = await provider.call({
       apiKey,
+      model: modelId,
       messages: [{ role: 'user', content: EXTRACT_PROMPT(jobOffer) }],
       maxTokens: 600,
       responseFormat: 'json_object',
@@ -111,6 +126,12 @@ export async function POST(request: NextRequest) {
 
     const parsed = parseAIJson(result.text)
     if (!parsed) {
+      logger.error('parse.invalid_ai_format', new Error('AI response is not valid JSON'), {
+        ...ctx,
+        model,
+        mode,
+        aiResponsePreview: result.text.slice(0, 300),
+      })
       return NextResponse.json(
         { error: 'Invalid response format from AI', code: 'INVALID_FORMAT' },
         { status: 500 }
@@ -119,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: parsed })
   } catch (error) {
-    console.error('API error:', error)
+    logger.error('parse.failed', error, { ...ctx, model, modelId, mode })
     const message = error instanceof Error ? error.message : 'Internal server error'
     const code = error instanceof AIProviderError ? error.code : 'INTERNAL_ERROR'
     return NextResponse.json({ error: message, code }, { status: 500 })

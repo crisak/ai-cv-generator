@@ -31,6 +31,7 @@ export function useSettings() {
           await db.settings.insert({
             id: SINGLETON_ID,
             aiModel: 'claude',
+            aiModelId: '',
             aiApiKey: '',
             userName: '',
             userEmail: '',
