@@ -51,6 +51,9 @@ export class ClaudeProvider implements AIProvider {
       if (res.status === 403 || errorType === 'permission_error') {
         throw new AIProviderError('PERMISSION_DENIED', 'La API key no tiene permisos para este recurso', details)
       }
+      if (res.status === 400 && /credit balance/i.test((body as AnthropicError)?.error?.message ?? '')) {
+        throw new AIProviderError('INSUFFICIENT_QUOTA', 'Sin créditos en tu cuenta de Anthropic. Recarga en Plans & Billing', details)
+      }
       if (res.status === 429) {
         if (errorType === 'rate_limit_error') {
           throw new AIProviderError('RATE_LIMIT', 'Límite de requests alcanzado, intenta en unos minutos', details)
