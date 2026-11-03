@@ -26,7 +26,9 @@ export async function callProxy(
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({}))
-    throw new Error(`AI proxy error ${res.status}: ${error.code ?? 'UNKNOWN'}`)
+    throw Object.assign(new Error(`AI proxy error ${res.status}: ${error.code ?? 'UNKNOWN'}`), {
+      code: error.code as string | undefined,
+    })
   }
 
   const data = await res.json()

@@ -66,6 +66,6 @@ export class ClaudeProvider implements AIProvider {
     const data = await res.json()
     // Con thinking adaptativo el primer bloque puede ser de razonamiento: buscar el bloque de texto.
     const textBlock = (data.content as { type: string; text?: string }[] | undefined)?.find((b) => b.type === 'text')
-    return { text: textBlock?.text ?? '' }
+    return { text: textBlock?.text ?? '', finishReason: data.stop_reason, usage: data.usage }
   }
 }

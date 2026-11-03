@@ -10,8 +10,9 @@ import { useExperience } from '@/hooks/use-experience'
 import { useApplications } from '@/hooks/use-applications'
 import { useSettings } from '@/hooks/use-settings'
 import { useCvs } from '@/hooks/use-cvs'
+import { useToast } from '@/hooks/use-toast'
 import { suggestBullets, generateCv, initSelections, initSelectionsFromSavedCv } from '@/lib/ai-cv'
-import type { BulletsBySection } from '@/lib/ai-cv'
+import type { BulletsBySection, SuggestBulletsResult } from '@/lib/ai-cv'
 import type { CvData } from '@/types/experience'
 
 type Step = 1 | 2 | 3
@@ -43,6 +44,7 @@ function CvGeneratorContent() {
   const { cvData } = useExperience()
   const { applications, updateApplication } = useApplications()
   const { settings } = useSettings()
+  const { toast } = useToast()
   const { saveCV, updateCV, getCvById, getDraft, createDraft, deleteDraft } = useCvs()
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -198,6 +200,29 @@ function CvGeneratorContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftCv, editId])
 
+  function notifyBulletSource(result: SuggestBulletsResult) {
+    if (result.source === 'ai') {
+      toast({
+        title: 'Bullets seleccionados con IA',
+        description:
+          'La IA eligió los bullets según la oferta. Revisa la selección antes de continuar.',
+      })
+      return
+    }
+    const reasons: Record<string, string> = {
+      no_api_key: 'No hay API key configurada.',
+      empty_offer: 'La oferta está vacía.',
+      invalid_response: 'La IA respondió en un formato inválido.',
+      ai_error: `La llamada a la IA falló${result.errorCode ? ` (${result.errorCode})` : ''}.`,
+    }
+    toast({
+      variant: 'destructive',
+      title: 'Selección por defecto, sin IA',
+      description: `${reasons[result.fallbackReason ?? 'ai_error']} Se usaron los primeros bullets de cada rol sin comparar con la oferta: revísalos con detalle.`,
+      duration: 10000,
+    })
+  }
+
   async function handleStepOneNext() {
     if (!cvData) return
     setIsAnalyzing(true)
@@ -215,6 +240,7 @@ function CvGeneratorContent() {
     }
 
     const result = await suggestBullets(jobOfferText, cvData, settings)
+    notifyBulletSource(result)
     setSelections(result.selections)
     const { cv, ids } = buildDraftAndIds(cvData, result.selections)
     const finalCv = result.suggestedSkills
@@ -331,7 +357,12 @@ function CvGeneratorContent() {
     }))
   }
 
-  function handleBulletMoved(fromSectionId: string, fromIndex: number, toSectionId: string, toIndex: number) {
+  function handleBulletMoved(
+    fromSectionId: string,
+    fromIndex: number,
+    toSectionId: string,
+    toIndex: number
+  ) {
     setDraftBulletIds((prev) => {
       const next = { ...prev }
       if (fromSectionId === toSectionId) {
@@ -473,14 +504,14 @@ function CvGeneratorContent() {
           <h1 className="text-2xl font-bold tracking-tight">
             {editId ? 'Editar CV' : 'Generar CV'}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {editId
               ? 'Edita y actualiza tu CV guardado'
               : 'Genera un CV optimizado para ATS basado en tu experiencia real'}
           </p>
         </div>
         {autoSaveStatus === 'saved' && (
-          <span className="text-xs text-muted-foreground mt-1">Guardado automáticamente</span>
+          <span className="text-muted-foreground mt-1 text-xs">Guardado automáticamente</span>
         )}
       </div>
 
@@ -507,8 +538,8 @@ function CvGeneratorContent() {
                     step === s
                       ? 'bg-primary text-primary-foreground'
                       : step > s
-                      ? 'bg-primary/20 text-primary'
-                      : 'bg-muted text-muted-foreground',
+                        ? 'bg-primary/20 text-primary'
+                        : 'bg-muted text-muted-foreground',
                     isClickable && 'cursor-pointer hover:opacity-80'
                   )}
                 >
@@ -519,20 +550,25 @@ function CvGeneratorContent() {
                   className={cn(
                     'text-xs font-medium transition-colors',
                     step === s ? 'text-foreground' : 'text-muted-foreground',
-                    isClickable && 'cursor-pointer hover:text-foreground'
+                    isClickable && 'hover:text-foreground cursor-pointer'
                   )}
                 >
                   {stepLabels[s]}
                 </span>
               </button>
-              {idx < 2 && <div className="w-8 mx-2 h-px bg-border/60" />}
+              {idx < 2 && <div className="bg-border/60 mx-2 h-px w-8" />}
             </div>
           )
         })}
       </div>
 
       {/* Step content: expands to full width on step 2 */}
-      <div className={cn('rounded-lg border border-border/60 bg-card p-5', step !== 2 && 'max-w-3xl mx-auto')}>
+      <div
+        className={cn(
+          'border-border/60 bg-card rounded-lg border p-5',
+          step !== 2 && 'mx-auto max-w-3xl'
+        )}
+      >
         {step === 1 && (
           <StepJobOffer
             jobOfferText={jobOfferText}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { z } from 'zod'
-import { AIProviderFactory } from '@/lib/ai-providers/factory'
+import { callProvider } from '@/lib/ai-providers/factory'
 import { AIProviderError } from '@/lib/ai-providers/types'
 import { logger, requestContext } from '@/lib/logger'
 
@@ -48,8 +48,13 @@ export async function POST(request: NextRequest) {
 
   const startedAt = Date.now()
   try {
-    const handler = AIProviderFactory.create(provider)
-    const result = await handler.call({ apiKey, model: modelId, messages, maxTokens, responseFormat })
+    const result = await callProvider(provider, { apiKey, model: modelId, messages, maxTokens, responseFormat }, ctx)
+    if (!result.text.trim()) {
+      return NextResponse.json(
+        { error: 'El modelo no devolvió texto', code: 'EMPTY_RESPONSE' },
+        { status: 502 }
+      )
+    }
     return NextResponse.json({ text: result.text })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
