@@ -289,7 +289,8 @@ export async function chatWithCv(
     2
   ).substring(0, 3000)
 
-  const maxTokens = style === 'concise' ? 300 : style === 'extended' ? 1500 : 800
+  // Margen amplio: los modelos con razonamiento gastan tokens pensando antes de escribir la respuesta.
+  const maxTokens = style === 'concise' ? 1024 : style === 'extended' ? 2500 : 1500
 
   const systemContent = `Eres un experto en CVs ATS y reclutamiento. Tienes acceso a tres fuentes de información:
 
@@ -314,14 +315,17 @@ Responde en español. ${STYLE_INSTRUCTIONS[style]}`
     const result = await callProxy(
       [
         { role: 'system', content: systemContent },
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messages
+          .filter((m) => m.content.trim())
+          .map((m) => ({ role: m.role, content: m.content })),
       ],
       settings,
       maxTokens
     )
     return result
-  } catch {
-    return 'Error al conectar con la IA. Verifica tu API key en Configuración.'
+  } catch (error) {
+    console.error('[chatWithCv]', error)
+    return 'Error al conectar con la IA. Verifica tu API key y el modelo en Configuración.'
   }
 }
 
@@ -397,9 +401,16 @@ export function initSelectionsFromSavedCv(savedCv: CvData, fullCvData: CvData): 
 
 // ── AI bullet suggestion ──────────────────────────────────────────────────────
 
+export type SuggestFallbackReason = 'no_api_key' | 'empty_offer' | 'ai_error' | 'invalid_response'
+
 export interface SuggestBulletsResult {
   selections: BulletsBySection
   suggestedSkills: string | null
+  /** 'ai' si la IA eligió los bullets; 'default' si se usó la selección por defecto (sin mirar la oferta). */
+  source: 'ai' | 'default'
+  fallbackReason?: SuggestFallbackReason
+  /** Código de error del proxy (INVALID_API_KEY, RATE_LIMIT, EMPTY_RESPONSE…) cuando fallbackReason es 'ai_error'. */
+  errorCode?: string
 }
 
 export async function suggestBullets(
@@ -409,8 +420,18 @@ export async function suggestBullets(
   customMessage?: string
 ): Promise<SuggestBulletsResult> {
   const fallbackSelections = initSelections(cvData)
-  const fallback: SuggestBulletsResult = { selections: fallbackSelections, suggestedSkills: null }
-  if (!settings?.aiApiKey || !jobOffer.trim()) return fallback
+  const fallbackFor = (
+    fallbackReason: SuggestFallbackReason,
+    errorCode?: string
+  ): SuggestBulletsResult => ({
+    selections: fallbackSelections,
+    suggestedSkills: null,
+    source: 'default',
+    fallbackReason,
+    errorCode,
+  })
+  if (!settings?.aiApiKey) return fallbackFor('no_api_key')
+  if (!jobOffer.trim()) return fallbackFor('empty_offer')
 
   const bulletsSummary = [
     ...cvData.experience.map((exp) => ({
@@ -450,11 +471,13 @@ ${JSON.stringify(bulletsSummary)}${extra}`
   try {
     const raw = await callProxy([{ role: 'user', content: prompt }], settings, 900, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
-    if (!match) return fallback
+    if (!match) return fallbackFor('invalid_response')
     const result = JSON.parse(match[0]) as {
       selections?: Record<string, number[]>
       skills?: string
     }
+    if (!result.selections || typeof result.selections !== 'object')
+      return fallbackFor('invalid_response')
 
     const suggested: BulletsBySection = {}
 
@@ -476,9 +499,11 @@ ${JSON.stringify(bulletsSummary)}${extra}`
       }))
     })
 
-    return { selections: suggested, suggestedSkills: result.skills ?? null }
-  } catch {
-    return fallback
+    return { selections: suggested, suggestedSkills: result.skills ?? null, source: 'ai' }
+  } catch (error) {
+    console.error('[suggestBullets]', error)
+    if (error instanceof SyntaxError) return fallbackFor('invalid_response')
+    return fallbackFor('ai_error', (error as { code?: string }).code)
   }
 }
 

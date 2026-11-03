@@ -8,6 +8,7 @@ export type AIErrorCode =
   | 'MODEL_NOT_FOUND'      // modelo no disponible para esta key
   | 'PROVIDER_ERROR'       // error interno del proveedor (5xx)
   | 'NETWORK_ERROR'        // error de red / timeout
+  | 'EMPTY_RESPONSE'       // el proveedor respondió 200 sin texto (p. ej. max_tokens agotado por razonamiento)
 
 /** Detalle interno del error del proveedor. Solo para logs, nunca se devuelve al cliente. */
 export interface AIProviderErrorDetails {
@@ -46,6 +47,10 @@ export interface AIRequest {
 
 export interface AIResponse {
   text: string
+  /** Por qué terminó la generación (stop_reason / finish_reason). Solo para logs. */
+  finishReason?: string
+  /** Tokens consumidos según el proveedor. Solo para logs. */
+  usage?: unknown
 }
 
 export interface AIProvider {

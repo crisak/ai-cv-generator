@@ -68,6 +68,6 @@ export class GeminiProvider implements AIProvider {
 
     const data = await res.json()
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
-    return { text }
+    return { text, finishReason: data.candidates?.[0]?.finishReason ?? data.promptFeedback?.blockReason, usage: data.usageMetadata }
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { AIProviderFactory } from '@/lib/ai-providers/factory'
+import { callProvider } from '@/lib/ai-providers/factory'
 import { AIProviderError } from '@/lib/ai-providers/types'
 import type { AIProviderName } from '@/lib/ai-providers/types'
 import { logger, requestContext } from '@/lib/logger'
@@ -98,16 +98,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const provider = AIProviderFactory.create(model as AIProviderName)
-
     // mode=clean: return cleaned markdown of the job offer, or null if not a job offer
     if (mode === 'clean') {
-      const result = await provider.call({
-        apiKey,
-        model: modelId,
-        messages: [{ role: 'user', content: CLEAN_PROMPT(jobOffer) }],
-        maxTokens: 3000,
-      })
+      const result = await callProvider(
+        model as AIProviderName,
+        { apiKey, model: modelId, messages: [{ role: 'user', content: CLEAN_PROMPT(jobOffer) }], maxTokens: 3000 },
+        ctx
+      )
       const text = result.text.trim()
       if (text === 'NULL' || text.toUpperCase() === 'NULL') {
         return NextResponse.json({ success: true, markdown: null })
@@ -116,13 +113,17 @@ export async function POST(request: NextRequest) {
     }
 
     // mode=extract (default): return structured JSON fields
-    const result = await provider.call({
-      apiKey,
-      model: modelId,
-      messages: [{ role: 'user', content: EXTRACT_PROMPT(jobOffer) }],
-      maxTokens: 600,
-      responseFormat: 'json_object',
-    })
+    const result = await callProvider(
+      model as AIProviderName,
+      {
+        apiKey,
+        model: modelId,
+        messages: [{ role: 'user', content: EXTRACT_PROMPT(jobOffer) }],
+        maxTokens: 600,
+        responseFormat: 'json_object',
+      },
+      ctx
+    )
 
     const parsed = parseAIJson(result.text)
     if (!parsed) {
