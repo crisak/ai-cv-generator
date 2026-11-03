@@ -2,6 +2,7 @@ import { ClaudeProvider } from './claude'
 import { GPTProvider } from './gpt'
 import { DeepSeekProvider } from './deepseek'
 import { GeminiProvider } from './gemini'
+import { AIProviderError } from './types'
 import type { AIProvider, AIProviderName, AIRequest, AIResponse } from './types'
 import { logger } from '@/lib/logger'
 
@@ -40,8 +41,16 @@ export async function callProvider(
     durationMs: Date.now() - startedAt,
   }
   if (!result.text.trim()) {
-    logger.warn('ai.empty_response', fields)
-  } else if (result.finishReason === 'max_tokens' || result.finishReason === 'length' || result.finishReason === 'MAX_TOKENS') {
+    const truncated = result.finishReason === 'max_tokens' || result.finishReason === 'length' || result.finishReason === 'MAX_TOKENS'
+    throw new AIProviderError(
+      'EMPTY_RESPONSE',
+      truncated
+        ? 'El modelo agotó el límite de tokens (razonamiento) antes de escribir la respuesta'
+        : 'El modelo no devolvió texto',
+      { provider, model: req.model, upstreamBody: { finishReason: result.finishReason, usage: result.usage, maxTokens: req.maxTokens } },
+    )
+  }
+  if (result.finishReason === 'max_tokens' || result.finishReason === 'length' || result.finishReason === 'MAX_TOKENS') {
     logger.warn('ai.truncated_response', fields)
   } else {
     logger.info('ai.call_ok', fields)

@@ -1,16 +1,34 @@
 type Level = 'info' | 'warn' | 'error'
 
-const SENSITIVE_KEY = /api[-_]?key|authorization|token|secret|password|cookie/i
-const MAX_STRING = 500
+// Claves sensibles. `token$` captura accessToken/token pero no maxTokens ni input_tokens (métricas útiles).
+const SENSITIVE_KEY = /api[-_]?key|authorization|secret|password|cookie|token$/i
+// Secretos que pueden venir incrustados en mensajes de error del proveedor.
+const SECRET_IN_TEXT = /\b(?:sk-[A-Za-z0-9_-]{16,}|AIza[0-9A-Za-z_-]{20,}|eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,})/g
+const MAX_STRING = 4000
 
-function redact(value: unknown, depth = 0): unknown {
-  if (typeof value === 'string') {
-    return value.length > MAX_STRING ? `${value.slice(0, MAX_STRING)}…[+${value.length - MAX_STRING}]` : value
+/** "data sensible" -> "dat******ible", "101245676" -> "101***676". Deja una pista sin exponer el valor. */
+export function maskValue(value: unknown): string {
+  const str = String(value)
+  if (str.length <= 6) return '*'.repeat(str.length)
+  const edge = str.length >= 16 ? 4 : 3
+  return `${str.slice(0, edge)}${'*'.repeat(Math.min(str.length - edge * 2, 12))}${str.slice(-edge)}`
+}
+
+function truncate(str: string, max = MAX_STRING) {
+  return str.length > max ? `${str.slice(0, max)}…[+${str.length - max}]` : str
+}
+
+function redact(value: unknown, depth = 0, masked = false): unknown {
+  if (typeof value === 'string' || typeof value === 'number') {
+    if (masked) return maskValue(value)
+    return typeof value === 'string' ? truncate(value.replace(SECRET_IN_TEXT, maskValue)) : value
   }
-  if (value === null || typeof value !== 'object' || depth > 4) return value
-  if (Array.isArray(value)) return value.slice(0, 20).map((v) => redact(v, depth + 1))
+  if (typeof value === 'boolean' || value === null || value === undefined) return value
+  if (typeof value !== 'object') return value
+  if (depth > 6) return '[max-depth]'
+  if (Array.isArray(value)) return value.slice(0, 20).map((v) => redact(v, depth + 1, masked))
   return Object.fromEntries(
-    Object.entries(value).map(([k, v]) => [k, SENSITIVE_KEY.test(k) ? '[REDACTED]' : redact(v, depth + 1)]),
+    Object.entries(value).map(([k, v]) => [k, redact(v, depth + 1, masked || SENSITIVE_KEY.test(k))]),
   )
 }
 
@@ -22,7 +40,7 @@ export function serializeError(error: unknown): Record<string, unknown> {
     message: error.message,
     code,
     details: redact(details),
-    stack: error.stack,
+    stack: error.stack ? error.stack.replace(SECRET_IN_TEXT, maskValue) : undefined,
     cause: error.cause ? serializeError(error.cause) : undefined,
   }
 }
