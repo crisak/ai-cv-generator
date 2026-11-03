@@ -34,9 +34,10 @@ CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
 Responde ÚNICAMENTE con el texto del bullet mejorado, sin comillas ni prefijos.`
 
   try {
-    const result = await callProxy([{ role: 'user', content: prompt }], settings, 300)
+    const result = await callProxy([{ role: 'user', content: prompt }], settings, 1024)
     return result.trim().replace(/^["']|["']$/g, '') || bulletText
-  } catch {
+  } catch (error) {
+    console.error('[ai-cv]', error)
     return bulletText
   }
 }
@@ -71,7 +72,7 @@ Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}
     const result = await callProxy(
       [{ role: 'user', content: prompt }],
       settings,
-      700,
+      2048,
       'json_object'
     )
     const match = result.match(/\{[\s\S]*\}/)
@@ -80,7 +81,8 @@ Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}
     return (Array.isArray(parsed.variants) ? parsed.variants : [])
       .slice(0, 3)
       .filter((v: unknown): v is string => typeof v === 'string' && v.trim().length > 0)
-  } catch {
+  } catch (error) {
+    console.error('[ai-cv]', error)
     return []
   }
 }
@@ -138,7 +140,7 @@ Responde SOLO con JSON: {"skills": "Skill1, Skill2, Skill3, ..."}`
     const result = await callProxy(
       [{ role: 'user', content: prompt }],
       settings,
-      600,
+      2048,
       'json_object'
     )
     const match = result.match(/\{[\s\S]*\}/)
@@ -148,7 +150,8 @@ Responde SOLO con JSON: {"skills": "Skill1, Skill2, Skill3, ..."}`
 
     const skills = parseSkills(parsed.skills).map(capitalize)
     return skills.length > 0 ? skills.join(', ') : null
-  } catch {
+  } catch (error) {
+    console.error('[ai-cv]', error)
     return null
   }
 }
@@ -192,7 +195,7 @@ ${bulletsList}
 Responde SOLO con JSON: {"bullets": ["bullet mejorado 1", "bullet mejorado 2", ...]}`
 
   try {
-    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 1500, 'json_object')
+    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 3000, 'json_object')
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return draftCv
     const parsed = JSON.parse(jsonMatch[0]) as { bullets: string[] }
@@ -213,7 +216,8 @@ Responde SOLO con JSON: {"bullets": ["bullet mejorado 1", "bullet mejorado 2", .
       }
     })
     return updated
-  } catch {
+  } catch (error) {
+    console.error('[ai-cv]', error)
     return draftCv
   }
 }
@@ -289,7 +293,8 @@ export async function chatWithCv(
     2
   ).substring(0, 3000)
 
-  const maxTokens = style === 'concise' ? 300 : style === 'extended' ? 1500 : 800
+  // Margen amplio: los modelos con razonamiento gastan tokens pensando antes de escribir la respuesta.
+  const maxTokens = style === 'concise' ? 1024 : style === 'extended' ? 2500 : 1500
 
   const systemContent = `Eres un experto en CVs ATS y reclutamiento. Tienes acceso a tres fuentes de información:
 
@@ -314,14 +319,15 @@ Responde en español. ${STYLE_INSTRUCTIONS[style]}`
     const result = await callProxy(
       [
         { role: 'system', content: systemContent },
-        ...messages.map((m) => ({ role: m.role, content: m.content })),
+        ...messages.filter((m) => m.content.trim()).map((m) => ({ role: m.role, content: m.content })),
       ],
       settings,
       maxTokens
     )
     return result
-  } catch {
-    return 'Error al conectar con la IA. Verifica tu API key en Configuración.'
+  } catch (error) {
+    console.error('[chatWithCv]', error)
+    return 'Error al conectar con la IA. Verifica tu API key y el modelo en Configuración.'
   }
 }
 
@@ -448,7 +454,7 @@ BULLETS DEL CANDIDATO:
 ${JSON.stringify(bulletsSummary)}${extra}`
 
   try {
-    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 900, 'json_object')
+    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 4000, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return fallback
     const result = JSON.parse(match[0]) as {
@@ -477,7 +483,8 @@ ${JSON.stringify(bulletsSummary)}${extra}`
     })
 
     return { selections: suggested, suggestedSkills: result.skills ?? null }
-  } catch {
+  } catch (error) {
+    console.error('[ai-cv]', error)
     return fallback
   }
 }
@@ -525,7 +532,7 @@ Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title"
 JSON:`
 
   try {
-    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 4000, 'json_object')
+    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 8000, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return { cv: draft, usedAI: false }
 
@@ -559,7 +566,8 @@ JSON:`
     }
 
     return { cv: optimized, usedAI: true }
-  } catch {
+  } catch (error) {
+    console.error('[ai-cv]', error)
     return { cv: draft, usedAI: false }
   }
 }

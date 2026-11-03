@@ -62,6 +62,6 @@ export class GPTProvider implements AIProvider {
     }
 
     const data = await res.json()
-    return { text: data.choices?.[0]?.message?.content ?? '' }
+    return { text: data.choices?.[0]?.message?.content ?? '', finishReason: data.choices?.[0]?.finish_reason, usage: data.usage }
   }
 }
