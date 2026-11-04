@@ -8,7 +8,7 @@ export async function callProxy(
   settings: SettingsDocument,
   maxTokens?: number,
   responseFormat?: 'text' | 'json_object'
-): Promise<string> {
+): Promise<{ text: string; truncated: boolean }> {
   const provider = (settings.aiModel ?? 'claude') as AIProviderName
 
   const res = await fetch('/api/ai/proxy', {
@@ -32,5 +32,5 @@ export async function callProxy(
   }
 
   const data = await res.json()
-  return data.text ?? ''
+  return { text: data.text ?? '', truncated: data.truncated === true }
 }

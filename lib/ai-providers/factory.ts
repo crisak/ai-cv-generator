@@ -21,6 +21,11 @@ export class AIProviderFactory {
   }
 }
 
+/** finishReason que indica que la respuesta se cortó por el límite de tokens (Claude / OpenAI-DeepSeek / Gemini). */
+export function isTruncated(finishReason?: string) {
+  return finishReason === 'max_tokens' || finishReason === 'length' || finishReason === 'MAX_TOKENS'
+}
+
 /** Llama al proveedor y deja trazas: duración, tokens y avisos si la respuesta viene vacía o truncada. */
 export async function callProvider(
   provider: AIProviderName,
@@ -41,7 +46,7 @@ export async function callProvider(
     durationMs: Date.now() - startedAt,
   }
   if (!result.text.trim()) {
-    const truncated = result.finishReason === 'max_tokens' || result.finishReason === 'length' || result.finishReason === 'MAX_TOKENS'
+    const truncated = isTruncated(result.finishReason)
     throw new AIProviderError(
       'EMPTY_RESPONSE',
       truncated
@@ -50,7 +55,7 @@ export async function callProvider(
       { provider, model: req.model, upstreamBody: { finishReason: result.finishReason, usage: result.usage, maxTokens: req.maxTokens } },
     )
   }
-  if (result.finishReason === 'max_tokens' || result.finishReason === 'length' || result.finishReason === 'MAX_TOKENS') {
+  if (isTruncated(result.finishReason)) {
     logger.warn('ai.truncated_response', fields)
   } else {
     logger.info('ai.call_ok', fields)

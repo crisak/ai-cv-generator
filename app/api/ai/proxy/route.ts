@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { z } from 'zod'
-import { callProvider } from '@/lib/ai-providers/factory'
+import { callProvider, isTruncated } from '@/lib/ai-providers/factory'
 import { AIProviderError } from '@/lib/ai-providers/types'
 import { logger, requestContext } from '@/lib/logger'
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now()
   try {
     const result = await callProvider(provider, { apiKey, model: modelId, messages, maxTokens, responseFormat }, ctx)
-    return NextResponse.json({ text: result.text })
+    return NextResponse.json({ text: result.text, truncated: isTruncated(result.finishReason) })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
     const code = error instanceof AIProviderError ? error.code : 'PROVIDER_ERROR'
