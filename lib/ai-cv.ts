@@ -34,7 +34,7 @@ CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
 Responde ÚNICAMENTE con el texto del bullet mejorado, sin comillas ni prefijos.`
 
   try {
-    const result = await callProxy([{ role: 'user', content: prompt }], settings, 1024)
+    const { text: result } = await callProxy([{ role: 'user', content: prompt }], settings, 1024)
     return result.trim().replace(/^["']|["']$/g, '') || bulletText
   } catch (error) {
     console.error('[ai-cv]', error)
@@ -69,7 +69,7 @@ CONTEXTO (oferta): ${jobOffer.substring(0, 400)}
 Responde SOLO con JSON: {"variants": ["versión 1", "versión 2", "versión 3"]}`
 
   try {
-    const result = await callProxy(
+    const { text: result } = await callProxy(
       [{ role: 'user', content: prompt }],
       settings,
       2048,
@@ -137,7 +137,7 @@ REGLAS:
 Responde SOLO con JSON: {"skills": "Skill1, Skill2, Skill3, ..."}`
 
   try {
-    const result = await callProxy(
+    const { text: result } = await callProxy(
       [{ role: 'user', content: prompt }],
       settings,
       2048,
@@ -195,7 +195,7 @@ ${bulletsList}
 Responde SOLO con JSON: {"bullets": ["bullet mejorado 1", "bullet mejorado 2", ...]}`
 
   try {
-    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 3000, 'json_object')
+    const { text: raw } = await callProxy([{ role: 'user', content: prompt }], settings, 3000, 'json_object')
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) return draftCv
     const parsed = JSON.parse(jsonMatch[0]) as { bullets: string[] }
@@ -233,10 +233,11 @@ export type ChatStyle = 'concise' | 'normal' | 'extended'
 
 const STYLE_INSTRUCTIONS: Record<ChatStyle, string> = {
   concise:
-    'IMPORTANTE: Responde de forma MUY breve y directa. Máximo 2-3 oraciones. Sin introducciones, sin listas largas, sin conclusiones. Solo la respuesta esencial.',
-  normal: 'Sé claro y conciso. Usa listas cortas cuando ayuden.',
+    'ESTILO CONCISO: Responde de forma puntual y directa, máximo 2-3 oraciones o 3 viñetas cortas. Sin introducciones ni conclusiones. Solo lo esencial.',
+  normal:
+    'ESTILO NORMAL: Responde de forma semi-detallada pero puntual: ve al grano, explica lo necesario para que se entienda y usa listas cortas cuando ayuden. Evita relleno y repeticiones.',
   extended:
-    'Puedes dar explicaciones detalladas con ejemplos concretos cuando sea útil para el candidato.',
+    'ESTILO EXTENDIDO: Responde con todo el detalle que consideres útil, sin límite de longitud. Incluye explicaciones, ejemplos concretos y propuestas de bullets reescritos cuando aporten valor.',
 }
 
 export async function chatWithCv(
@@ -266,10 +267,8 @@ export async function chatWithCv(
       })),
       educacion: cvData.education,
       skills: cvData.skills,
-    },
-    null,
-    2
-  ).substring(0, 5000)
+    }
+  ).substring(0, 20000)
 
   const cvEdicionSummary = JSON.stringify(
     {
@@ -288,13 +287,11 @@ export async function chatWithCv(
       })),
       educacion: draftCv.education,
       skills: draftCv.skills,
-    },
-    null,
-    2
-  ).substring(0, 3000)
+    }
+  ).substring(0, 12000)
 
   // Margen amplio: los modelos con razonamiento gastan tokens pensando antes de escribir la respuesta.
-  const maxTokens = style === 'concise' ? 1024 : style === 'extended' ? 2500 : 1500
+  const maxTokens = style === 'concise' ? 2048 : style === 'extended' ? 8192 : 4096
 
   const systemContent = `Eres un experto en CVs ATS y reclutamiento. Tienes acceso a tres fuentes de información:
 
@@ -311,12 +308,12 @@ CV EN EDICIÓN:
 ${cvEdicionSummary}
 
 OFERTA LABORAL:
-${jobOffer.substring(0, 2000)}
+${jobOffer.substring(0, 4000)}
 
 Responde en español. ${STYLE_INSTRUCTIONS[style]}`
 
   try {
-    const result = await callProxy(
+    const { text: result, truncated } = await callProxy(
       [
         { role: 'system', content: systemContent },
         ...messages
@@ -326,6 +323,9 @@ Responde en español. ${STYLE_INSTRUCTIONS[style]}`
       settings,
       maxTokens
     )
+    if (truncated) {
+      return `${result}\n\n_⚠️ Respuesta cortada por el límite de tokens. Pídele "continúa" o usa el estilo Extendido._`
+    }
     return result
   } catch (error) {
     console.error('[chatWithCv]', error)
@@ -473,7 +473,7 @@ BULLETS DEL CANDIDATO:
 ${JSON.stringify(bulletsSummary)}${extra}`
 
   try {
-    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 4000, 'json_object')
+    const { text: raw } = await callProxy([{ role: 'user', content: prompt }], settings, 4000, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return fallbackFor('invalid_response')
     const result = JSON.parse(match[0]) as {
@@ -554,7 +554,7 @@ Responde SOLO con JSON. Por cada item de experience incluye solo: {"id", "title"
 JSON:`
 
   try {
-    const raw = await callProxy([{ role: 'user', content: prompt }], settings, 8000, 'json_object')
+    const { text: raw } = await callProxy([{ role: 'user', content: prompt }], settings, 8000, 'json_object')
     const match = raw.match(/\{[\s\S]*\}/)
     if (!match) return { cv: draft, usedAI: false }
 
